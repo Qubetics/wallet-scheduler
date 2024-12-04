@@ -1,0 +1,20 @@
+export interface AdminTotalProfitsInterface {
+    id: number,
+    user_id: number,
+    type: string | null,
+    sub_type: string | null,
+    trnx_id: string | null,
+    order_id: string | null,
+    fiat_amount: number | null,
+    crypto_amount: number | null,
+    crypto_type: string | null,
+    fiat_fee: number | null,
+    crypto_fee: number | null,
+    usd_price: number | null,
+    profit_percentage: number | null,
+    crypto_profit_amount: number | null,
+    fiat_profit_amount: number | null,
+    trnx_date: string | null,
+    created_at: Date,
+    updated_at: Date
+}

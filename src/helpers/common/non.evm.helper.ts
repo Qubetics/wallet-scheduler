@@ -1,0 +1,346 @@
+import axios from "axios";
+// import Web3 from "web3";
+import TronWeb from 'tronweb';
+import { config } from "../../config";
+
+import { exponentialToDecimal } from "../common/globalFunctions";
+// import { CoinModel } from "../../models/interface/interface.coins";
+import { Boolean } from "../../constants";
+import { PublicKey, Connection } from "@solana/web3.js"
+import { AccountLayout } from "@solana/spl-token";
+// const soltokenbalance = require('soltokenbalance');
+// const solTokenObj = new soltokenbalance(config.NODE.SOL_RPC_URL);
+
+class NonEvmHelpers {
+    public TRX_FULLNODE: string = config.NODE.TRX_RPC_URL
+    public BTC_RPC_URL: string = config.NODE.BTC_RPC_URL
+    public tronWeb: any;
+    public connection: Connection;
+
+    public config: any;
+
+    constructor() {
+        this.tronWeb = new TronWeb({
+            fullHost: this.TRX_FULLNODE,
+            headers: { apikey: config.NODE.TRX_API_KEY }
+        });
+
+        this.config = {
+            method: 'get',
+            headers: {
+                'apikey': `${config.NODE.BTC_API_KEY}`,
+                'Content-Type': 'application/json',
+            }
+        };
+        this.connection = new Connection(config.NODE.SOL_RPC_URL || '', 'confirmed');
+
+    }
+    /** start btc functions */
+    public getTransactionById = async (transactionId: string) => {
+        try {
+            this.config.url = `${this.BTC_RPC_URL}api/v2/tx/${transactionId}`
+            const response = await axios(this.config.url);
+            return response.data;
+        } catch (error) {
+            console.error('🔥 ~ ~ getTransactionById error', error);
+            return null;
+        }
+    }
+
+    public async get_user_btc_balance(address: string) {
+        try {
+            this.config.url = `${this.BTC_RPC_URL}api/v2/address/${address}`
+            const result = await axios(this.config.url);
+            let balance: number | null = result.data.balance ? Number(result.data.balance) : 0
+            if (balance > 0) {
+                balance = balance / 100000000;
+            } else {
+                balance = null;
+            }
+            console.log('🚀 ~ ~ get_user_btc_balance', balance);
+            return balance;
+        } catch (err) {
+            console.log('🔥 ~ ~ get_user_btc_balance err', err);
+            return null;
+        }
+    }
+    /** end btc functions */
+
+    /** start tron functions */
+
+    public async Fetch_Balance(address: string, is_token: Boolean, token_address: string | null) {
+        try {
+            let balance: number | null = 0;
+            if (is_token == Boolean.true) {
+                balance = await this.TRC20_Token_Balance(address, token_address)
+            } else {
+                balance = await this.Coin_Fetch_Balance(address);
+            }
+            return balance;
+        } catch (err: any) {
+            console.error(`Error in Fetch_Balance of tron. `, err);
+            return null;
+        }
+    }
+
+    public async TRC20_Token_Balance(address: string, contract_address: string | null | undefined) {
+        try {
+            await this.tronWeb.setAddress(contract_address);
+            let contract: any = await this.tronWeb.contract().at(contract_address);
+            let decimals: number = await contract.decimals().call();
+            let dex: any = decimals.toString()
+            if (dex.hex != undefined) {
+                dex = await this.tronWeb.toDecimal(dex.hex);
+                decimals = Number(dex);
+            }
+
+            let balanceOf: any = await contract.balanceOf(address).call();
+            let toDecimal: number = await this.tronWeb.toDecimal(balanceOf._hex);
+            if (balanceOf._hex == undefined) {
+                toDecimal = await this.tronWeb.toDecimal(
+                    balanceOf.balance._hex
+                );
+            }
+            let expToDecimal: string = await exponentialToDecimal(toDecimal);
+            let balance: number = Number(expToDecimal) / Math.pow(10, decimals);
+            return balance;
+        } catch (err: any) {
+            console.error(`Tron_Helper TRC20_Token_Balance error >>`, err);
+            return null;
+        }
+    }
+
+    public async Coin_Fetch_Balance(address: string) {
+        try {
+            return await this.tronWeb.trx.getBalance(address).then(async (result: any) => {
+                return await this.tronWeb.fromSun(result);
+            });
+        } catch (err: any) {
+            console.error(`Non-Evm Helper Coin_Fetch_Balance error >>`, err);
+            return null;
+        }
+    }
+
+    public async getTransactionInfo(transactionId: string) {
+        let fromAddress: string = 'INTERNAL';
+        let blockId: number = 0
+        try {
+            const transaction: any = await this.tronWeb.trx.getTransaction(transactionId);
+            // console.log("tramnsaction >>>>>>>>>>>>>>>>>>>>", transaction)
+            let tx: any = transaction;
+            if (tx.ret.length > 0 && tx.ret[0].contractRet == 'SUCCESS') {
+                if (
+                    tx?.raw_data &&
+                    tx?.raw_data.contract[0].type == 'TransferContract'
+                ) {
+                    console.log("TransferContract>>>>")
+                    if (tx) {
+                        fromAddress = await this.tronWeb.address.fromHex(
+                            tx.raw_data.contract[0].parameter.value.owner_address
+                        );
+                        blockId = 0
+
+                    }
+                } else if (
+                    tx?.raw_data &&
+                    tx?.raw_data.contract[0].type == 'TriggerSmartContract'
+                ) {
+                    console.log("TriggerSmartContract>>>>")
+                    const transactionInfo = await this.tronWeb.trx.getTransactionInfo(
+                        tx.txID
+                    );
+                    console.log("transactionInfo>>>>>>>.", transactionInfo)
+                    console.log("transactionInfo.logs>>>>>>>.", transactionInfo.log[0])
+                    if (transactionInfo.log[0].topics[1]) {
+                        console.log("topics 1 exist")
+                        const fromAddressHex = transactionInfo.log[0].topics[1].substring(24, transactionInfo.log[0].topics[1].length);
+                        console.log("fromAddressHex>>>>>>>>>>>>", fromAddressHex)
+                        fromAddress = await this.tronWeb.address.fromHex('41' + fromAddressHex);
+                    } else {
+                        console.log("topics 1 not exist")
+                        fromAddress = 'INTERNAL'
+                    }
+                    console.log("fromAddress>>>>>>>>>>>>", fromAddress)
+
+                    blockId = transactionInfo.blockNumber;
+
+                } else if (
+                    tx.raw_data.contract[0].type == 'TransferAssetContract'
+                ) {
+                    console.log("TransferAssetContract>>>>")
+
+                    if (tx) {
+                        fromAddress = await this.tronWeb.address.fromHex(
+                            tx.raw_data.contract[0].parameter.value.owner_address
+                        );
+                    }
+                    blockId = 0
+
+                }
+                return { status: true, fromAddress: fromAddress, blockId: blockId };
+            } else {
+                return { status: false, fromAddress: fromAddress, blockId: blockId };
+            }
+        } catch (err: any) {
+            console.error("error in getTransactionInfo in tron>>>.", err)
+            return { status: false, fromAddress: fromAddress, blockId: blockId };
+        }
+    }
+    public async searchToken(
+        trc20ContractAddress: string
+    ) {
+        try {
+            // console.log("trc20ContractAddress>>", trc20ContractAddress)
+            await this.tronWeb.setAddress(trc20ContractAddress);
+
+            let contract = await this.tronWeb.contract().at(trc20ContractAddress);
+            // console.log("contract>>", contract)
+            const coin_name = await contract.name().call();
+            const coin_symbol = await contract.symbol().call();
+            const decimals = await contract.decimals().call();
+
+            const data: any = {
+                name: coin_name,
+                symbol: coin_symbol,
+                decimals: decimals.toString(),
+            };
+            if (decimals._hex != undefined) {
+                data.decimals = await this.tronWeb.toDecimal(decimals._hex);
+                data.decimals = data.decimals.toStringfy()
+                console.log("data.decimals>>>>>", data.decimals)
+
+            }
+            console.log("data.decimals>>>>>", data.decimals)
+
+            if (!data) {
+                // let trc10ContractAddress: any = trc20ContractAddress
+                // contract = await this.tronWeb.trx.getTokenByID(trc10ContractAddress);
+                // if (contract) {
+                //     const name = contract.name;
+                //     console.log("name: ", name);
+
+                //     const symbol = contract.abbr;
+                //     console.log("symbol: ", symbol);
+
+                //     const decimals =
+                //         contract.precision == undefined ? 1 : contract.precision;
+                //     console.log("decimals: ", decimals);
+
+                //     const data: any = {
+                //         decimals,
+                //         name,
+                //         symbol,
+                //     };
+                // }
+                return null;
+            }
+            return data;
+        } catch (error: any) {
+            console.error("trigger smart contract error", error);
+            return null
+        }
+    }
+    public async return_decimals(address: string, coin_family: number) {
+        try {
+
+            if (coin_family == 6) {
+                let token_data: any = await this.searchToken(address)
+                return Math.pow(10, parseInt(token_data?.decimals))
+            } else {
+                // console.log("Invalid Coin_Family")
+                return 0;
+            }
+        } catch (err: any) {
+            console.error("err in return_decimals", err);
+            return 0;
+        }
+    }
+    /** end tron functions */
+
+    /** start solana functions */
+    public async getUserSolanaBalance(wallet: string, inSolana: boolean): Promise<string | number> {
+        try {
+            let balanceInWei = await this.connection.getBalance(new PublicKey(wallet));
+            if (inSolana == true) {
+                return Number(balanceInWei / 1000000000);
+            }
+            return balanceInWei;
+        } catch (err) {
+            console.log("🔥 ~ ~ getUserSolanaBalance error", err);
+            return 0;
+        }
+    }
+
+    /* Get Wallet Toekn balance */
+    public async getUserCRC20TokenBalance(tokenAddress: string, walletAddress: string): Promise<number> {
+        try {
+            const walletPublicKey = new PublicKey(walletAddress);
+            const mintPublicKey = new PublicKey(tokenAddress);
+            const tokenAccounts = await this.connection.getTokenAccountsByOwner(walletPublicKey, {
+                mint: mintPublicKey,
+            });
+            if (tokenAccounts.value?.length > 0) {
+                const tokenAccount = tokenAccounts.value[0].account;
+                const tokenAccountInfo = AccountLayout.decode(tokenAccount.data);
+                const amount = tokenAccountInfo.amount;
+                const mintInfo: any = await this.connection.getParsedAccountInfo(mintPublicKey);
+                const decimals = mintInfo.value.data.parsed.info.decimals;
+                const balance = Number(amount) / (10 ** decimals);
+                return balance;
+            } else {
+                return 0;
+            }
+
+            // let tokenBalance = await solTokenObj.tokenBalance(walletAddress, tokenAddress);
+            // return tokenBalance;
+        } catch (error: any) {
+            console.log("🔥 ~ ~ getUserCRC20TokenBalance error", error);
+            return 0;
+        }
+    }
+
+    public rpcCall = async (body: {}) => {
+        try {
+            const result = async (resolve: any, reject: any) => {
+                const options = { headers: { "Content-Type": "application/json" } };
+                axios.post(`${config.NODE.SOL_RPC_URL}`, body, options).then((data: any) => {
+                    if (data.status == 200) {
+                        resolve(data.data.result);
+                    } else {
+                        reject(false);
+                    }
+                });
+            };
+            return new Promise(result);
+        } catch (error: any) {
+            console.log('🔥 ~ ~ rpcCall error', error);
+            return error.message;
+        }
+    }
+
+    public getTransaction = async (tx_id: string) => {
+        try {
+            var rpcJson = {
+                jsonrpc: "2.0",
+                id: 1,
+                method: "getTransaction",
+                params: [tx_id],
+            };
+            return await NonEvmHelper
+                .rpcCall(rpcJson)
+                .then((result) => { return result; })
+                .catch((err) => {
+                    console.log("💥 ~ ~ getTransaction solWeb3 error", err);
+                    return false;
+                });
+        } catch (error: any) {
+            console.log("🔥 ~ ~ getTransaction error", error);
+            return error.message;
+        }
+    };
+    /** end of solana functions */
+
+}
+
+const NonEvmHelper = new NonEvmHelpers();
+export default NonEvmHelper;
