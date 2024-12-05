@@ -8,6 +8,7 @@ import { bnbHelper } from "../../modules/on_off_ramps/bnbHelper";
 import { NonEvmHelper } from "../../modules/on_off_ramps/btc_helper";
 import { Tron_Helper } from "../../modules/on_off_ramps/tron_helper";
 import { pushNotification } from "./push_notification";
+import { Op } from "sequelize";
 
 var BigNumber = require("bignumber.js");
 // var FCM = require("fcm-node");
@@ -100,11 +101,15 @@ export const exponentialToDecimal = async function (exponential: number) {
   return decimal;
 };
 
-export const GetDeviceTokens = async function GetDeviceTokens(user_id: number) {
+export const GetDeviceTokens = async function GetDeviceTokens(user_id: number, address: string, coin_family: number) {
   try {
     return await DeviceToken.DeviceTokenRead.findAll({
       attributes: ["device_token"],
       where: {
+        address: {
+          [Op.like]: address,
+        },
+        coin_family: coin_family,
         user_id: user_id,
         push: 1,
       },

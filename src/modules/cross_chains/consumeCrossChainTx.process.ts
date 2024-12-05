@@ -412,7 +412,7 @@ class CosnumeCrossChainTxProcess {
                                     };
                                     await NotificationModel.create(notificationData);
                                     /** send push notification */
-                                    let device_token_data: any = await GetDeviceTokens(to_user_id);
+                                    let device_token_data: any = await GetDeviceTokens(to_user_id, destinationAddr, coin_family);
                                     if (device_token_data?.length > 0) {
                                         let dataNoti: any = {
                                             token: device_token_data,

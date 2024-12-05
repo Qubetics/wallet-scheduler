@@ -27,6 +27,14 @@ let dataObj = {
     type: DataTypes.TINYINT,
     allowNull: true,
   },
+  address: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  coin_family: {
+    type: DataTypes.TINYINT,
+    allowNull: false,
+  },
   push: {
     type: DataTypes.INTEGER,
     allowNull: true,
