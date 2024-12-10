@@ -15,9 +15,11 @@ export interface CoinModel {
   token_abi?: string | null;
   token_address?: string | null;
   mainnet_token_address?: string | null;
-
   uuid?: string | null;
   added_by?: string;
   is_on_cmc?: number;
-  for_swap?: number
+  for_swap?: number;
+  graph_source?: string | null;
+  graph_pair?: string | null;
+  is_on_trading_view?: number | null;
 }

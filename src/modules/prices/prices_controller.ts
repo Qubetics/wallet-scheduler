@@ -31,7 +31,7 @@ const {
 const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 
 class PricesController {
-  public fetchCmcPrice = async (coin_family: number) => {
+  public fetchCmcPrice = async () => {
     try {
       // let family_data: any = Object.keys(COIN_FAMILY).find(
       //   (key) => COIN_FAMILY[key] === coin_family
@@ -70,7 +70,7 @@ class PricesController {
           offset: currency_limit_count,
           limit: currency_limit,
           order: [["currency_id", "asc"]],
-          logging: true,
+          // logging: true,
         });
       let coin_data_count: number = 0;
       if (currency_data.count > 0) {
@@ -272,14 +272,26 @@ class PricesController {
                   // }
                   /** update latest record in history candle */
                   if (coin_id > 0) {
-                    await this.update_history_last_price(
-                      latest_price,
-                      obj.id,
-                      code,
-                      coin_id,
-                      where,
-                      obj?.symbol
-                    );
+                    const graphSourceExist = await Coins.CoinsRead.findOne({
+                      attributes: [
+                        "coin_id"
+                      ],
+                      where: {
+                        cmc_id: obj.id,
+                        graph_source: { [Op.is]: null }
+                      },
+                      raw: true
+                    });
+                    if (!graphSourceExist) {
+                      await this.update_history_last_price(
+                        latest_price,
+                        obj.id,
+                        code,
+                        coin_id,
+                        where,
+                        obj?.symbol
+                      );
+                    }
                   }
                 } else {
                   // console.log('latest_price >>>.', latest_price);
@@ -468,6 +480,7 @@ class PricesController {
         attributes: ["cmc_id"],
         where: {
           cmc_id: { [Op.ne]: 0 },
+          graph_source: { [Op.is]: null }
           // coin_family: coin_family
         },
         include: [
@@ -556,7 +569,7 @@ class PricesController {
                       }
 
                       if (data?.quote[code?.toUpperCase()] !== undefined && data?.quote[code?.toUpperCase()] !== null) {
-                        console.log('data data >>>>>>', data?.quote[code?.toUpperCase()]);
+                        // console.log('data data >>>>>>', data?.quote[code?.toUpperCase()]);
                         created_at = new Date(
                           data?.quote[code?.toUpperCase()]?.timestamp
                         )?.toISOString()?.replace(/T/, " ")?.replace(/\..+/, "");
@@ -652,7 +665,7 @@ class PricesController {
                     }
                   }
                   // console.log("recordExist >>>>", "where", where);
-                  console.log("recordExist >>>>", recordExist);
+                  // console.log("recordExist >>>>", recordExist);
 
                   if (recordExist) {
                     // console.log(

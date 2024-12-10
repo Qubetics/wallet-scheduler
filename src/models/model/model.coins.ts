@@ -90,7 +90,19 @@ let dataObj = {
   added_by: {
     type: DataTypes.ENUM('admin', 'user', 'swap'),
     allowNull: true,
-  }
+  },
+  graph_source: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  graph_pair: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  is_on_trading_view: {
+    type: DataTypes.TINYINT,
+    allowNull: true,
+  },
 };
 let dataObjIndex = {
   indexes: [

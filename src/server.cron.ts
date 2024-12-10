@@ -9,6 +9,7 @@ import {
   PendingCrossChainProcess,
   CosnumeCrossChainTxProcess,
   OnOffRampController,
+  TradingViewGraphs
 } from "./modules/index";
 
 class CronJobs {
@@ -23,7 +24,7 @@ class CronJobs {
     this.updateCmcIds();
     /**  */
 
-    /** Graph data */
+    // /** Graph data */
     this.updateFiatCoinPriceCron();
     this.getCoinGraphDataDaily();
     /**  */
@@ -33,6 +34,7 @@ class CronJobs {
     /** Update btc balances of users */
     // this.updateBtcBalances()
     // this.updateUsdtBalances()
+    this.tradingViewGraphData()
   }
 
   public updateEthGasPriceCron = async () => {
@@ -40,6 +42,7 @@ class CronJobs {
       await ThirdPartyController.updateGasPrice();
     });
   };
+
   public updateBNBGasPriceCron = async () => {
     schedule.scheduleJob("*/7 * * * * *", async function () {
       await ThirdPartyController.updateBNBGasPrice();
@@ -57,51 +60,28 @@ class CronJobs {
       await PricesController.fetchCmcIds();
     });
   };
+
   public updateFiatCoinPriceCron = async () => {
-    if (config.SERVER == "prod") {
-      /** for eth coins/tokens current prices */
-      schedule.scheduleJob("0 */1 * * * *", async function () {
-        await PricesController.fetchCmcPrice(COIN_FAMILY.ETH);
-      });
-    } else {
-      /** for eth coins/tokens current prices */
-      schedule.scheduleJob("0 */1 * * * *", async function () {
-        await PricesController.fetchCmcPrice(COIN_FAMILY.ETH);
-      });
-    }
+    schedule.scheduleJob("0 */1 * * * *", async function () {
+      await PricesController.fetchCmcPrice();
+    });
   };
+
   public getCoinGraphDataDaily = async () => {
-    if (config.SERVER == "prod") {
-      schedule.scheduleJob("0 */2 * * * *", async function () {
-        const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
-        const startDateMoment = moment()
-          .subtract(1, "day")
-          .format("YYYY-MM-DD HH:mm");
-        await PricesController.getCoinGraphData(
-          startDateMoment,
-          endDateMoment,
-          "5m",
-          "1d",
-          5,
-          // COIN_FAMILY.ETH
-        );
-      });
-    } else {
-      schedule.scheduleJob("0 */2 * * * *", async function () {
-        const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
-        const startDateMoment = moment()
-          .subtract(1, "day")
-          .format("YYYY-MM-DD HH:mm");
-        await PricesController.getCoinGraphData(
-          startDateMoment,
-          endDateMoment,
-          "5m",
-          "1d",
-          5,
-          // COIN_FAMILY.ETH
-        );
-      });
-    }
+    schedule.scheduleJob("0 */2 * * * *", async function () {
+      const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
+      const startDateMoment = moment()
+        .subtract(1, "day")
+        .format("YYYY-MM-DD HH:mm");
+      await PricesController.getCoinGraphData(
+        startDateMoment,
+        endDateMoment,
+        "5m",
+        "1d",
+        5,
+        // COIN_FAMILY.ETH
+      );
+    });
   };
 
   public getPendingWithdrawalTxProcess() {
@@ -122,6 +102,11 @@ class CronJobs {
     }, 10000)
   }
 
+  public tradingViewGraphData = async () => {
+    schedule.scheduleJob("*/1 * * * *", async function () {
+      await TradingViewGraphs.getTradingViewTokens();
+    });
+  }
   // public async updateOnOffRampFiats() {
   //   schedule.scheduleJob('0 0 */2 * *', async function () {
   //     // await OnOffRampController.updateFiats('alchemy')
