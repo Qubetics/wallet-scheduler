@@ -97,22 +97,50 @@ class tradingViewController {
             for (let exchange of exchanges) {
                 try {
                     const response = await axios.get(exchange.url(symbol));
-                    if ((exchange.name === 'BINANCE' && response.data?.code === undefined) ||
-                        (exchange.name === 'OKX' && response.data?.code === 0) ||
-                        (exchange.name === 'BYBIT' && response.data?.result?.list?.length > 0) ||
-                        (exchange.name === 'BITGET' && response.data.code === '00000' && response.data.data?.length > 0) ||
-                        (exchange.name === 'BITMART' && response?.data?.code === 1000 && response?.data?.data !== undefined) ||
-                        (exchange.name === 'COINBASE' && response?.data?.products?.length > 0) ||
-                        (exchange.name === 'MEXC' && response?.data?.symbols?.length > 0) ||
-                        (exchange.name === 'GATEIO' && response?.data?.label === undefined)
-                    ) {
+                    // Simplified exchange response validation
+                    if (isValidExchangeResponse(exchange, response)) {
                         return exchange.name;
                     }
+                    // if ((exchange.name === 'BINANCE' && response.data?.code === undefined) ||
+                    //     (exchange.name === 'OKX' && response.data?.code === 0) ||
+                    //     (exchange.name === 'BYBIT' && response.data?.result?.list?.length > 0) ||
+                    //     (exchange.name === 'BITGET' && response.data.code === '00000' && response.data.data?.length > 0) ||
+                    //     (exchange.name === 'BITMART' && response?.data?.code === 1000 && response?.data?.data !== undefined) ||
+                    //     (exchange.name === 'COINBASE' && response?.data?.products?.length > 0) ||
+                    //     (exchange.name === 'MEXC' && response?.data?.symbols?.length > 0) ||
+                    //     (exchange.name === 'GATEIO' && response?.data?.label === undefined)
+                    // ) {
+                    //     return exchange.name;
+                    // }
                 } catch (error: any) {
                     console.error(`Error fetching from ${exchange.name}:`, error.message);
                 }
             }
             return null; // If no exchange source is found
+        };
+
+        // Function to validate the response based on exchange name
+        const isValidExchangeResponse = (exchange: { name: string }, response: any) => {
+            switch (exchange.name) {
+                case 'BINANCE':
+                    return response.data?.code === undefined;
+                case 'OKX':
+                    return response.data?.code === 0;
+                case 'BYBIT':
+                    return response.data?.result?.list?.length > 0;
+                case 'BITGET':
+                    return response.data.code === '00000' && response.data.data?.length > 0;
+                case 'BITMART':
+                    return response?.data?.code === 1000 && response?.data?.data !== undefined;
+                case 'COINBASE':
+                    return response?.data?.products?.length > 0;
+                case 'MEXC':
+                    return response?.data?.symbols?.length > 0;
+                case 'GATEIO':
+                    return response?.data?.label === undefined;
+                default:
+                    return false;
+            }
         };
 
         // Loop through each coin and update the graph source
