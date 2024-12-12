@@ -7,7 +7,7 @@
     "compile": "tsc",
     "server": "nodemon build/index.cron.js",
     "dev": "concurrently \"npm run compile\" \"npm run server\"",
-    "start": "npm run compile && node build/index.cron.js "
+    "start": "npm run compile && cp -a ./src/constants/firebase.admin.key.json ./build/constants/firebase.admin.key.json && node build/index.cron.js "
   },
   "keywords": [
     "processes"
@@ -36,7 +36,7 @@
     "crypto-js": "^4.2.0",
     "dotenv": "^16.0.0",
     "express": "^4.17.1",
-    "fcm-node": "^1.6.1",
+    "firebase-admin": "^13.0.1",
     "fs": "^0.0.1-security",
     "i18n-iso-countries": "^7.11.0",
     "kafkajs": "^2.2.4",

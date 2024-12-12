@@ -110,7 +110,7 @@ export const GetDeviceTokens = async function GetDeviceTokens(user_id: number, a
           [Op.like]: address,
         },
         coin_family: coin_family,
-        user_id: user_id,
+        // user_id: user_id,
         push: 1,
       },
       order: [
