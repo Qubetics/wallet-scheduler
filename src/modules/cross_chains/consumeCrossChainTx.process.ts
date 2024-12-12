@@ -383,7 +383,7 @@ class CosnumeCrossChainTxProcess {
 
                                 }
                                 /** save notification */
-                                let deposit_notification_exist: any = await NotificationModel.findOne({ attributes: ['notification_id', 'tx_type'], where: { tx_id: row_id, tx_type: 'deposit' } });
+                                let deposit_notification_exist: any = await NotificationModel.findOne({ attributes: ['notification_id', 'tx_type'], where: { wallet_address: { [Op.like]: destinationAddr }, tx_id: row_id, tx_type: 'deposit' } });
                                 if (!deposit_notification_exist) {
                                     let am = amount.toString();
                                     let value: any = new BigNumber(am);

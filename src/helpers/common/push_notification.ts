@@ -5,7 +5,9 @@
 // const firebaseAdmin = require("firebase-admin");
 // import fcmServiceAccount from "../../constants/firebase.admin.key.json";
 import firebaseAdmin from 'firebase-admin';
-const fcmServiceAccount = require("../../constants/firebase.admin.key.json");
+// const fcmServiceAccount = require("../../constants/firebase.admin.key.json");
+import { fcmServiceAccount } from "../../constants/firebase.admin.key";
+
 // import dbHelper from "../dbHelper";
 
 class PushNotification {

@@ -117,7 +117,7 @@ export const GetDeviceTokens = async function GetDeviceTokens(user_id: number, a
         ["updated_at", "DESC"],
         ["id", "DESC"],
       ],
-      limit: 3,
+      // limit: 3,
       raw: true,
     });
   } catch (error: any) {
@@ -182,12 +182,12 @@ export const sendNotification = async function sendNotification(
         title: devices.title,
         thread: chat_thread,
         notification_type: devices.notification_type,
-        table_id: devices.tx_id,
+        table_id: devices.tx_id?.toString(),
         tx_type: devices.tx_type,
-        from_user_id: fromUserId,
+        from_user_id: fromUserId?.toString(),
         user_name: userName,
         wallet_address: walletAddress,
-        user_coin_id: userCoinId,
+        user_coin_id: userCoinId?.toString(),
         chat_thread_id: devices.chat_thread,
       },
     };
