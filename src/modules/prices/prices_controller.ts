@@ -554,8 +554,8 @@ class PricesController {
                 let created_at;
                 let fiat_type = code;
                 let sparkline: any = [];
-                let circulating_supply: any;
-                let price: any;
+                //let circulating_supply: any;
+                //let price: any;
                 if (
                   data?.data[id]?.quotes &&
                   data?.data[id]?.quotes.length > 0

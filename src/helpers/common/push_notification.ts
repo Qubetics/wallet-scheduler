@@ -40,7 +40,7 @@ class PushNotification {
               data: data.data,
             })
             .then((response: any) => {
-              console.log(" ~ firebase admin push notification", response);
+              console.log("💥🚀 ~ firebase admin push notification", JSON.stringify(response));
             })
             .catch((error: any) => {
               console.error(
@@ -57,7 +57,7 @@ class PushNotification {
               data: data.data,
             })
             .then((response: any) => {
-              console.log(" ~ firebase admin push notification", response);
+              console.log("💥🚀 ~ firebase admin push notification", JSON.stringify(response));
             })
             .catch((error: any) => {
               console.error(

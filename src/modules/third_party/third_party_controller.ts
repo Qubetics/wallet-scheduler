@@ -70,23 +70,24 @@ class ThirdPartyController {
             return;
         }
     };
-    
+
     public updatePolGasPrice = async () => {
         console.error("success ~ ~ updatePolGasPrice",);
         try {
-            let url: string = `${config.POL_GAS_FEE_URL}${config.POL_GAS_FEE_API_KEY}`;
+            let url: string = `${config.POL_GAS_FEE_URL}${config.POL_GAS_FEE_API_KEY}/networks/137/suggestedGasFees`;
             await axios.get(url).then(async (responce) => {
+                // console.log('pol responce >>>', responce.data);
                 if (responce.status == 200) {
                     await GasPrice.GasPriceWrite.update(
                         {
                             safe_gas_price: Math.floor(
-                                responce.data.result.SafeGasPrice
+                                responce.data.low.suggestedMaxFeePerGas
                             ),
                             propose_gas_price: Math.floor(
-                                responce.data.result.ProposeGasPrice
+                                responce.data.medium.suggestedMaxFeePerGas
                             ),
                             fast_gas_price: Math.floor(
-                                responce.data.result.FastGasPrice
+                                responce.data.high.suggestedMaxFeePerGas
                             ),
                         },
                         {
