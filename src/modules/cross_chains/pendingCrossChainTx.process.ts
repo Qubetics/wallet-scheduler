@@ -1,7 +1,7 @@
 import { Op } from "sequelize";
 import { ITrnxHistoryInterface } from "../../models/interface/interface.trnxHistory";
 import TrnxHistoryModel from "../../models/model/model.trnxHistory";
-import  KafkaHelper  from "../../helpers/common/kafka.helper";
+import KafkaHelper from "../../helpers/common/kafka.helper";
 import { config } from "../../config";
 
 class PendingCrossChainProcess {
@@ -9,7 +9,7 @@ class PendingCrossChainProcess {
         try {
             let where: any = {
                 blockchain_status: 'confirmed', type: 'cross_chain', order_id: { [Op.ne]: null }
-                , [Op.or]: [{ swftc_order_status: 'pending' }, { swftc_order_status: 'processing' }]
+                , [Op.or]: [{ order_status: 'pending' }, { order_status: 'processing' }]
             }
             if (coin_family !== 0) {
                 where.coin_family = coin_family;
@@ -22,17 +22,17 @@ class PendingCrossChainProcess {
                 for await (const el of txns.rows) {
                     await this.addTxToQueue({ id: el.id, from_adrs: el.from_adrs, to_adrs: el.to_adrs, order_id: el.order_id })
                     await TrnxHistoryModel.update({
-                        swftc_order_status: 'processing'
+                        order_status: 'processing'
                     },
                         { where: { id: el.id } }
                     )
                 }
             }
             await TrnxHistoryModel.update({
-                swftc_order_status: 'failed'
+                order_status: 'failed'
             }, {
                 where: {
-                    blockchain_status: 'failed', type: 'cross_chain', order_id: { [Op.ne]: null }, [Op.or]: [{ swftc_order_status: 'pending' }, { swftc_order_status: 'processing' }]
+                    blockchain_status: 'failed', type: 'cross_chain', order_id: { [Op.ne]: null }, [Op.or]: [{ order_status: 'pending' }, { order_status: 'processing' }]
                 }
             })
         } catch (err: any) {

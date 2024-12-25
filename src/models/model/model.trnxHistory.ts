@@ -131,7 +131,7 @@ let dataObj = {
         type: DataTypes.STRING(191),
         allowNull: true
     },
-    swftc_order_status: {
+    order_status: {
         type: DataTypes.ENUM('pending', 'processing', 'completed'),
         allowNull: true
     },
@@ -139,7 +139,7 @@ let dataObj = {
         type: DataTypes.STRING,
         allowNull: true
     },
-    swftc_order_failed_reason: {
+    order_failed_reason: {
         type: DataTypes.STRING,
         allowNull: true
     }

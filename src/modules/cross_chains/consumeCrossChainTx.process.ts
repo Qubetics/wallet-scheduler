@@ -284,7 +284,7 @@ class CosnumeCrossChainTxProcess {
                                     /** User Solana Balance */
                                     userBalance = Number(await NonEvmHelper.getUserSolanaBalance(destinationAddr, true));
                                 }
-                            } else if (coin_family == 6) {
+                            } else if (coin_family == COIN_FAMILY.TRX) {
                                 let transactionData: { status: boolean, fromAddress: string, blockId: number } = await non_evm_helper.getTransactionInfo(transactionId);
                                 if (transactionData.status) {
                                     from_address = transactionData.fromAddress
@@ -313,7 +313,7 @@ class CosnumeCrossChainTxProcess {
                                     to_adrs: destinationAddr,
                                     tx_id: transactionId,
                                     status: 'completed',
-                                    blockchain_status: 'pending',
+                                    blockchain_status: 'confirmed',
                                     coin_id: coins_data.coin_id,
                                     coin_family: coin_family,
                                     amount: amount,
@@ -327,7 +327,7 @@ class CosnumeCrossChainTxProcess {
                                 }
                                 let history_crated_data = await TrnxHistoryModel.create(history_data);
                                 let row_id = history_crated_data.id;
-                                await TrnxHistoryModel.update({ swftc_order_status: SWFTC_STATUS.COMPLETED, swftc_order_failed_reason: null }, { where: { id: data.id } });
+                                await TrnxHistoryModel.update({ order_status: SWFTC_STATUS.COMPLETED, order_failed_reason: null }, { where: { id: data.id } });
                                 console.log("in create order id >>>", data.order_id)
 
                                 await cross_chain_helper.insert_profit_in_admin_table(res_data, data.order_id, to_user_id)
@@ -374,7 +374,7 @@ class CosnumeCrossChainTxProcess {
 
                                     // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>balance>>>>>>>>>", userBalance)
                                     if (userBalance !== null) {
-                                        let update_balance: any = await Wallets.WalletWrite.update({
+                                        await Wallets.WalletWrite.update({
                                             balance: userBalance
                                         }, {
                                             where: { coin_id: coins_data.coin_id, wallet_address: destinationAddr }
@@ -429,7 +429,7 @@ class CosnumeCrossChainTxProcess {
                                 console.log('Transaction not getting from blockchain');
                             }
                         } else {
-                            await TrnxHistoryModel.update({ swftc_order_status: SWFTC_STATUS.COMPLETED, swftc_order_failed_reason: null }, { where: { id: data.id } })
+                            await TrnxHistoryModel.update({ order_status: SWFTC_STATUS.COMPLETED, order_failed_reason: null }, { where: { id: data.id } })
                             console.log("in update order id >>>", data.order_id)
                             await cross_chain_helper.insert_profit_in_admin_table(res_data, data.order_id, to_user_id)
                         }
@@ -446,9 +446,9 @@ class CosnumeCrossChainTxProcess {
             } else {
                 // console.log('res_data.detailState >>>>>>>>>.', res_data?.detailState);
                 if (res_data?.detailState == SWFTC_RESPONSE.WAIT_DEPOSIT || res_data?.detailState == SWFTC_RESPONSE.WAIT_PUSH || res_data?.detailState == SWFTC_RESPONSE.WAIT_RETURN || res_data?.detailState == SWFTC_RESPONSE.WAIT_REC_SEND || res_data?.detailState == SWFTC_RESPONSE.WAIT_REC_CONFIRM || res_data?.detailState == SWFTC_RESPONSE.WAIT_SEND || res_data?.detailState == SWFTC_RESPONSE.WAIT_CONFIRM || res_data?.detailState == SWFTC_RESPONSE.ERROR) {
-                    await TrnxHistoryModel.update({ swftc_order_status: SWFTC_STATUS.PENDING, swftc_order_failed_reason: res_data?.detailState }, { where: { id: data.id } });
+                    await TrnxHistoryModel.update({ order_status: SWFTC_STATUS.PENDING, order_failed_reason: res_data?.detailState }, { where: { id: data.id } });
                 } else if (res_data?.detailState == SWFTC_RESPONSE.REFRESH_COMPLETE || res_data?.detailState == SWFTC_RESPONSE.WAIT_KYC || res_data?.detailState == SWFTC_RESPONSE.TIMEOUT || res_data?.detailState == SWFTC_RESPONSE.REFUND_COMPLETE) {
-                    await TrnxHistoryModel.update({ swftc_order_status: SWFTC_STATUS.FAILED, swftc_order_failed_reason: res_data?.detailState }, { where: { id: data.id } });
+                    await TrnxHistoryModel.update({ order_status: SWFTC_STATUS.FAILED, order_failed_reason: res_data?.detailState }, { where: { id: data.id } });
                 }
             }
 

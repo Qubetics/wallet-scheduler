@@ -29,8 +29,8 @@ export interface ITrnxHistoryInterface {
     fiat_price: number | null,
     fiat_type: string | null,
     country_code: string | null,
-    swftc_order_status: string | null;
+    order_status: string | null;
     referral_upgrade_level: string | null;
-    swftc_order_failed_reason: string | null
+    order_failed_reason: string | null
     // address_book_name: string
 }
