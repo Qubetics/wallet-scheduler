@@ -8,15 +8,15 @@ class PendingCrossChainProcess {
     public async getTransactionFromDB(coin_family: number) {
         try {
             let where: any = {
-                blockchain_status: 'confirmed', type: 'cross_chain', order_id: { [Op.ne]: null }
-                , [Op.or]: [{ order_status: 'pending' }, { order_status: 'processing' }]
+                blockchain_status: 'confirmed', type: 'cross_chain', order_id: { [Op.ne]: null }, [Op.or]: [{ order_status: 'pending' }, { order_status: 'processing' }]
             }
             if (coin_family !== 0) {
                 where.coin_family = coin_family;
             }
             const txns: { rows: ITrnxHistoryInterface[], count: number } = await TrnxHistoryModel.findAndCountAll({
                 attributes: ['id', 'from_adrs', 'to_adrs', 'order_id'],
-                where: where
+                where: where,
+                logging: true
             });
             if (txns.count > 0) {
                 for await (const el of txns.rows) {
@@ -28,13 +28,13 @@ class PendingCrossChainProcess {
                     )
                 }
             }
-            await TrnxHistoryModel.update({
-                order_status: 'failed'
-            }, {
-                where: {
-                    blockchain_status: 'failed', type: 'cross_chain', order_id: { [Op.ne]: null }, [Op.or]: [{ order_status: 'pending' }, { order_status: 'processing' }]
-                }
-            })
+            // await TrnxHistoryModel.update({
+            //     order_status: 'failed'
+            // }, {
+            //     where: {
+            //         blockchain_status: 'failed', type: 'cross_chain', order_id: { [Op.ne]: null }, [Op.or]: [{ order_status: 'pending' }, { order_status: 'processing' }]
+            //     }
+            // })
         } catch (err: any) {
             console.error("💥 ~ getTransactionFromDB error", err)
         }

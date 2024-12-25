@@ -29,7 +29,7 @@ class CosnumeCrossChainTxProcess {
     public Abi: any;
     constructor() {
         this.Eth_Web3_Url = eth_web3.eth_web3;
-        this.Bnb_Web3_Url = eth_web3.eth_web3
+        this.Bnb_Web3_Url = eth_web3.bsc_web3
         this.Pol_Web3_Url = eth_web3.pol_web3
     }
 
@@ -174,8 +174,10 @@ class CosnumeCrossChainTxProcess {
                     } else if (coin_family == COIN_FAMILY.BTC) {
                         depositQuery = await redisClient.getKeyValuePair(`${config.BTC_WALLET_ADDRESS}`, destinationAddr.toUpperCase())
                     } else if (coin_family == COIN_FAMILY.BNB) {
+                        console.log('${config.BSC_WALLET_ADDRESS', config.BSC_WALLET_ADDRESS);
                         web3_object = this.Bnb_Web3_Url;
                         depositQuery = await redisClient.getKeyValuePair(`${config.BSC_WALLET_ADDRESS}`, destinationAddr.toUpperCase())
+                        console.log('depositQuery', depositQuery);
 
                     }
                     console.log("cross chain  123>>>>>>>>>>>>>>>>>.")
@@ -209,10 +211,12 @@ class CosnumeCrossChainTxProcess {
                             let transaction_fee: number = 0;
                             let userBalance: number | null = 0;
                             let trans_status: any = false;
-                            /** for ETH/BSC */
+                            /** for ETH/BSC/POL */
+                            console.log('coin_family >>>', coin_family);
                             if (coin_family == COIN_FAMILY.ETH || coin_family == COIN_FAMILY.BNB || coin_family == COIN_FAMILY.POL) {
                                 let { getTransaction, getTransactionReceipt } = web3_object.eth;
                                 const transactionReceipt = await getTransactionReceipt(transactionId);
+                                // console.log('transactionReceipt >>>', transactionReceipt);
                                 if (transactionReceipt && transactionReceipt?.status && transactionReceipt?.blockHash != null) {
                                     trans_status = true;
                                     const transaction = await getTransaction(transactionId);
@@ -301,7 +305,7 @@ class CosnumeCrossChainTxProcess {
                                 }
 
                             }
-
+                            console.log('trans_status >>>', trans_status);
                             if (trans_status) {
                                 const trnx_type: string = 'deposit';
                                 let history_data: any = {

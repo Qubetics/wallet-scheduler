@@ -77,7 +77,7 @@ export const POL_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zo
 export const SOL_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.SOL_WALLET_ADDRESS}`;
 export const TRON_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TRON_WALLET_ADDRESS}`;
 export const BTC_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BTC_WALLET_ADDRESS}`;
-export const BSC_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BNB_WALLET_ADDRESS}`;
+export const BSC_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_WALLET_ADDRESS}`;
 
 export const TRANSAK = {
     TRANSAK_URL: zookeeperConfig.config.TRANSAK_URL,
