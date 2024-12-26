@@ -39,8 +39,8 @@ class CosnumeCrossChainTxProcess {
 
         await consumer.run({
             eachMessage: ({ topic, partition, message }: { topic: any, partition: any, message: any }) => {
-                // console.log("🚀 ~ startBlockTxQueue topic", topic);
-                // console.log("🚀 ~ startBlockTxQueue message.value", message.value.toString());
+                console.log("🚀 ~ cross chain startBlockTxQueue topic", topic);
+                console.log("🚀 ~ cross chain startBlockTxQueue message.value", message.value.toString());
                 this.getTx(JSON.parse(message.value.toString()))
             }
         }).catch((err: Error) => {
@@ -81,7 +81,7 @@ class CosnumeCrossChainTxProcess {
                 coin_symbol = coin_symbol[Boolean.false]
                 let destinationAddr = res_data.destinationAddr;
                 let swftc_coin: any = await SWFTCCoinsDataModel.findOne({
-                    attributes: ["id", "coinName", "coinCode", "coinImageUrl", "mainNetwork", "contact", "coinDecimal", "noSupportCoin", "coinCodeShow", "status"],
+                    attributes: ["id", "coinId", "coinName", "coinCode", "coinImageUrl", "mainNetwork", "contact", "coinDecimal", "noSupportCoin", "coinCodeShow", "status"],
                     where: { coinCode: { [Op.like]: old_coin_symbol } },
                     raw: true
                 })
@@ -93,7 +93,7 @@ class CosnumeCrossChainTxProcess {
                         token_type = TOKENS.ERC20
                     } else if (swftc_coin.mainNetwork == COINS.BTC) {
                         coin_family = COIN_FAMILY.BTC
-                    } else if (swftc_coin.mainNetwork == COINS.POL) {
+                    } else if (swftc_coin.mainNetwork == COINS.POL || swftc_coin.mainNetwork == COINS.POLYGON) {
                         coin_family = COIN_FAMILY.POL
                         token_type = TOKENS.ERC20
                     } else if (swftc_coin.mainNetwork == COINS.SOL) {
@@ -111,7 +111,7 @@ class CosnumeCrossChainTxProcess {
 
                     let coins_data: any = await Coins.CoinsRead.findOne({
                         attributes: ["coin_id", "coin_symbol", "is_token", "token_type", "token_address"],
-                        where: { coin_symbol: coin_symbol, coin_family: coin_family },
+                        where: { coin_id: swftc_coin.coinId, coin_family: coin_family },
                         raw: true
                     })
                     if (!coins_data) {
@@ -335,19 +335,20 @@ class CosnumeCrossChainTxProcess {
                                 console.log("in create order id >>>", data.order_id)
 
                                 await cross_chain_helper.insert_profit_in_admin_table(res_data, data.order_id, to_user_id)
-
+                                console.log('dddddddddddddddddddddddddddddd>>>>');
                                 let wallet_data_exist: any = await Wallets.WalletRead.findOne({
                                     attributes: ["wallet_id"],
                                     where: {
                                         coin_id: coins_data.coin_id,
                                         wallet_address: destinationAddr
                                     },
-                                    raw: true
-                                })
+                                    raw: true,
+                                    // logging: true
+                                });
+                                console.log('wallet_data_exist>>>>', wallet_data_exist);
                                 if (!wallet_data_exist) {
                                     let walletData: any = await Wallets.WalletRead.findOne({
                                         where: {
-                                            // coin_id: coins_data.coin_id,
                                             wallet_address: destinationAddr
                                         },
                                         limit: 1,
@@ -356,9 +357,9 @@ class CosnumeCrossChainTxProcess {
                                     // console.log("balance>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", userBalance)
                                     await Wallets.WalletWrite.create({
                                         user_id: walletData.user_id,
-                                        email: walletData.email,
-                                        login_type: walletData.login_type,
-                                        social_id: walletData.social_id,
+                                        // email: walletData.email,
+                                        // login_type: walletData.login_type,
+                                        // social_id: walletData.social_id,
                                         wallet_name: walletData.wallet_name,
                                         wallet_address: walletData.wallet_address,
                                         coin_id: coins_data.coin_id,

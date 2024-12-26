@@ -11,6 +11,7 @@ export enum COINS {
     TRX = 'TRX',
     BSC = 'BSC',
     POL = 'POL',
+    POLYGON = 'POLYGON',
     SOL = 'SOL'
 }
 export enum ADDED_BY {

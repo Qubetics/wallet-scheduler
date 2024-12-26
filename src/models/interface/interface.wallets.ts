@@ -1,9 +1,9 @@
 export interface WalletModel {
     wallet_id: number,
     user_id: number,
-    email: string | null,
-    login_type: string | null,
-    social_id: string | null,
+    // email: string | null,
+    // login_type: string | null,
+    // social_id: string | null,
     coin_family: number,
     wallet_name: string,
     wallet_address: string,
