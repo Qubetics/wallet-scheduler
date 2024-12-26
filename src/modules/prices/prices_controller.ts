@@ -381,8 +381,8 @@ class PricesController {
           const cleanedData = history_sparkline.filter((item: any) => item !== null);
           console.log('cleanedData >>>>', cleanedData?.length);
           let last_record = cleanedData[cleanedData?.length - 1];
-          console.log('last_record >>>', last_record);
-          console.log('latest_price >>>', latest_price);
+          // console.log('last_record >>>', last_record);
+          // console.log('latest_price >>>', latest_price);
 
           const existingTimestamp = new Date(last_record?.timestamp).getTime();
           const latestTimestamp = new Date(latest_price?.timestamp).getTime();
@@ -601,7 +601,7 @@ class PricesController {
                   sparkline = data?.data?.quotes.map(
                     (data: any, index: number) => {
                       if (data?.quote[code?.toUpperCase()] !== undefined && data?.quote[code?.toUpperCase()] !== null) {
-                        console.log('data data22222 >>>>>>', data);
+                        //console.log('data data22222 >>>>>>', data);
                         created_at = new Date(data.quote[code?.toUpperCase()]?.timestamp
                         ).toISOString().replace(/T/, " ").replace(/\..+/, "");
                         return {
