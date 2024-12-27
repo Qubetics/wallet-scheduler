@@ -16,6 +16,7 @@ class NonEvmHelpers {
     public BTC_RPC_URL: string = config.NODE.BTC_RPC_URL
     public tronWeb: any;
     public connection: Connection;
+    public connectionNew: Connection;
 
     public config: any;
 
@@ -33,6 +34,7 @@ class NonEvmHelpers {
             }
         };
         this.connection = new Connection(config.NODE.SOL_RPC_URL || '', 'confirmed');
+        this.connectionNew = new Connection(`https://api.tatum.io/v3/blockchain/node/solana-mainnet/REDACTED`, 'confirmed');
 
     }
     /** start btc functions */
@@ -276,14 +278,14 @@ class NonEvmHelpers {
         try {
             const walletPublicKey = new PublicKey(walletAddress);
             const mintPublicKey = new PublicKey(tokenAddress);
-            const tokenAccounts = await this.connection.getTokenAccountsByOwner(walletPublicKey, {
+            const tokenAccounts = await this.connectionNew.getTokenAccountsByOwner(walletPublicKey, {
                 mint: mintPublicKey,
             });
             if (tokenAccounts.value?.length > 0) {
                 const tokenAccount = tokenAccounts.value[0].account;
                 const tokenAccountInfo = AccountLayout.decode(tokenAccount.data);
                 const amount = tokenAccountInfo.amount;
-                const mintInfo: any = await this.connection.getParsedAccountInfo(mintPublicKey);
+                const mintInfo: any = await this.connectionNew.getParsedAccountInfo(mintPublicKey);
                 const decimals = mintInfo.value.data.parsed.info.decimals;
                 const balance = Number(amount) / (10 ** decimals);
                 return balance;
@@ -317,10 +319,28 @@ class NonEvmHelpers {
             return error.message;
         }
     }
+    public rpcPublicCall = async (body: {}) => {
+        try {
+            const result = async (resolve: any, reject: any) => {
+                const options = { headers: { "Content-Type": "application/json" } };
+                axios.post(`https://api.mainnet-beta.solana.com`, body, options).then((data: any) => {
+                    if (data.status == 200) {
+                        resolve(data.data.result);
+                    } else {
+                        reject(false);
+                    }
+                });
+            };
+            return new Promise(result);
+        } catch (error: any) {
+            console.log('🔥 ~ ~ rpcCall error', error);
+            return error.message;
+        }
+    }
 
     public getTransaction = async (tx_id: string) => {
         try {
-            var rpcJson = {
+            let rpcJson = {
                 jsonrpc: "2.0",
                 id: 1,
                 method: "getTransaction",
@@ -328,10 +348,29 @@ class NonEvmHelpers {
             };
             return await NonEvmHelper
                 .rpcCall(rpcJson)
-                .then((result) => { return result; })
-                .catch((err) => {
+                .then(async (result) => {
+                    if (!result) {
+                        return await NonEvmHelper
+                            .rpcPublicCall(rpcJson)
+                            .then((pubResult) => {
+                                return pubResult;
+                            }).catch((err) => {
+                                console.log("💥 ~ ~ getTransaction solWeb3 error", err);
+                                return false;
+                            });
+
+                    }
+                    return result;
+                }).catch(async (err) => {
                     console.log("💥 ~ ~ getTransaction solWeb3 error", err);
-                    return false;
+                    return await NonEvmHelper
+                        .rpcPublicCall(rpcJson)
+                        .then((result) => {
+                            return result;
+                        }).catch((err) => {
+                            console.log("💥 ~ ~ getTransaction solWeb3 error", err);
+                            return false;
+                        });
                 });
         } catch (error: any) {
             console.log("🔥 ~ ~ getTransaction error", error);
