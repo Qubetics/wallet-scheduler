@@ -376,21 +376,21 @@ class PricesController {
     if (historyExistData.count > 0) {
       for (let history of historyExistData.rows) {
         let history_sparkline: any = history.sparkline !== null ? history.sparkline : [];
-        console.log('history_sparkline >>>>', history_sparkline?.length);
+        // console.log('history_sparkline >>>>', history_sparkline?.length);
         if (history_sparkline.length > 0) {
           const cleanedData = history_sparkline.filter((item: any) => item !== null);
-          console.log('cleanedData >>>>', cleanedData?.length);
+          // console.log('cleanedData >>>>', cleanedData?.length);
           let last_record = cleanedData[cleanedData?.length - 1];
           // console.log('last_record >>>', last_record);
           // console.log('latest_price >>>', latest_price);
 
           const existingTimestamp = new Date(last_record?.timestamp).getTime();
           const latestTimestamp = new Date(latest_price?.timestamp).getTime();
-          console.log(
-            "sparkline333 >>>>",
-            latestTimestamp >
-            existingTimestamp
-          );
+          // console.log(
+          //   "sparkline333 >>>>",
+          //   latestTimestamp >
+          //   existingTimestamp
+          // );
           if (
             latestTimestamp >
             existingTimestamp
@@ -564,8 +564,8 @@ class PricesController {
                     (data: any, index: number) => {
 
                       if (data?.quote[code?.toUpperCase()] == undefined) {
-                        console.log('data data111 >>>>>>', data);
-                        console.log('code >>>>>>', code);
+                        // console.log('data data111 >>>>>>', data);
+                        // console.log('code >>>>>>', code);
                       }
 
                       if (data?.quote[code?.toUpperCase()] !== undefined && data?.quote[code?.toUpperCase()] !== null) {
@@ -688,7 +688,7 @@ class PricesController {
                     // ;
                     let getGraphData: any = await globalHelper.setGraphData(sparkline);  // slicing sparkline data 
 
-                    console.log("sparkline sliced >>>>>>>>", getGraphData?.graphData?.length);
+                    //console.log("sparkline sliced >>>>>>>>", getGraphData?.graphData?.length);
 
                     if (getGraphData.status) {
                       const updateData: any = {
@@ -1123,10 +1123,10 @@ class PricesController {
             let last_time_stamp: any = "";
             let minutes: number = 0;
             if (history_sparkline.length > 0) {
-              console.log("sparkline >>>>>", history_sparkline.length);
+              // console.log("sparkline >>>>>", history_sparkline.length);
               for (let sparkline of history_sparkline) {
-                console.log("compare_date >>>>>", compare_date);
-                console.log("compare_date >>>>>", sparkline?.timestamp);
+                // console.log("compare_date >>>>>", compare_date);
+                // console.log("compare_date >>>>>", sparkline?.timestamp);
                 if (last_time_stamp !== "") {
                   let diff: any = Math.abs(
                     new Date(last_time_stamp).getTime() -

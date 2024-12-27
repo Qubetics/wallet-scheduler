@@ -335,7 +335,7 @@ class CosnumeCrossChainTxProcess {
                                 console.log("in create order id >>>", data.order_id)
 
                                 await cross_chain_helper.insert_profit_in_admin_table(res_data, data.order_id, to_user_id)
-                                console.log('dddddddddddddddddddddddddddddd>>>>');
+                                // console.log('dddddddddddddddddddddddddddddd>>>>');
                                 let wallet_data_exist: any = await Wallets.WalletRead.findOne({
                                     attributes: ["wallet_id"],
                                     where: {
