@@ -86,6 +86,7 @@ class CronJobs {
 
   public getPendingWithdrawalTxProcess() {
     schedule.scheduleJob("*/2 * * * *", async function () {
+      console.log('getting pending crosschain');
       await PendingCrossChainProcess.getTransactionFromDB(0);
     });
   }

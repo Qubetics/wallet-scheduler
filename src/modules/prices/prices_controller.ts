@@ -360,14 +360,14 @@ class PricesController {
     where: any,
     coin_type: string | null
   ) => {
-    console.log(
-      "---------------------update history last price--------------",
-      id,
-      "------",
-      code,
-      "where >>>>>",
-      where
-    );
+    // console.log(
+    //   "---------------------update history last price--------------",
+    //   id,
+    //   "------",
+    //   code,
+    //   "where >>>>>",
+    //   where
+    // );
     const historyExistData =
       await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
         attributes: [`id`, `sparkline`, `type`, `coin_type`],
