@@ -403,7 +403,7 @@ class CosnumeCrossChainTxProcess {
                                         fiat_type: null,
                                         from_user_id: 0,
                                         to_user_id: to_user_id,
-                                        notification_type: 'deposit',
+                                        notification_type: 'Deposit',
                                         tx_id: row_id,
                                         tx_type: 'deposit',
                                         coin_symbol: coin_symbol,
