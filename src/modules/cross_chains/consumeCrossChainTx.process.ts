@@ -270,7 +270,9 @@ class CosnumeCrossChainTxProcess {
                                 userBalance = userBtcBaldata ? Number(userBtcBaldata) : null;
                                 /** for Tron */
                             } else if (coin_family == COIN_FAMILY.SOL) {
+                                console.log('solana transaction');
                                 const transaction = await NonEvmHelper.getTransaction(transactionId);
+                                console.log('transaction >>>.', transaction);
                                 if (transaction) {
                                     if (transaction.meta.err == null) {
                                         trans_status = true;
