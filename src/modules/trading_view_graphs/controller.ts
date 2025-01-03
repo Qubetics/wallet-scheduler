@@ -165,11 +165,12 @@ class tradingViewController {
                 graph_source = await getExchangeSource(symbol);
 
                 if (graph_source) {
+                    const graph_pair = symbol == 'usdt' ? `${symbol}USD` : `${symbol}USDT`;
                     console.log('Graph source found:', graph_source);
                     await Coins.CoinsWrite.update(
                         {
                             graph_source: graph_source,
-                            graph_pair: `${symbol}USDT`,
+                            graph_pair: graph_pair,
                         },
                         { where: { coin_id: coin.coin_id } }
                     );
