@@ -105,10 +105,11 @@ class tradingViewController {
 
         // Helper function to find the exchange source
         const getExchangeSource = async (symbol: string) => {
-            const exchangesSource = symbol == 'usdt' ? usdtExchanges : exchanges;
-
+            const exchangesSource = symbol.toLowerCase() == 'usdt' ? usdtExchanges : exchanges;
+            // console.log('exchangesSource >>>', exchangesSource);
             for (let exchange of exchangesSource) {
                 try {
+                    // console.log('exchange.url(symbol) ', exchange.url(symbol));
                     const response = await axios.get(exchange.url(symbol));
                     // Simplified exchange response validation
                     if (isValidExchangeResponse(exchange, response)) {
@@ -138,7 +139,7 @@ class tradingViewController {
                 case 'BINANCE':
                     return response.data?.code === undefined;
                 case 'OKX':
-                    return response.data?.code === 0;
+                    return response.data?.code === "0";
                 case 'BYBIT':
                     return response.data?.result?.list?.length > 0;
                 case 'BITGET':
@@ -165,7 +166,7 @@ class tradingViewController {
                 graph_source = await getExchangeSource(symbol);
 
                 if (graph_source) {
-                    const graph_pair = symbol == 'usdt' ? `${symbol}USD` : `${symbol}USDT`;
+                    const graph_pair = symbol?.toLowerCase() == 'usdt' ? `${symbol}USD` : `${symbol}USDT`;
                     console.log('Graph source found:', graph_source);
                     await Coins.CoinsWrite.update(
                         {
