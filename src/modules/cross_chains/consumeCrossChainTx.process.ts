@@ -4,7 +4,7 @@ import { config } from '../../config';
 import eth_web3 from "../../helpers/common/web3.helper";
 import blockchain_helper from "../../helpers/common/blockchain.helper";
 import non_evm_helper from "../../helpers/common/non.evm.helper";
-import { Coins, Wallets, NotificationModel } from '../../models/model';
+import { Coins, Wallets, NotificationModel, CustomToken } from '../../models/model';
 import { Op } from 'sequelize';
 import redisClient from '../../helpers/common/redis';
 import TrnxHistoryModel from '../../models/model/model.trnxHistory';
@@ -110,7 +110,7 @@ class CosnumeCrossChainTxProcess {
                     console.log("cross chain >>>>>>>>>>>>>>>>>.", coin_family)
 
                     let coins_data: any = await Coins.CoinsRead.findOne({
-                        attributes: ["coin_id", "coin_symbol", "is_token", "token_type", "token_address"],
+                        attributes: ["coin_id", "coin_symbol", "is_token", "token_type", "token_address", "added_by"],
                         where: { coin_id: swftc_coin.coinId, coin_family: coin_family },
                         raw: true
                     })
@@ -375,8 +375,37 @@ class CosnumeCrossChainTxProcess {
                                         is_deleted: walletData.is_deleted,
                                         sort_order: null,
                                         is_private_wallet: walletData.is_private_wallet
-
                                     })
+                                     
+                                    if (coins_data.added_by) {
+                                        console.log("coin.added_by exist", coins_data.added_by)
+                                        if (coins_data.added_by == 'user') {
+                                            console.log("added by user")
+                                            let user_exist: any = await CustomToken.CustomTokenRead.findOne({
+                                                attributes: ["id"],
+                                                where: { user_id: wallet_data.user_id, coin_id: coins_data.coin_id },
+                                                raw: true
+                                            })
+                                            if (user_exist) {
+                                                console.log("custom token already exist")
+                                            } else {
+                                                console.log("custom token not exist")
+                                                let currentUTCDate: string = new Date()
+                                                    .toISOString()
+                                                    .replace(/T/, " ")
+                                                    .replace(/\..+/, "");
+                                                await CustomToken.CustomTokenWrite.create({
+                                                    coin_id: coins_data.coin_id,
+                                                    user_id: wallet_data.user_id,
+                                                    created_at: currentUTCDate,
+                                                    updated_at: currentUTCDate
+                                                })
+                                            }
+
+                                        }
+                                    } else {
+                                        console.log("coin added by admin")
+                                    }
                                 } else {
 
                                     // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>balance>>>>>>>>>", userBalance)
