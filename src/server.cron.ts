@@ -9,8 +9,20 @@ import {
   PendingCrossChainProcess,
   CosnumeCrossChainTxProcess,
   OnOffRampController,
-  TradingViewGraphs
+  TradingViewGraphs,
 } from "./modules/index";
+
+const {
+  eth: ETH,
+  btc: BTC,
+  bnb: BNB,
+  sol: SOL,
+  ada: ADA,
+  matic: MATIC,
+  avax: AVAX,
+  cro: CRO,
+  pls: PLS,
+} = config.STATIC_COIN_FAMILY;
 
 class CronJobs {
   constructor() {
@@ -34,7 +46,13 @@ class CronJobs {
     /** Update btc balances of users */
     // this.updateBtcBalances()
     // this.updateUsdtBalances()
-    this.tradingViewGraphData()
+    this.tradingViewGraphData();
+
+    /* moralis Chart Widget TradingView */
+    this.moralisTradingviewETH();
+    this.moralisTradingviewBSC();
+    this.moralisTradingviewMATIC();
+    this.moralisTradingviewSOL();
   }
 
   public updateEthGasPriceCron = async () => {
@@ -78,7 +96,7 @@ class CronJobs {
         endDateMoment,
         "5m",
         "1d",
-        5,
+        5
         // COIN_FAMILY.ETH
       );
     });
@@ -86,7 +104,7 @@ class CronJobs {
 
   public getPendingWithdrawalTxProcess() {
     schedule.scheduleJob("*/2 * * * *", async function () {
-      console.log('getting pending crosschain');
+      console.log("getting pending crosschain");
       await PendingCrossChainProcess.getTransactionFromDB(0);
     });
   }
@@ -100,14 +118,14 @@ class CronJobs {
   public updateBalanceCron = async () => {
     setTimeout(async () => {
       await update_balance_controller.update_wallet_balance();
-    }, 10000)
-  }
+    }, 10000);
+  };
 
   public tradingViewGraphData = async () => {
     schedule.scheduleJob("*/1 * * * *", async function () {
       await TradingViewGraphs.getTradingViewTokens();
     });
-  }
+  };
   // public async updateOnOffRampFiats() {
   //   schedule.scheduleJob('0 0 */2 * *', async function () {
   //     // await OnOffRampController.updateFiats('alchemy')
@@ -132,6 +150,35 @@ class CronJobs {
   //     await update_balance_controller.updateUsdtBalances()
   //   })
   // }
+
+  /* moralis Chart Widget TradingView */
+  public moralisTradingviewETH = async () => {
+    schedule.scheduleJob("*/5 * * * *", async function () {
+      await PricesController.moralisTradingviewChartWidget("eth", ETH, "ERC20");
+    });
+  };
+
+  public moralisTradingviewBSC = async () => {
+    schedule.scheduleJob("*/6 * * * *", async function () {
+      await PricesController.moralisTradingviewChartWidget("bsc", BNB, "BEP20");
+    });
+  };
+
+  public moralisTradingviewMATIC = async () => {
+    schedule.scheduleJob("*/7 * * * *", async function () {
+      await PricesController.moralisTradingviewChartWidget(
+        "polygon",
+        MATIC,
+        "ERC20"
+      );
+    });
+  };
+
+  public moralisTradingviewSOL = async () => {
+    schedule.scheduleJob("*/8 * * * *", async function () {
+      await PricesController.moralisTradingviewChartWidgetSOL();
+    });
+  };
 }
 
 new CronJobs();

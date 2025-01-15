@@ -17,8 +17,7 @@ import dbHelper from "../../helpers/dbHelper";
 import cmcHelper from "../../helpers/common/cmc.helper";
 import globalHelper from "../../helpers/common/global.helper";
 // import otcHelper from "../../modules/prices/helper";
-
-
+import axios from "axios";
 
 const {
   current_price_coin_counter: CURRENT_PRICE_COIN_COUNTER,
@@ -48,7 +47,7 @@ class PricesController {
         coin_limit_count = Number(findCoinCounter);
       }
 
-      console.log('coin_limit_countcoin_limit_count', coin_limit_count);
+      console.log("coin_limit_countcoin_limit_count", coin_limit_count);
 
       /** currencies pagination */
       let currency_limit_count: number = 0;
@@ -162,8 +161,7 @@ class PricesController {
                   percent_change_7d: obj.quote[code].percent_change_7d || 0,
                   percent_change_30d: obj.quote[code].percent_change_30d || 0,
                 };
-                if (latest_price !== null && latest_price !== 'null') {
-
+                if (latest_price !== null && latest_price !== "null") {
                   let where: any = { cmc_id: obj.id, fiat_type: code };
                   // console.log("where>>", where);
 
@@ -208,23 +206,24 @@ class PricesController {
                     //   "obj?.quote[code]?.price",
                     //   obj?.quote[code]?.price
                     // );
-                    const val = await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-                      {
-                        cmc_id: obj.id,
-                        coin_id: coin_id,
-                        value: obj?.quote[code]?.price || 0,
-                        price_change_24h: obj.quote[code].percent_change_24h,
-                        price_change_percentage_24h:
-                          obj.quote[code].percent_change_24h,
-                        volume_24h: obj.quote[code].volume_24h,
-                        total_supply: obj.total_supply,
-                        latest_price: latest_price,
-                        latest_price_source: "current",
-                      },
-                      {
-                        where: where,
-                      }
-                    );
+                    const val =
+                      await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+                        {
+                          cmc_id: obj.id,
+                          coin_id: coin_id,
+                          value: obj?.quote[code]?.price || 0,
+                          price_change_24h: obj.quote[code].percent_change_24h,
+                          price_change_percentage_24h:
+                            obj.quote[code].percent_change_24h,
+                          volume_24h: obj.quote[code].volume_24h,
+                          total_supply: obj.total_supply,
+                          latest_price: latest_price,
+                          latest_price_source: "current",
+                        },
+                        {
+                          where: where,
+                        }
+                      );
                   } else {
                     let coin = await Coins.CoinsRead.findOne({
                       attributes: [
@@ -257,7 +256,8 @@ class PricesController {
                           fiat_type: code.toLowerCase(),
                           coin_symbol: obj.symbol,
                           value: obj?.quote[code].price || 0,
-                          price_change_24h: obj.quote[code].percent_change_24h || 0,
+                          price_change_24h:
+                            obj.quote[code].percent_change_24h || 0,
                           price_change_percentage_24h:
                             obj.quote[code].percent_change_24h || 0,
                           volume_24h: obj.quote[code].volume_24h || 0,
@@ -273,14 +273,12 @@ class PricesController {
                   /** update latest record in history candle */
                   if (coin_id > 0) {
                     const graphSourceExist = await Coins.CoinsRead.findOne({
-                      attributes: [
-                        "coin_id"
-                      ],
+                      attributes: ["coin_id"],
                       where: {
                         cmc_id: obj.id,
-                        graph_source: { [Op.is]: null }
+                        graph_source: { [Op.is]: null },
                       },
-                      raw: true
+                      raw: true,
                     });
                     if (!graphSourceExist) {
                       await this.update_history_last_price(
@@ -375,10 +373,13 @@ class PricesController {
       });
     if (historyExistData.count > 0) {
       for (let history of historyExistData.rows) {
-        let history_sparkline: any = history.sparkline !== null ? history.sparkline : [];
+        let history_sparkline: any =
+          history.sparkline !== null ? history.sparkline : [];
         // console.log('history_sparkline >>>>', history_sparkline?.length);
         if (history_sparkline.length > 0) {
-          const cleanedData = history_sparkline.filter((item: any) => item !== null);
+          const cleanedData = history_sparkline.filter(
+            (item: any) => item !== null
+          );
           // console.log('cleanedData >>>>', cleanedData?.length);
           let last_record = cleanedData[cleanedData?.length - 1];
           // console.log('last_record >>>', last_record);
@@ -391,32 +392,44 @@ class PricesController {
           //   latestTimestamp >
           //   existingTimestamp
           // );
-          if (
-            latestTimestamp >
-            existingTimestamp
-          ) {
+          if (latestTimestamp > existingTimestamp) {
             cleanedData.push(latest_price);
-            const history_data: any = await globalHelper.setGraphData(cleanedData);
-
+            const history_data: any = await globalHelper.setGraphData(
+              cleanedData
+            );
 
             if (history_data.status) {
-              const updateData: any = { sparkline: history_data.graphData, cmc_id: id }
+              const updateData: any = {
+                sparkline: history_data.graphData,
+                cmc_id: id,
+              };
               if (history?.coin_type == null) {
                 updateData.coin_type = coin_type;
               }
               // console.log('history_data.graphData >>>', history_data?.graphData?.length);
-              await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(updateData, { where: { id: history.id } })
+              await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+                updateData,
+                { where: { id: history.id } }
+              );
             }
           }
         } else {
           history_sparkline.push(latest_price);
-          const history_data: any = await globalHelper.setGraphData(history_sparkline);  // slicing the data
+          const history_data: any = await globalHelper.setGraphData(
+            history_sparkline
+          ); // slicing the data
           if (history_data.status) {
-            const updateData: any = { sparkline: history_data.graphData, cmc_id: id }
+            const updateData: any = {
+              sparkline: history_data.graphData,
+              cmc_id: id,
+            };
             if (history?.coin_type == null) {
               updateData.coin_type = coin_type;
             }
-            await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(updateData, { where: { id: history.id } });
+            await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+              updateData,
+              { where: { id: history.id } }
+            );
           }
         }
       }
@@ -440,8 +453,6 @@ class PricesController {
       }
     }
   };
-
-
 
   /**
    * graph data for coins
@@ -480,7 +491,7 @@ class PricesController {
         attributes: ["cmc_id"],
         where: {
           cmc_id: { [Op.ne]: 0 },
-          graph_source: { [Op.is]: null }
+          graph_source: { [Op.is]: null },
           // coin_family: coin_family
         },
         include: [
@@ -562,27 +573,37 @@ class PricesController {
                 ) {
                   sparkline = await data?.data[id]?.quotes.map(
                     (data: any, index: number) => {
-
                       if (data?.quote[code?.toUpperCase()] == undefined) {
                         // console.log('data data111 >>>>>>', data);
                         // console.log('code >>>>>>', code);
                       }
 
-                      if (data?.quote[code?.toUpperCase()] !== undefined && data?.quote[code?.toUpperCase()] !== null) {
+                      if (
+                        data?.quote[code?.toUpperCase()] !== undefined &&
+                        data?.quote[code?.toUpperCase()] !== null
+                      ) {
                         // console.log('data data >>>>>>', data?.quote[code?.toUpperCase()]);
                         created_at = new Date(
                           data?.quote[code?.toUpperCase()]?.timestamp
-                        )?.toISOString()?.replace(/T/, " ")?.replace(/\..+/, "");
+                        )
+                          ?.toISOString()
+                          ?.replace(/T/, " ")
+                          ?.replace(/\..+/, "");
                         return {
                           price: data.quote[code.toUpperCase()].price || 0,
-                          timestamp: data.quote[code.toUpperCase()].timestamp || 0,
+                          timestamp:
+                            data.quote[code.toUpperCase()].timestamp || 0,
                           percent_change_24h:
-                            data.quote[code.toUpperCase()].percent_change_24h || 0,
-                          volume_24h: data.quote[code.toUpperCase()].volume_24h || 0,
+                            data.quote[code.toUpperCase()].percent_change_24h ||
+                            0,
+                          volume_24h:
+                            data.quote[code.toUpperCase()].volume_24h || 0,
                           percent_change_7d:
-                            data.quote[code.toUpperCase()].percent_change_7d || 0,
+                            data.quote[code.toUpperCase()].percent_change_7d ||
+                            0,
                           percent_change_30d:
-                            data.quote[code.toUpperCase()].percent_change_30d || 0,
+                            data.quote[code.toUpperCase()].percent_change_30d ||
+                            0,
                         };
                       }
                     }
@@ -600,20 +621,32 @@ class PricesController {
                 ) {
                   sparkline = data?.data?.quotes.map(
                     (data: any, index: number) => {
-                      if (data?.quote[code?.toUpperCase()] !== undefined && data?.quote[code?.toUpperCase()] !== null) {
+                      if (
+                        data?.quote[code?.toUpperCase()] !== undefined &&
+                        data?.quote[code?.toUpperCase()] !== null
+                      ) {
                         //console.log('data data22222 >>>>>>', data);
-                        created_at = new Date(data.quote[code?.toUpperCase()]?.timestamp
-                        ).toISOString().replace(/T/, " ").replace(/\..+/, "");
+                        created_at = new Date(
+                          data.quote[code?.toUpperCase()]?.timestamp
+                        )
+                          .toISOString()
+                          .replace(/T/, " ")
+                          .replace(/\..+/, "");
                         return {
                           price: data.quote[code?.toUpperCase()].price || 0,
-                          timestamp: data.quote[code?.toUpperCase()].timestamp || 0,
+                          timestamp:
+                            data.quote[code?.toUpperCase()].timestamp || 0,
                           percent_change_24h:
-                            data.quote[code?.toUpperCase()].percent_change_24h || 0,
-                          volume_24h: data.quote[code?.toUpperCase()].volume_24h || 0,
+                            data.quote[code?.toUpperCase()]
+                              .percent_change_24h || 0,
+                          volume_24h:
+                            data.quote[code?.toUpperCase()].volume_24h || 0,
                           percent_change_7d:
-                            data.quote[code?.toUpperCase()].percent_change_7d || 0,
+                            data.quote[code?.toUpperCase()].percent_change_7d ||
+                            0,
                           percent_change_30d:
-                            data.quote[code?.toUpperCase()].percent_change_30d || 0,
+                            data.quote[code?.toUpperCase()]
+                              .percent_change_30d || 0,
                         };
                       }
                     }
@@ -686,7 +719,9 @@ class PricesController {
                     //  console.log("sparkline return >>>>>>>>", sparkline);
 
                     // ;
-                    let getGraphData: any = await globalHelper.setGraphData(sparkline);  // slicing sparkline data 
+                    let getGraphData: any = await globalHelper.setGraphData(
+                      sparkline
+                    ); // slicing sparkline data
 
                     //console.log("sparkline sliced >>>>>>>>", getGraphData?.graphData?.length);
 
@@ -694,26 +729,26 @@ class PricesController {
                       const updateData: any = {
                         sparkline: getGraphData.graphData,
                         cmc_id: id,
-                      }
+                      };
                       if (recordExist?.coin_type == null) {
                         updateData.coin_type = recordExist?.coin_type;
                       }
-                      const updated: any = await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
-                        updateData,
-                        {
-                          where: where,
-                        }
-                      );
-                      console.log("sparkline_Updated:::", updated)
+                      const updated: any =
+                        await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+                          updateData,
+                          {
+                            where: where,
+                          }
+                        );
+                      console.log("sparkline_Updated:::", updated);
                     }
-
                   } else {
                     let coin_data: any = await Coins.CoinsRead.findOne({
                       attributes: ["coin_id", "coin_symbol"],
                       where: {
                         cmc_id: id,
                       },
-                      raw: true
+                      raw: true,
                     });
                     if (coin_data) {
                       await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.create(
@@ -728,7 +763,6 @@ class PricesController {
                         }
                       );
                     }
-
                   }
                   // For Otc graph data
                   // await otcHelper.update_coin_price_in_fiat_graph({ cmc_id: id, fiat_type: fiat_type.toUpperCase() }, sparkline, circulating_supply, price)
@@ -854,14 +888,21 @@ class PricesController {
   ) => {
     if (!sparkline?.length) return sparkline;
 
-    const sparklineLatestRecord = sparkline[sparkline.length - 1] ? sparkline[sparkline.length - 1] : null;
+    const sparklineLatestRecord = sparkline[sparkline.length - 1]
+      ? sparkline[sparkline.length - 1]
+      : null;
 
     const existingSparkline = recordExist.sparkline || [];
     const cleanedData = existingSparkline.filter((item: any) => item !== null);
-    const existingLastRecord = cleanedData.length > 0 ? cleanedData[cleanedData.length - 1] : null;
+    const existingLastRecord =
+      cleanedData.length > 0 ? cleanedData[cleanedData.length - 1] : null;
     if (existingLastRecord && sparklineLatestRecord) {
-      const existingTimestamp = new Date(existingLastRecord.timestamp).getTime();
-      const latestTimestamp = new Date(sparklineLatestRecord.timestamp).getTime();
+      const existingTimestamp = new Date(
+        existingLastRecord.timestamp
+      ).getTime();
+      const latestTimestamp = new Date(
+        sparklineLatestRecord.timestamp
+      ).getTime();
 
       if (existingTimestamp > latestTimestamp) {
         sparkline.push(existingLastRecord);
@@ -873,14 +914,18 @@ class PricesController {
         where: { cmc_id: id },
       });
 
-      console.log('Updating with latest sparkline record:', sparklineLatestRecord);
+      console.log(
+        "Updating with latest sparkline record:",
+        sparklineLatestRecord
+      );
 
       await CoinPriceInFiat.CoinPriceInFiatWrite.update(
         {
           coin_id: coinData?.coin_id,
           value: sparklineLatestRecord?.price || 0,
           price_change_24h: sparklineLatestRecord?.percent_change_24h || 0,
-          price_change_percentage_24h: sparklineLatestRecord?.percent_change_24h || 0,
+          price_change_percentage_24h:
+            sparklineLatestRecord?.percent_change_24h || 0,
           volume_24h: sparklineLatestRecord?.volume_24h || 0,
           latest_price: sparklineLatestRecord,
           latest_price_source: type,
@@ -943,7 +988,6 @@ class PricesController {
     //         }
     //       );
 
-
     //     }
     //   }
     // }
@@ -961,7 +1005,7 @@ class PricesController {
       if (findCoinCounter) {
         coin_limit_count = Number(findCoinCounter);
       }
-      console.log('coin_limit_count>>>>', coin_limit_count);
+      console.log("coin_limit_count>>>>", coin_limit_count);
       let data: any = await Coins.CoinsWrite.findAndCountAll({
         attributes: [
           "coin_id",
@@ -979,17 +1023,17 @@ class PricesController {
         raw: true,
         limit,
         offset: coin_limit_count,
-        logging: true
+        logging: true,
       });
-      console.log('data >>.', data);
+      console.log("data >>.", data);
       if (data?.count > 0) {
-        console.log('data.rows >>.', data.rows);
+        console.log("data.rows >>.", data.rows);
         for await (const iterator of data.rows) {
           let query_data: string = iterator?.mainnet_token_address
             ? `?address=${iterator.mainnet_token_address}`
             : iterator?.token_address
-              ? `?address=${iterator.token_address}`
-              : `?symbol=${iterator.coin_symbol}`;
+            ? `?address=${iterator.token_address}`
+            : `?symbol=${iterator.coin_symbol}`;
           try {
             let result: any = await cmcHelper.cmcApi(`info${query_data}`);
             if (result && result.data) {
@@ -1130,7 +1174,7 @@ class PricesController {
                 if (last_time_stamp !== "") {
                   let diff: any = Math.abs(
                     new Date(last_time_stamp).getTime() -
-                    new Date(sparkline?.timestamp).getTime()
+                      new Date(sparkline?.timestamp).getTime()
                   );
                   minutes = Math.floor(diff / 1000 / 60);
                   if (minutes >= 5) {
@@ -1142,7 +1186,7 @@ class PricesController {
 
                 if (
                   new Date(sparkline?.timestamp).getTime() >=
-                  new Date(compare_date).getTime() &&
+                    new Date(compare_date).getTime() &&
                   minutes >= 5
                 ) {
                   latest_sparkline.push(sparkline);
@@ -1176,6 +1220,222 @@ class PricesController {
       console.error("fetchhhhhh_coin_price errorjsj", error);
     }
   };
+
+  // Utility function to format exchange names
+  public formatExchangeName = (exchangeName: string): string => {
+    return exchangeName
+      .split(" ") // Split the string by spaces
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word
+      .join("") // Join without spaces
+      .replace(/v(\d+)/gi, "V$1"); // Handle 'v3' to 'V3'
+  };
+
+  public async moralisTradingviewChartWidget(
+    chain: string,
+    coinFamily: number,
+    tokenType: string
+  ) {
+    try {
+      const tradingviewTokens = await Coins.CoinsRead.findAll({
+        attributes: [
+          "coin_id",
+          "coin_symbol",
+          "coin_family",
+          "is_token",
+          "token_address",
+          "graph_source",
+          "graph_pair",
+          "pair_address",
+        ],
+        where: {
+          // is_token: { [Op.ne]: null },     //      old check
+          is_token: 1,
+          coin_family: coinFamily,
+          token_type: tokenType,
+          pair_address: { [Op.eq]: null },
+        },
+      });
+
+      const BATCH_SIZE = 20;
+      const delay = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
+
+      for (let i = 0; i < tradingviewTokens.length; i += BATCH_SIZE) {
+        const batch = tradingviewTokens.slice(i, i + BATCH_SIZE);
+
+        // Process each batch
+        const batchPromises = batch.map(async (token) => {
+          const { coin_id, token_address, coin_symbol } = token;
+
+          if (!token_address) {
+            console.warn(
+              `Skipping token with ID: ${coin_id}, as it has no token_address`
+            );
+            return;
+          }
+
+          const url = `https://deep-index.moralis.io/api/v2.2/erc20/${token_address}/pairs?chain=${chain}`;
+
+          try {
+            // Delay 1 second before each request
+            await delay(1000);
+
+            // Fetch data from Moralis API
+            const response = await axios.get(url, {
+              headers: { "x-api-key": config.MORALIS_KEY },
+            });
+
+            const pairs = response?.data?.pairs;
+            if (pairs?.length > 0) {
+              // const firstPair = pairs[0];
+              const activePair = await pairs.find(
+                (pair: any) =>
+                  pair?.inactive_pair === false || pair?.inactivePair === false
+              );
+              if (activePair) {
+                const pairAddress = activePair?.pair_address || null;
+                const rawExchangeName = activePair?.exchange_name || null;
+                const graphSource = rawExchangeName
+                  ? this.formatExchangeName(rawExchangeName)
+                  : null;
+
+                if (pairAddress) {
+                  // Update the database with graph source and pair
+                  await Coins.CoinsWrite.update(
+                    {
+                      graph_source: graphSource,
+                      graph_pair: activePair.pair_label,
+                      pair_address: pairAddress,
+                    },
+                    { where: { coin_id } }
+                  );
+                }
+              }
+            } else {
+              console.warn(
+                `No pairs found for coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`
+              );
+            }
+          } catch (err: any) {
+            console.error(
+              `Error processing coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`,
+              err?.message || err
+            );
+          }
+        });
+
+        // Wait for the current batch to complete before moving to the next
+        await Promise.allSettled(batchPromises);
+      }
+    } catch (error) {
+      console.log(
+        "::Error log:: 🔥 ~ moralisTradingviewChartWidget error",
+        error
+      );
+      return false;
+    }
+  }
+
+  public async moralisTradingviewChartWidgetSOL() {
+    try {
+      const tradingviewTokens = await Coins.CoinsRead.findAll({
+        attributes: [
+          "coin_id",
+          "coin_symbol",
+          "coin_family",
+          "is_token",
+          "token_address",
+          "graph_source",
+          "graph_pair",
+          "pair_address",
+        ],
+        where: {
+          is_token: 1,
+          coin_family: COIN_FAMILY.SOL,
+          token_type: "CRC20",
+          pair_address: { [Op.eq]: null },
+        },
+      });
+
+      const BATCH_SIZE = 20;
+      const delay = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
+
+      for (let i = 0; i < tradingviewTokens.length; i += BATCH_SIZE) {
+        const batch = tradingviewTokens.slice(i, i + BATCH_SIZE);
+
+        // Process each batch
+        const batchPromises = batch.map(async (token) => {
+          const { coin_id, token_address, coin_symbol } = token;
+
+          if (!token_address) {
+            console.warn(
+              `Skipping token with ID: ${coin_id}, as it has no token_address`
+            );
+            return;
+          }
+
+          const url = `https://solana-gateway.moralis.io/token/mainnet/${token_address}/pairs`;
+
+          try {
+            // Delay 1 second before each request
+            await delay(1000);
+
+            // Fetch data from Moralis API
+            const response = await axios.get(url, {
+              headers: { "x-api-key": config.MORALIS_KEY },
+            });
+
+            const pairs = response?.data?.pairs;
+            if (pairs?.length > 0) {
+              // const activePair = pairs[0];
+              const activePair = await pairs.find(
+                (pair: any) =>
+                  pair?.inactive_pair === false || pair?.inactivePair === false
+              );
+              if (activePair) {
+                const pairAddress = activePair?.pairAddress || null;
+                const rawExchangeName = activePair?.exchangeName || null;
+                const graphSource = rawExchangeName
+                  ? this.formatExchangeName(rawExchangeName)
+                  : null;
+
+                if (pairAddress) {
+                  // Update the database with graph source and pair
+                  await Coins.CoinsWrite.update(
+                    {
+                      graph_source: graphSource,
+                      graph_pair: activePair.pairLabel,
+                      pair_address: pairAddress,
+                    },
+                    { where: { coin_id } }
+                  );
+                }
+              }
+            } else {
+              console.warn(
+                `No pairs found for coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`
+              );
+            }
+          } catch (err: any) {
+            console.error(
+              `Error processing coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`,
+              err?.message || err
+            );
+          }
+        });
+
+        // Wait for the current batch to complete before moving to the next
+        await Promise.allSettled(batchPromises);
+      }
+    } catch (error) {
+      console.log(
+        "::Error log:: 🔥 ~ moralisTradingviewChartWidgetSOL error",
+        error
+      );
+      return false;
+    }
+  }
 }
 
 const third_party_controller = new PricesController();

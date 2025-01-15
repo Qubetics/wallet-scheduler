@@ -21,5 +21,6 @@ export interface CoinModel {
   for_swap?: number;
   graph_source?: string | null;
   graph_pair?: string | null;
+  pair_address?: string | null;
   is_on_trading_view?: number | null;
 }

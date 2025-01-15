@@ -5,8 +5,8 @@ import db from "../../helpers/common/db";
 import { CoinPriceInFiat } from "./model.coinPriceInFiat";
 import reset_graph_data from "./reset_graph_data";
 
-interface CoinCreationModel extends Optional<CoinModel, "coin_id"> { }
-interface CoinInstance extends Model<CoinModel, CoinCreationModel>, CoinModel { }
+interface CoinCreationModel extends Optional<CoinModel, "coin_id"> {}
+interface CoinInstance extends Model<CoinModel, CoinCreationModel>, CoinModel {}
 
 let dataObj = {
   coin_id: {
@@ -88,7 +88,7 @@ let dataObj = {
     allowNull: true,
   },
   added_by: {
-    type: DataTypes.ENUM('admin', 'user', 'swap'),
+    type: DataTypes.ENUM("admin", "user", "swap"),
     allowNull: true,
   },
   graph_source: {
@@ -96,6 +96,10 @@ let dataObj = {
     allowNull: true,
   },
   graph_pair: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  pair_address: {
     type: DataTypes.STRING,
     allowNull: true,
   },
@@ -152,8 +156,16 @@ const CoinsRead = db.db_read.define<CoinInstance>(
   dataObj,
   dataObjIndex
 );
-CoinsRead.hasOne(CoinPriceInFiat.CoinPriceInFiatRead, { foreignKey: 'coin_id', sourceKey: 'coin_id', as: 'coin_price_data' });
-CoinsRead.hasOne(reset_graph_data.ResetGraphRead, { foreignKey: "cmc_id", sourceKey: "cmc_id", as: "reset_graph_data" })
+CoinsRead.hasOne(CoinPriceInFiat.CoinPriceInFiatRead, {
+  foreignKey: "coin_id",
+  sourceKey: "coin_id",
+  as: "coin_price_data",
+});
+CoinsRead.hasOne(reset_graph_data.ResetGraphRead, {
+  foreignKey: "cmc_id",
+  sourceKey: "cmc_id",
+  as: "reset_graph_data",
+});
 
 export const Coins = {
   CoinsWrite: CoinsWrite,
