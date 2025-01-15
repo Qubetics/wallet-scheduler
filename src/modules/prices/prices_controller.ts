@@ -1352,7 +1352,7 @@ class PricesController {
         where: {
           is_token: 1,
           coin_family: COIN_FAMILY.SOL,
-          token_type: "CRC20",
+          // token_type: "CRC20",
           pair_address: { [Op.eq]: null },
         },
       });
