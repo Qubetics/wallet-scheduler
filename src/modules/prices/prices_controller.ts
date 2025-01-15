@@ -483,13 +483,6 @@ class PricesController {
       // let findCoinCounter = await redisClient.getKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, `${type}_${GRAPH_DATA_COIN_COUNTER}`);
       if (findCoinCounter) {
         coin_limit_count = Number(findCoinCounter);
-      } else {
-        coin_limit_count = 0;
-        await redisClient.setKeyValuePair(
-          config.REDISKEYS.COIN_LIMIT_COUNTS,
-          `${type}_${GRAPH_DATA_COIN_COUNTER}`,
-          coin_limit_count.toString()
-        );
       }
 
       console.log("endDate>>>>>>>>>>>", endDate);
@@ -523,6 +516,8 @@ class PricesController {
         ids = dbCoinrecords.rows.map((item: any) => item.cmc_id);
         // console.log("ids>>>", ids);
       }
+
+      console.log("ids,  :>> ", ids, "type :", type);
 
       /** currencies pagination */
       let currency_limit_count = 0;
