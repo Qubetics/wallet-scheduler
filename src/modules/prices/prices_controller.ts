@@ -500,7 +500,7 @@ class PricesController {
             attributes: ["graph_type", "updated_at"],
             as: "reset_graph_data",
             where: sequelize.literal(
-              `(reset_graph_data.updated_at IS NULL OR DATE(reset_graph_data.updated_at) != CURRENT_DATE)`
+              `(reset_graph_data.updated_at IS NULL OR DATE(reset_graph_data.updated_at) != CURRENT_DATE OR reset_graph_data.graph_type!="${type}")`
             ),
             required: true,
           },
