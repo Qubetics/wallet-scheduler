@@ -49,9 +49,9 @@ class CronJobs {
     this.tradingViewGraphData();
 
     /* moralis Chart Widget TradingView */
-    this.moralisTradingviewETH();
-    this.moralisTradingviewBSC();
-    this.moralisTradingviewMATIC();
+    // this.moralisTradingviewETH();
+    // this.moralisTradingviewBSC();
+    // this.moralisTradingviewMATIC();
     this.moralisTradingviewSOL();
   }
 
