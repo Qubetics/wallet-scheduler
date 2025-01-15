@@ -531,11 +531,10 @@ class PricesController {
         currency_limit_count = 0;
         await redisClient.setKeyValuePair(
           config.REDISKEYS.COIN_LIMIT_COUNTS,
-          `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`,
+          `${type}_${GRAPH_DATA_COIN_COUNTER}`,
           currency_limit_count.toString()
         );
       }
-
       let currencylimit = 3;
       let currencies_data_count = 0;
       if (dbCoinrecords.count > 0 && ids.length > 0) {
