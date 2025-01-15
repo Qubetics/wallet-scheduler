@@ -52,7 +52,7 @@ class CronJobs {
     // this.moralisTradingviewETH();
     // this.moralisTradingviewBSC();
     // this.moralisTradingviewMATIC();
-    this.moralisTradingviewSOL();
+    // this.moralisTradingviewSOL();
   }
 
   public updateEthGasPriceCron = async () => {
