@@ -39,6 +39,9 @@ class CronJobs {
     // /** Graph data */
     this.updateFiatCoinPriceCron();
     this.getCoinGraphDataDaily();
+    this.getCoinGraphDataWeekly();
+    this.getCoinGraphDataMonthly();
+    this.getCoinGraphDataYearly();
     /**  */
     /** cross chain */
     this.getPendingWithdrawalTxProcess();
@@ -96,6 +99,60 @@ class CronJobs {
         endDateMoment,
         "5m",
         "1d",
+        5
+        // COIN_FAMILY.ETH
+      );
+    });
+  };
+
+  public getCoinGraphDataWeekly = async () => {
+    schedule.scheduleJob("0 */2 * * * *", async function () {
+      const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
+      const startDateMoment = moment()
+        .subtract(1, "week")
+        .format("YYYY-MM-DD HH:mm");
+
+      await PricesController.getCoinGraphData(
+        startDateMoment,
+        endDateMoment,
+        "3h",
+        "1w",
+        5
+        // COIN_FAMILY.ETH
+      );
+    });
+  };
+
+  public getCoinGraphDataMonthly = async () => {
+    schedule.scheduleJob("0 */2 * * * *", async function () {
+      const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
+      let startDateMoment = moment()
+        .subtract(1, "months")
+        .format("YYYY-MM-DD HH:mm");
+
+      await PricesController.getCoinGraphData(
+        startDateMoment,
+        endDateMoment,
+        "12h",
+        "1m",
+        5
+        // COIN_FAMILY.ETH
+      );
+    });
+  };
+
+  public getCoinGraphDataYearly = async () => {
+    schedule.scheduleJob("0 */2 * * * *", async function () {
+      const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
+      let startDateMoment = moment()
+        .subtract(1, "year")
+        .format("YYYY-MM-DD HH:mm");
+
+      await PricesController.getCoinGraphData(
+        startDateMoment,
+        endDateMoment,
+        "3d",
+        "1y",
         5
         // COIN_FAMILY.ETH
       );
