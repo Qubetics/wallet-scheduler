@@ -154,13 +154,21 @@ class CronJobs {
   /* moralis Chart Widget TradingView */
   public moralisTradingviewETH = async () => {
     schedule.scheduleJob("*/5 * * * *", async function () {
-      await PricesController.moralisTradingviewChartWidget("eth", ETH, "ERC20");
+      await PricesController.moralisTradingviewChartWidget(
+        "eth",
+        COIN_FAMILY.ETH,
+        "ERC20"
+      );
     });
   };
 
   public moralisTradingviewBSC = async () => {
     schedule.scheduleJob("*/6 * * * *", async function () {
-      await PricesController.moralisTradingviewChartWidget("bsc", BNB, "BEP20");
+      await PricesController.moralisTradingviewChartWidget(
+        "bsc",
+        COIN_FAMILY.BNB,
+        "BEP20"
+      );
     });
   };
 
@@ -168,7 +176,7 @@ class CronJobs {
     schedule.scheduleJob("*/7 * * * *", async function () {
       await PricesController.moralisTradingviewChartWidget(
         "polygon",
-        MATIC,
+        COIN_FAMILY.POL,
         "ERC20"
       );
     });
