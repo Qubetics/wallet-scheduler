@@ -56,6 +56,8 @@ class CronJobs {
     // this.moralisTradingviewBSC();
     // this.moralisTradingviewMATIC();
     // this.moralisTradingviewSOL();
+
+    this.moralisTradingview(); // call custom token kafka consumer
   }
 
   public updateEthGasPriceCron = async () => {
@@ -250,6 +252,12 @@ class CronJobs {
       await PricesController.moralisTradingviewChartWidgetSOL();
     });
   };
+
+  public async moralisTradingview() {
+    setTimeout(async () => {
+      await CosnumeCrossChainTxProcess.moralisTradingviewChartWidgets();
+    }, 1000);
+  }
 }
 
 new CronJobs();

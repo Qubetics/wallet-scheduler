@@ -110,6 +110,10 @@ export const TOKENS = {
   TRX_TOKEN_TYPE_10: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE10_TRON}`,
   SOL_TOKEN_TYPE: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_SOL}`,
 };
+
+export const MORALIS_TRADINGVIEW_GROUP_ID = "moralis_tradingview_group";
+export const MORALIS_TRADINGVIEW_TOPIC = "moralis_tradingview_topic";
+
 // /**
 //  * ERC 20 Tokens standard ABI
 //  */
