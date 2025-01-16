@@ -514,7 +514,7 @@ class PricesController {
       });
 
       let ids: any[] = [];
-      console.log("dbCoinrecords.count :>> ", dbCoinrecords.count);
+      // console.log("dbCoinrecords.count :>> ", dbCoinrecords.count);
       const groupedCount = dbCoinrecords.count; // This is an array of grouped results
       const totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
 
@@ -578,9 +578,9 @@ class PricesController {
           var data = await rp(requestOptionsForListing);
           if (data) {
             for await (let id of ids as any) {
-              console.log("id=====================", id);
+              // console.log("id=====================", id);
               for await (let code of codes) {
-                console.log("code=====================", code);
+                // console.log("code=====================", code);
 
                 let created_at;
                 let fiat_type = code;
