@@ -506,36 +506,25 @@ class PricesController {
           },
         ],
         // raw: true,
-        group: ["cmc_id"], // Group results by cmc_id
         order: [["coin_id", "asc"]],
         limit: limit,
         offset: coin_limit_count,
         logging: true,
       });
-
       let ids: any[] = [];
+      if (dbCoinrecords.count > 0) {
+        ids = dbCoinrecords.rows.map((item: any) => item.cmc_id);
+        // console.log("ids>>>", ids);
+      }
 
-      // Handle grouped result properly
-      const groupedCount = dbCoinrecords.count; // This is an array of grouped results
-      const totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
-
-      // Example: Iterate over groups
-      groupedCount.forEach((group) => {
-        console.log(`cmc_id: ${group.cmc_id}, count: ${group.count}`);
-        ids.push(group.cmc_id);
-      });
-
-      console.log("ids,  :>> ", ids, "type :", type);
-
-      // Access grouped rows (the data)
-      const groupedRows = dbCoinrecords.rows;
-      console.log("groupedRows :>> ", groupedRows);
-      return;
-      // // Example: Iterate over groups
-      // groupedRows.forEach((group) => {
-      //   console.log(`cmc_id: ${group.cmc_id}, count: ${group.count}`);
-      //   ids.push(group.cmc_id);
-      // });
+      // console.log(
+      //   "ids,  :>> ",
+      //   ids,
+      //   "type :",
+      //   type,
+      //   "count",
+      //   dbCoinrecords.count
+      // );
 
       /** currencies pagination */
       let currency_limit_count = 0;
@@ -547,14 +536,8 @@ class PricesController {
 
       if (findCurrencyCounter) {
         currency_limit_count = Number(findCurrencyCounter);
-      } else {
-        currency_limit_count = 0;
-        await redisClient.setKeyValuePair(
-          config.REDISKEYS.COIN_LIMIT_COUNTS,
-          `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`,
-          currency_limit_count.toString()
-        );
       }
+
       let currencylimit = 3;
       let currencies_data_count = 0;
       if (dbCoinrecords.count > 0 && ids.length > 0) {
