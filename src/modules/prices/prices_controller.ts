@@ -487,7 +487,7 @@ class PricesController {
 
       console.log("endDate>>>>>>>>>>>", endDate);
 
-      let dbCoinrecords = await Coins.CoinsRead.findAndCountAll({
+      let dbCoinrecords: any = await Coins.CoinsRead.findAndCountAll({
         attributes: ["cmc_id"],
         where: {
           cmc_id: { [Op.ne]: 0 },
@@ -506,12 +506,15 @@ class PricesController {
           },
         ],
         // raw: true,
+        group: ["cmc_id"],
         order: [["coin_id", "asc"]],
         limit: limit,
         offset: coin_limit_count,
         logging: true,
       });
+
       let ids: any[] = [];
+      console.log("dbCoinrecords.count :>> ", dbCoinrecords.count);
       if (dbCoinrecords.count > 0) {
         ids = dbCoinrecords.rows.map((item: any) => item.cmc_id);
         // console.log("ids>>>", ids);
