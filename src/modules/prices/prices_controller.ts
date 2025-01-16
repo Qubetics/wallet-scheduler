@@ -523,9 +523,12 @@ class PricesController {
       //   // console.log("ids>>>", ids);
       // }
 
+      // Access grouped rows (the data)
+      const groupedRows = dbCoinrecords.rows;
+
       // Example: Iterate over groups
       if (totalRecords > 0) {
-        await groupedCount.forEach((group: any) => {
+        await groupedRows.forEach((group: any) => {
           console.log(`cmc_id: ${group.cmc_id}, count: ${group.count}`);
           ids.push(group.cmc_id);
         });
