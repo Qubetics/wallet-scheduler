@@ -522,7 +522,7 @@ class PricesController {
       //   ids = dbCoinrecords.rows.map((item: any) => item.cmc_id);
       //   // console.log("ids>>>", ids);
       // }
-
+      console.log("totalRecords :>> ", totalRecords);
       // Access grouped rows (the data)
       const groupedRows = dbCoinrecords.rows;
 
