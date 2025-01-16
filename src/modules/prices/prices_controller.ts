@@ -507,7 +507,7 @@ class PricesController {
         ],
         // raw: true,
         group: ["cmc_id"],
-        order: [["coin_id", "asc"]],
+        order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
         limit: limit,
         offset: coin_limit_count,
         logging: true,
@@ -529,7 +529,7 @@ class PricesController {
       // Example: Iterate over groups
       if (totalRecords > 0) {
         await groupedRows.forEach((group: any) => {
-          console.log(`cmc_id: ${group.cmc_id}, count: ${group.count}`);
+          // console.log(`cmc_id: ${group.cmc_id}}`);
           ids.push(group.cmc_id);
         });
       }
