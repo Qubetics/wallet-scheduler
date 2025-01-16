@@ -515,19 +515,23 @@ class PricesController {
 
       let ids: any[] = [];
       console.log("dbCoinrecords.count :>> ", dbCoinrecords.count);
-      if (dbCoinrecords.count > 0) {
-        ids = dbCoinrecords.rows.map((item: any) => item.cmc_id);
-        // console.log("ids>>>", ids);
+      const groupedCount = dbCoinrecords.count; // This is an array of grouped results
+      const totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
+
+      // if (groupedCount.count > 0) {
+      //   ids = dbCoinrecords.rows.map((item: any) => item.cmc_id);
+      //   // console.log("ids>>>", ids);
+      // }
+
+      // Example: Iterate over groups
+      if (totalRecords > 0) {
+        await groupedCount.forEach((group: any) => {
+          console.log(`cmc_id: ${group.cmc_id}, count: ${group.count}`);
+          ids.push(group.cmc_id);
+        });
       }
 
-      // console.log(
-      //   "ids,  :>> ",
-      //   ids,
-      //   "type :",
-      //   type,
-      //   "count",
-      //   dbCoinrecords.count
-      // );
+      console.log("ids,  :>> ", ids, "type :", type);
 
       /** currencies pagination */
       let currency_limit_count = 0;
@@ -543,7 +547,7 @@ class PricesController {
 
       let currencylimit = 3;
       let currencies_data_count = 0;
-      if (dbCoinrecords.count > 0 && ids.length > 0) {
+      if (totalRecords > 0 && ids.length > 0) {
         const currencies_data =
           await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
             attributes: ["currency_code"],
@@ -867,8 +871,7 @@ class PricesController {
         //   family_data
         // );
 
-        let counter =
-          coin_limit_count >= dbCoinrecords.count ? 0 : coin_limit_count;
+        let counter = coin_limit_count >= totalRecords ? 0 : coin_limit_count;
         // console.log("graph coin counter >>>", counter, " >>>>>>", family_data);
 
         await redisClient.setKeyValuePair(
@@ -885,10 +888,11 @@ class PricesController {
         `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`,
         currency_counter.toString()
       );
-
+      return;
       //await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`, currency_counter.toString());
     } catch (err) {
       console.error(`err`, "historical data type", type, err);
+      return;
     }
   };
 
