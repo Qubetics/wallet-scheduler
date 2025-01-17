@@ -517,7 +517,7 @@ class PricesController {
       const groupedCount = dbCoinrecords.count; // This is an array of grouped results
       const totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
 
-      // console.log("totalRecords :>> ", totalRecords);
+      console.log("totalRecords :>> ", totalRecords);
       // Access grouped rows (the data)
       const groupedRows = dbCoinrecords.rows;
 
