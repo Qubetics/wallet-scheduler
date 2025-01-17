@@ -485,26 +485,26 @@ class PricesController {
         coin_limit_count = Number(findCoinCounter);
       }
 
-      console.log("endDate>>>>>>>>>>>", endDate);
+      // console.log("endDate>>>>>>>>>>>", endDate);
 
       let dbCoinrecords: any = await Coins.CoinsRead.findAndCountAll({
         attributes: ["cmc_id"],
         where: {
           cmc_id: { [Op.ne]: 0 },
-          graph_source: { [Op.is]: null },
+          // graph_source: { [Op.is]: null },     // not in use
           // coin_family: coin_family
         },
-        include: [
-          {
-            model: reset_graph_data.ResetGraphRead,
-            attributes: ["graph_type", "updated_at"],
-            as: "reset_graph_data",
-            where: sequelize.literal(
-              `(reset_graph_data.updated_at IS NULL OR DATE(reset_graph_data.updated_at) != CURRENT_DATE OR reset_graph_data.graph_type!="${type}")`
-            ),
-            required: true,
-          },
-        ],
+        // include: [
+        //   {
+        //     model: reset_graph_data.ResetGraphRead,
+        //     attributes: ["graph_type", "updated_at"],
+        //     as: "reset_graph_data",
+        //     where: sequelize.literal(
+        //       `(reset_graph_data.updated_at IS NULL OR DATE(reset_graph_data.updated_at) != CURRENT_DATE OR reset_graph_data.graph_type!="${type}")`
+        //     ),
+        //     required: true,
+        //   },
+        // ],
         // raw: true,
         group: ["cmc_id"],
         order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
@@ -514,15 +514,10 @@ class PricesController {
       });
 
       let ids: any[] = [];
-      // console.log("dbCoinrecords.count :>> ", dbCoinrecords.count);
       const groupedCount = dbCoinrecords.count; // This is an array of grouped results
       const totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
 
-      // if (groupedCount.count > 0) {
-      //   ids = dbCoinrecords.rows.map((item: any) => item.cmc_id);
-      //   // console.log("ids>>>", ids);
-      // }
-      console.log("totalRecords :>> ", totalRecords);
+      // console.log("totalRecords :>> ", totalRecords);
       // Access grouped rows (the data)
       const groupedRows = dbCoinrecords.rows;
 
@@ -710,32 +705,32 @@ class PricesController {
               }
             }
 
-            let reset_data_exist: any =
-              await reset_graph_data.ResetGraphWrite.findOne({
-                where: { cmc_id: id, graph_type: type },
-              });
-            let currentUTCDate: string = new Date()
-              .toISOString()
-              .replace(/T/, " ")
-              .replace(/\..+/, "");
-            if (!reset_data_exist) {
-              await reset_graph_data.ResetGraphWrite.create({
-                cmc_id: id,
-                graph_type: type,
-                created_at: currentUTCDate,
-                updated_at: currentUTCDate,
-              });
-            } else {
-              await reset_graph_data.ResetGraphWrite.update(
-                {
-                  graph_type: type,
-                  updated_at: currentUTCDate,
-                },
-                {
-                  where: { cmc_id: id },
-                }
-              );
-            }
+            // let reset_data_exist: any =
+            //   await reset_graph_data.ResetGraphWrite.findOne({
+            //     where: { cmc_id: id, graph_type: type },
+            //   });
+            // let currentUTCDate: string = new Date()
+            //   .toISOString()
+            //   .replace(/T/, " ")
+            //   .replace(/\..+/, "");
+            // if (!reset_data_exist) {
+            //   await reset_graph_data.ResetGraphWrite.create({
+            //     cmc_id: id,
+            //     graph_type: type,
+            //     created_at: currentUTCDate,
+            //     updated_at: currentUTCDate,
+            //   });
+            // } else {
+            //   await reset_graph_data.ResetGraphWrite.update(
+            //     {
+            //       graph_type: type,
+            //       updated_at: currentUTCDate,
+            //     },
+            //     {
+            //       where: { cmc_id: id },
+            //     }
+            //   );
+            // }
           }
         }
       }
