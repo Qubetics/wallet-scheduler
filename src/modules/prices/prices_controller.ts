@@ -1330,16 +1330,17 @@ class PricesController {
       let requestOptionsForListing = await cmcHelper.cmcFiatCurrencyData(
         cryptoSymbols
       );
-      let result = await axios
-        .request(requestOptionsForListing)
-        .then((response) => {
-          // console.log(JSON.stringify(response.data));
-          return response.data;
-        })
-        .catch((error) => {
-          console.log("::Error log:: updateFiatPrice catch", error);
-          return false;
-        });
+      // let result = await axios
+      //   .request(requestOptionsForListing)
+      //   .then((response) => {
+      //     // console.log(JSON.stringify(response.data));
+      //     return response.data;
+      //   })
+      //   .catch((error) => {
+      //     console.log("::Error log:: updateFiatPrice catch", error);
+      //     return false;
+      //   });
+      var result = await rp(requestOptionsForListing);
 
       if (result && result.data) {
         const response = result.data["2781"];
