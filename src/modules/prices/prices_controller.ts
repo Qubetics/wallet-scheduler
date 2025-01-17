@@ -684,7 +684,7 @@ class PricesController {
                         where: where,
                       }
                     );
-                  console.log("sparkline_Updated:::", updated);
+                  // console.log("sparkline_Updated:::", updated);
                 }
               } else {
                 // let coin_data: any = await Coins.CoinsRead.findOne({
@@ -792,10 +792,10 @@ class PricesController {
         where: { cmc_id: id },
       });
 
-      console.log(
-        "Updating with latest sparkline record:",
-        sparklineLatestRecord
-      );
+      // console.log(
+      //   "Updating with latest sparkline record:",
+      //   sparklineLatestRecord
+      // );
 
       await CoinPriceInFiat.CoinPriceInFiatWrite.update(
         {
