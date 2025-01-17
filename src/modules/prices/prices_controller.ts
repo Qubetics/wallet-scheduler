@@ -537,362 +537,222 @@ class PricesController {
       console.log("ids,  :>> ", ids, "type :", type);
 
       /** currencies pagination */
-      let currency_limit_count = 0;
-      let findCurrencyCounter = await redisClient.getKeyValuePair(
-        config.REDISKEYS.COIN_LIMIT_COUNTS,
-        `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`
-      );
+      // let currency_limit_count = 0;
+      // let findCurrencyCounter = await redisClient.getKeyValuePair(
+      //   config.REDISKEYS.COIN_LIMIT_COUNTS,
+      //   `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`
+      // );
       //let findCurrencyCounter = await redisClient.getKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`);
 
-      if (findCurrencyCounter) {
-        currency_limit_count = Number(findCurrencyCounter);
-      }
+      // if (findCurrencyCounter) {
+      //   currency_limit_count = Number(findCurrencyCounter);
+      // }
 
-      let currencylimit = 3;
-      let currencies_data_count = 0;
       if (totalRecords > 0 && ids.length > 0) {
-        const currencies_data =
-          await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
-            attributes: ["currency_code"],
-            raw: true,
-            order: [["currency_id", "asc"]],
-            limit: currencylimit,
-            offset: currency_limit_count,
-          });
-        currencies_data_count = currencies_data.count;
-        if (currencies_data.count > 0) {
-          let codes = [];
-          for await (let fiat_currency of currencies_data.rows) {
-            let currencyInFiat = fiat_currency.currency_code;
-            codes.push(currencyInFiat.toLowerCase());
-          }
+        const code = "USD";
+        const requestOptionsForListing = await cmcHelper.cmcHistoricalData(
+          ids,
+          interval,
+          startDate,
+          endDate
+        );
+        var data = await rp(requestOptionsForListing);
+        if (data) {
+          for await (let id of ids as any) {
+            let created_at;
+            let fiat_type = code;
+            let sparkline: any = [];
 
-          // console.log(" ids type >>>>>", ids);
-          const requestOptionsForListing = await cmcHelper.cmcHistoricalData(
-            ids,
-            interval,
-            codes,
-            startDate,
-            endDate
-          );
-          var data = await rp(requestOptionsForListing);
-          if (data) {
-            for await (let id of ids as any) {
-              // console.log("id=====================", id);
-              for await (let code of codes) {
-                // console.log("code=====================", code);
-
-                let created_at;
-                let fiat_type = code;
-                let sparkline: any = [];
-                //let circulating_supply: any;
-                //let price: any;
-                if (
-                  data?.data[id]?.quotes &&
-                  data?.data[id]?.quotes.length > 0
-                ) {
-                  sparkline = await data?.data[id]?.quotes.map(
-                    (data: any, index: number) => {
-                      if (data?.quote[code?.toUpperCase()] == undefined) {
-                        // console.log('data data111 >>>>>>', data);
-                        // console.log('code >>>>>>', code);
-                      }
-
-                      if (
-                        data?.quote[code?.toUpperCase()] !== undefined &&
-                        data?.quote[code?.toUpperCase()] !== null
-                      ) {
-                        // console.log('data data >>>>>>', data?.quote[code?.toUpperCase()]);
-                        created_at = new Date(
-                          data?.quote[code?.toUpperCase()]?.timestamp
-                        )
-                          ?.toISOString()
-                          ?.replace(/T/, " ")
-                          ?.replace(/\..+/, "");
-                        return {
-                          price: data.quote[code.toUpperCase()].price || 0,
-                          timestamp:
-                            data.quote[code.toUpperCase()].timestamp || 0,
-                          percent_change_24h:
-                            data.quote[code.toUpperCase()].percent_change_24h ||
-                            0,
-                          volume_24h:
-                            data.quote[code.toUpperCase()].volume_24h || 0,
-                          percent_change_7d:
-                            data.quote[code.toUpperCase()].percent_change_7d ||
-                            0,
-                          percent_change_30d:
-                            data.quote[code.toUpperCase()].percent_change_30d ||
-                            0,
-                        };
-                      }
-                    }
-                  );
-                  //circulating_supply =data?.data[id].quotes[0].quote[code.toUpperCase()].circulating_supply || 0;
-                  // price =data?.data[id].quotes[0].quote[code.toUpperCase()].price || 0;
-                  // console.log(
-                  //   " if circulating_supply price>>>",
-                  //   circulating_supply,
-                  //   price
-                  // );
-                } else if (
-                  data?.data?.quotes &&
-                  data?.data?.quotes.length > 0
-                ) {
-                  sparkline = data?.data?.quotes.map(
-                    (data: any, index: number) => {
-                      if (
-                        data?.quote[code?.toUpperCase()] !== undefined &&
-                        data?.quote[code?.toUpperCase()] !== null
-                      ) {
-                        //console.log('data data22222 >>>>>>', data);
-                        created_at = new Date(
-                          data.quote[code?.toUpperCase()]?.timestamp
-                        )
-                          .toISOString()
-                          .replace(/T/, " ")
-                          .replace(/\..+/, "");
-                        return {
-                          price: data.quote[code?.toUpperCase()].price || 0,
-                          timestamp:
-                            data.quote[code?.toUpperCase()].timestamp || 0,
-                          percent_change_24h:
-                            data.quote[code?.toUpperCase()]
-                              .percent_change_24h || 0,
-                          volume_24h:
-                            data.quote[code?.toUpperCase()].volume_24h || 0,
-                          percent_change_7d:
-                            data.quote[code?.toUpperCase()].percent_change_7d ||
-                            0,
-                          percent_change_30d:
-                            data.quote[code?.toUpperCase()]
-                              .percent_change_30d || 0,
-                        };
-                      }
-                    }
-                  );
-                  //circulating_supply =data?.data?.quotes[0].quote[code.toUpperCase()].circulating_supply || 0;
-                  //price = data?.data?.quotes[0].quote[code.toUpperCase()].price || 0;
-                  // console.log(
-                  //   " else if circulating_supply price>>>",
-                  //   circulating_supply,
-                  //   price
-                  // );
+            if (data?.data[id]?.quotes && data?.data[id]?.quotes.length > 0) {
+              sparkline = await data?.data[id]?.quotes.map(
+                (data: any, index: number) => {
+                  if (
+                    data?.quote[code?.toUpperCase()] !== undefined &&
+                    data?.quote[code?.toUpperCase()] !== null
+                  ) {
+                    created_at = new Date(
+                      data?.quote[code?.toUpperCase()]?.timestamp
+                    )
+                      ?.toISOString()
+                      ?.replace(/T/, " ")
+                      ?.replace(/\..+/, "");
+                    return {
+                      price: data.quote[code.toUpperCase()].price || 0,
+                      timestamp: data.quote[code.toUpperCase()].timestamp || 0,
+                      percent_change_24h:
+                        data.quote[code.toUpperCase()].percent_change_24h || 0,
+                      volume_24h:
+                        data.quote[code.toUpperCase()].volume_24h || 0,
+                      percent_change_7d:
+                        data.quote[code.toUpperCase()].percent_change_7d || 0,
+                      percent_change_30d:
+                        data.quote[code.toUpperCase()].percent_change_30d || 0,
+                    };
+                  }
                 }
-                // console.log("sparkline=====================", code, sparkline);
-                if (sparkline.length > 0) {
-                  let where: any = {
-                    cmc_id: id,
-                    fiat_type: code,
-                    type: type,
+              );
+            } else if (data?.data?.quotes && data?.data?.quotes.length > 0) {
+              sparkline = data?.data?.quotes.map((data: any, index: number) => {
+                if (
+                  data?.quote[code?.toUpperCase()] !== undefined &&
+                  data?.quote[code?.toUpperCase()] !== null
+                ) {
+                  //console.log('data data22222 >>>>>>', data);
+                  created_at = new Date(
+                    data.quote[code?.toUpperCase()]?.timestamp
+                  )
+                    .toISOString()
+                    .replace(/T/, " ")
+                    .replace(/\..+/, "");
+                  return {
+                    price: data.quote[code?.toUpperCase()].price || 0,
+                    timestamp: data.quote[code?.toUpperCase()].timestamp || 0,
+                    percent_change_24h:
+                      data.quote[code?.toUpperCase()].percent_change_24h || 0,
+                    volume_24h: data.quote[code?.toUpperCase()].volume_24h || 0,
+                    percent_change_7d:
+                      data.quote[code?.toUpperCase()].percent_change_7d || 0,
+                    percent_change_30d:
+                      data.quote[code?.toUpperCase()].percent_change_30d || 0,
                   };
-                  let recordExist: any =
+                }
+              });
+            }
+            // console.log("sparkline=====================", code, sparkline);
+            if (sparkline.length > 0) {
+              let where: any = {
+                cmc_id: id,
+                fiat_type: code,
+                type: type,
+              };
+              let recordExist: any =
+                await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne({
+                  attributes: ["id", "sparkline", "coin_type"],
+                  where: where,
+                  // logging: true
+                });
+
+              if (!recordExist) {
+                /** if by cmc id not exist then check by coin id */
+                let coin_data: CoinModel | null = await Coins.CoinsRead.findOne(
+                  {
+                    attributes: ["coin_id"],
+                    where: {
+                      cmc_id: id,
+                    },
+                  }
+                );
+                if (coin_data) {
+                  where.coin_id = coin_data?.coin_id;
+                  delete where.cmc_id;
+                  recordExist =
                     await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne(
                       {
-                        attributes: ["id", "sparkline", "coin_type"],
+                        attributes: [`id`, "sparkline", "coin_type"],
                         where: where,
                         // logging: true
                       }
                     );
-
-                  if (!recordExist) {
-                    /** if by cmc id not exist then check by coin id */
-                    let coin_data: CoinModel | null =
-                      await Coins.CoinsRead.findOne({
-                        attributes: ["coin_id"],
-                        where: {
-                          cmc_id: id,
-                        },
-                      });
-                    if (coin_data) {
-                      where.coin_id = coin_data?.coin_id;
-                      delete where.cmc_id;
-                      recordExist =
-                        await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne(
-                          {
-                            attributes: [`id`, "sparkline", "coin_type"],
-                            where: where,
-                            // logging: true
-                          }
-                        );
-                    }
-                  }
-                  // console.log("recordExist >>>>", "where", where);
-                  // console.log("recordExist >>>>", recordExist);
-
-                  if (recordExist) {
-                    // console.log(
-                    //   "type>>>>>>>>>>>>>>>>>>>>>>>>33333",
-                    //   id,
-                    //   type,
-                    //   code
-                    // );
-                    sparkline = await this.compare_update_prices(
-                      sparkline,
-                      recordExist,
-                      id,
-                      code,
-                      type
-                    );
-                    // console.log('sparkline >>>', sparkline);
-
-                    //  console.log("sparkline return >>>>>>>>", sparkline);
-
-                    // ;
-                    let getGraphData: any = await globalHelper.setGraphData(
-                      sparkline
-                    ); // slicing sparkline data
-
-                    //console.log("sparkline sliced >>>>>>>>", getGraphData?.graphData?.length);
-
-                    if (getGraphData.status) {
-                      const updateData: any = {
-                        sparkline: getGraphData.graphData,
-                        cmc_id: id,
-                      };
-                      if (recordExist?.coin_type == null) {
-                        updateData.coin_type = recordExist?.coin_type;
-                      }
-                      const updated: any =
-                        await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
-                          updateData,
-                          {
-                            where: where,
-                          }
-                        );
-                      console.log("sparkline_Updated:::", updated);
-                    }
-                  } else {
-                    let coin_data: any = await Coins.CoinsRead.findOne({
-                      attributes: ["coin_id", "coin_symbol"],
-                      where: {
-                        cmc_id: id,
-                      },
-                      raw: true,
-                    });
-                    if (coin_data) {
-                      await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.create(
-                        {
-                          coin_id: coin_data.coin_id,
-                          coin_type: coin_data.coin_symbol,
-                          sparkline: sparkline,
-                          cmc_id: id,
-                          fiat_type: fiat_type?.toUpperCase(),
-                          type: type,
-                          // created_at,
-                        }
-                      );
-                    }
-                  }
-                  // For Otc graph data
-                  // await otcHelper.update_coin_price_in_fiat_graph({ cmc_id: id, fiat_type: fiat_type.toUpperCase() }, sparkline, circulating_supply, price)
                 }
               }
-              // console.log("==================================");
-              // console.log(
-              //   "currecncy-limit_count == 9 checking",
-              //   currency_limit_count
-              // );
-              if (currency_limit_count == 9) {
-                // console.log(
-                //   "currency_limit_count >>>>>>>>>>>>>>>",
-                //   currency_limit_count
-                // );
+              // console.log("recordExist >>>>", "where", where);
+              // console.log("recordExist >>>>", recordExist);
 
-                let reset_data_exist: any =
-                  await reset_graph_data.ResetGraphWrite.findOne({
-                    where: { cmc_id: id, graph_type: type },
-                  });
-                let currentUTCDate: string = new Date()
-                  .toISOString()
-                  .replace(/T/, " ")
-                  .replace(/\..+/, "");
-                if (!reset_data_exist) {
-                  await reset_graph_data.ResetGraphWrite.create({
+              if (recordExist) {
+                sparkline = await this.compare_update_prices(
+                  sparkline,
+                  recordExist,
+                  id,
+                  code,
+                  type
+                );
+
+                let getGraphData: any = await globalHelper.setGraphData(
+                  sparkline
+                ); // slicing sparkline data
+
+                if (getGraphData.status) {
+                  const updateData: any = {
+                    sparkline: getGraphData.graphData,
                     cmc_id: id,
-                    graph_type: type,
-                    created_at: currentUTCDate,
-                    updated_at: currentUTCDate,
+                  };
+                  if (recordExist?.coin_type == null) {
+                    updateData.coin_type = recordExist?.coin_type;
+                  }
+                  const updated: any =
+                    await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+                      updateData,
+                      {
+                        where: where,
+                      }
+                    );
+                  console.log("sparkline_Updated:::", updated);
+                }
+              } else {
+                let coin_data: any = await Coins.CoinsRead.findOne({
+                  attributes: ["coin_id", "coin_symbol"],
+                  where: {
+                    cmc_id: id,
+                  },
+                  raw: true,
+                });
+                if (coin_data) {
+                  await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.create({
+                    coin_id: coin_data.coin_id,
+                    coin_type: coin_data.coin_symbol,
+                    sparkline: sparkline,
+                    cmc_id: id,
+                    fiat_type: fiat_type?.toUpperCase(),
+                    type: type,
+                    // created_at,
                   });
-                } else {
-                  await reset_graph_data.ResetGraphWrite.update(
-                    {
-                      graph_type: type,
-                      updated_at: currentUTCDate,
-                    },
-                    {
-                      where: { cmc_id: id },
-                    }
-                  );
                 }
               }
+            }
+
+            let reset_data_exist: any =
+              await reset_graph_data.ResetGraphWrite.findOne({
+                where: { cmc_id: id, graph_type: type },
+              });
+            let currentUTCDate: string = new Date()
+              .toISOString()
+              .replace(/T/, " ")
+              .replace(/\..+/, "");
+            if (!reset_data_exist) {
+              await reset_graph_data.ResetGraphWrite.create({
+                cmc_id: id,
+                graph_type: type,
+                created_at: currentUTCDate,
+                updated_at: currentUTCDate,
+              });
+            } else {
+              await reset_graph_data.ResetGraphWrite.update(
+                {
+                  graph_type: type,
+                  updated_at: currentUTCDate,
+                },
+                {
+                  where: { cmc_id: id },
+                }
+              );
             }
           }
         }
       }
-      // console.log(
-      //   "graph currency_limit_count >>>",
-      //   currency_limit_count,
-      //   " >>>>>>",
-      //   family_data
-      // );
 
-      currency_limit_count = currency_limit_count + currencylimit;
+      /** update coins pagination */
+      coin_limit_count = coin_limit_count + limit;
 
-      // console.log(
-      //   "graph total currency_data.count >>>",
-      //   currencies_data_count,
-      //   " >>>>>>",
-      //   family_data
-      // );
+      let counter = coin_limit_count >= totalRecords ? 0 : coin_limit_count;
+      // console.log("graph coin counter >>>", counter, " >>>>>>", family_data);
 
-      let currency_counter =
-        currency_limit_count >= currencies_data_count
-          ? 0
-          : currency_limit_count;
-      // console.log(
-      //   "graph currency_counter >>>",
-      //   currency_counter,
-      //   " >>>>>>",
-      //   family_data
-      // );
-
-      if (currency_counter == 0) {
-        /** update coins pagination */
-        coin_limit_count = coin_limit_count + limit;
-        // console.log(
-        //   "graph coin_limit_count >>>",
-        //   coin_limit_count,
-        //   " >>>>>>",
-        //   family_data
-        // );
-
-        // console.log(
-        //   "graph total_count >>>",
-        //   dbCoinrecords.count,
-        //   " >>>>>>",
-        //   family_data
-        // );
-
-        let counter = coin_limit_count >= totalRecords ? 0 : coin_limit_count;
-        // console.log("graph coin counter >>>", counter, " >>>>>>", family_data);
-
-        await redisClient.setKeyValuePair(
-          config.REDISKEYS.COIN_LIMIT_COUNTS,
-          `${type}_${GRAPH_DATA_COIN_COUNTER}`,
-          counter.toString()
-        );
-
-        //await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, `${type}_${GRAPH_DATA_COIN_COUNTER}`, counter.toString());
-      }
-      /** update currencies pagination */
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
-        `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`,
-        currency_counter.toString()
+        `${type}_${GRAPH_DATA_COIN_COUNTER}`,
+        counter.toString()
       );
+
       return;
-      //await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`, currency_counter.toString());
     } catch (err) {
       console.error(`err`, "historical data type", type, err);
       return;
