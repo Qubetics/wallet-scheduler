@@ -358,17 +358,18 @@ class PricesController {
     where: any,
     coin_type: string | null
   ) => {
-    // console.log(
-    //   "---------------------update history last price--------------",
-    //   id,
-    //   "------",
-    //   code,
-    //   "where >>>>>",
-    //   where
-    // );
+    console.log(
+      "---------------------update history last price--------------",
+      id,
+      "------",
+      code,
+      "where >>>>>",
+      where
+    );
+    return;
     const historyExistData =
       await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
-        attributes: [`id`, `sparkline`, `type`, `coin_type`],
+        attributes: [`id`, `sparkline`, `type`],
         where: where,
       });
     if (historyExistData.count > 0) {
@@ -403,9 +404,9 @@ class PricesController {
                 sparkline: history_data.graphData,
                 cmc_id: id,
               };
-              if (history?.coin_type == null) {
-                updateData.coin_type = coin_type;
-              }
+              // if (history?.coin_type == null) {
+              //   updateData.coin_type = coin_type;
+              // }
               // console.log('history_data.graphData >>>', history_data?.graphData?.length);
               await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
                 updateData,
@@ -423,9 +424,9 @@ class PricesController {
               sparkline: history_data.graphData,
               cmc_id: id,
             };
-            if (history?.coin_type == null) {
-              updateData.coin_type = coin_type;
-            }
+            // if (history?.coin_type == null) {
+            //   updateData.coin_type = coin_type;
+            // }
             await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
               updateData,
               { where: { id: history.id } }
@@ -437,8 +438,8 @@ class PricesController {
       let types = ["1d"];
       for (let i = 0; i < types.length; i++) {
         let create_data: any = {
-          coin_id: coin_id,
-          coin_type: coin_type ? coin_type : null,
+          // coin_id: coin_id,
+          // coin_type: coin_type ? coin_type : null,
           cmc_id: id,
           type: types[i],
           fiat_type: code,
