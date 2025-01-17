@@ -627,29 +627,27 @@ class PricesController {
                   // logging: true
                 });
 
-              if (!recordExist) {
-                /** if by cmc id not exist then check by coin id */
-                let coin_data: CoinModel | null = await Coins.CoinsRead.findOne(
-                  {
-                    attributes: ["coin_id"],
-                    where: {
-                      cmc_id: id,
-                    },
-                  }
-                );
-                if (coin_data) {
-                  where.coin_id = coin_data?.coin_id;
-                  delete where.cmc_id;
-                  recordExist =
-                    await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne(
-                      {
-                        attributes: [`id`, "sparkline", "coin_type"],
-                        where: where,
-                        // logging: true
-                      }
-                    );
-                }
-              }
+              // if (!recordExist) {
+              //   /** if by cmc id not exist then check by coin id */
+              //   // let coin_data: CoinModel | null = await Coins.CoinsRead.findOne(
+              //   //   {
+              //   //     attributes: ["coin_id"],
+              //   //     where: {
+              //   //       cmc_id: id,
+              //   //     },
+              //   //   }
+              //   // );
+              //   // if (coin_data) {
+              //   // where.coin_id = coin_data?.coin_id;
+              //   // delete where.cmc_id;
+              //   recordExist =
+              //     await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne({
+              //       attributes: [`id`, "sparkline", "coin_type"],
+              //       where: where,
+              //       // logging: true
+              //     });
+              //   // }
+              // }
               // console.log("recordExist >>>>", "where", where);
               // console.log("recordExist >>>>", recordExist);
 
@@ -671,9 +669,9 @@ class PricesController {
                     sparkline: getGraphData.graphData,
                     cmc_id: id,
                   };
-                  if (recordExist?.coin_type == null) {
-                    updateData.coin_type = recordExist?.coin_type;
-                  }
+                  // if (recordExist?.coin_type == null) {
+                  //   updateData.coin_type = recordExist?.coin_type;
+                  // }
                   const updated: any =
                     await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
                       updateData,
@@ -684,24 +682,24 @@ class PricesController {
                   console.log("sparkline_Updated:::", updated);
                 }
               } else {
-                let coin_data: any = await Coins.CoinsRead.findOne({
-                  attributes: ["coin_id", "coin_symbol"],
-                  where: {
-                    cmc_id: id,
-                  },
-                  raw: true,
+                // let coin_data: any = await Coins.CoinsRead.findOne({
+                //   attributes: ["coin_id", "coin_symbol"],
+                //   where: {
+                //     cmc_id: id,
+                //   },
+                //   raw: true,
+                // });
+                // if (coin_data) {
+                await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.create({
+                  // coin_id: coin_data.coin_id,
+                  // coin_type: coin_data.coin_symbol,
+                  sparkline: sparkline,
+                  cmc_id: id,
+                  fiat_type: fiat_type?.toUpperCase(),
+                  type: type,
+                  // created_at,
                 });
-                if (coin_data) {
-                  await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.create({
-                    coin_id: coin_data.coin_id,
-                    coin_type: coin_data.coin_symbol,
-                    sparkline: sparkline,
-                    cmc_id: id,
-                    fiat_type: fiat_type?.toUpperCase(),
-                    type: type,
-                    // created_at,
-                  });
-                }
+                // }
               }
             }
 

@@ -4,10 +4,10 @@ import { CoinPriceInFiatGraphModel } from "../interface/interface.coinPriceInFia
 import db from "../../helpers/common/db";
 
 interface CoinPriceInFiatCreationModel
-  extends Optional<CoinPriceInFiatGraphModel, "id"> { }
+  extends Optional<CoinPriceInFiatGraphModel, "id"> {}
 interface CoinPriceInFiatInstance
   extends Model<CoinPriceInFiatGraphModel, CoinPriceInFiatCreationModel>,
-  CoinPriceInFiatGraphModel { }
+    CoinPriceInFiatGraphModel {}
 
 let dataObj = {
   id: {
@@ -16,18 +16,12 @@ let dataObj = {
     primaryKey: true,
     autoIncrement: true,
   },
-  coin_id: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
+
   cmc_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  coin_type: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
+
   fiat_type: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -65,8 +59,8 @@ let dataObj = {
   // },
 };
 let dataObjIndex = {
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  createdAt: "created_at",
+  updatedAt: "updated_at",
   indexes: [
     {
       unique: false,
