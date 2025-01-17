@@ -3,5 +3,6 @@ export interface CurrencyFiatModel {
   currency_name: string;
   currency_code: string;
   currency_symbol: string;
+  price_in_usd: number;
   uuid?: string;
 }
