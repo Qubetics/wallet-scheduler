@@ -285,9 +285,7 @@ class PricesController {
                         latest_price,
                         obj.id,
                         code,
-                        coin_id,
-                        where,
-                        obj?.symbol
+                        where
                       );
                     }
                   }
@@ -354,9 +352,7 @@ class PricesController {
     latest_price: any,
     id: number,
     code: string,
-    coin_id: number,
-    where: any,
-    coin_type: string | null
+    where: any
   ) => {
     // console.log(
     //   "---------------------update history last price--------------",
@@ -367,14 +363,14 @@ class PricesController {
     //   where
     // );
     if (where.fiat_type != "USD") return;
-    console.log(
-      "--------------------- update history last price--------------",
-      id,
-      "------",
-      code,
-      "where >>>>>",
-      where
-    );
+    // console.log(
+    //   "--------------------- update history last price--------------",
+    //   id,
+    //   "------",
+    //   code,
+    //   "where >>>>>",
+    //   where
+    // );
     const historyExistData =
       await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
         attributes: [`id`, `sparkline`, `type`],
