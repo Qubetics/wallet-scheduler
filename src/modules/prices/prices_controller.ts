@@ -1361,7 +1361,7 @@ class PricesController {
           );
         }
       } else {
-        console.log("No Fiat Currency Found.");
+        console.log("No Fiat Currency Found..");
       }
     } catch (error) {
       console.log("::Error log:: updateFiatPrice :>> ", error);
