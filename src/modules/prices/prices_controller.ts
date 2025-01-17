@@ -1327,20 +1327,11 @@ class PricesController {
         }
       }
 
-      let configObj: any = {
-        method: "get",
-        maxBodyLength: Infinity,
-        uri: `${
-          config.CMC.CMC_URL
-        }quotes/latest?id=2781&convert=${cryptoSymbols.toString()}`,
-
-        headers: { "X-CMC_PRO_API_KEY": config.CMC.CMC_KEY },
-      };
-
-      console.log("configObj :>> ", configObj);
-
+      let requestOptionsForListing = await cmcHelper.cmcFiatCurrencyData(
+        cryptoSymbols
+      );
       let result = await axios
-        .request(configObj)
+        .request(requestOptionsForListing)
         .then((response) => {
           // console.log(JSON.stringify(response.data));
           return response.data;
