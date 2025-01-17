@@ -631,7 +631,7 @@ class PricesController {
               };
               let recordExist: any =
                 await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne({
-                  attributes: ["id", "sparkline", "coin_type"],
+                  attributes: ["id", "sparkline"],
                   where: where,
                   // logging: true
                 });
