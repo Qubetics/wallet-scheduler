@@ -529,6 +529,7 @@ class PricesController {
             cmc_id: { [Op.ne]: 0 },
             // graph_source: { [Op.is]: null },     // not in use
             // coin_family: coin_family
+            [Op.and]: [sequelize.literal(`(graph_data.updated_at IS NULL)`)],
           },
           include: [
             {
@@ -536,7 +537,7 @@ class PricesController {
               attributes: ["type", "updated_at"], // Specify the columns to return from the graph_data table
               as: "graph_data",
               where: {
-                updated_at: { [Op.is]: null }, // Example filter: only include rows where updated_at is not null
+                // updated_at: { [Op.is]: null }, // Example filter: only include rows where updated_at is not null
                 type: type,
                 fiat_type: "USD",
                 // Add additional filters here if needed
