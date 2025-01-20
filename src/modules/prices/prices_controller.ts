@@ -592,6 +592,15 @@ class PricesController {
       const totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
 
       console.log("totalRecords :>> ", totalRecords);
+      if (!totalRecords) {
+        let counter = 0;
+        await redisClient.setKeyValuePair(
+          config.REDISKEYS.COIN_LIMIT_COUNTS,
+          `${type}_${GRAPH_DATA_COIN_COUNTER}`,
+          counter.toString()
+        );
+        return;
+      }
       // Access grouped rows (the data)
       const groupedRows = dbCoinrecords.rows;
 
