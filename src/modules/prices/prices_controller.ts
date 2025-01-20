@@ -510,6 +510,7 @@ class PricesController {
           },
           logging: true,
         });
+
       console.log(
         "dbCoinPriceInGraphrecords.count :>> ",
         dbCoinPriceInGraphrecords.count
