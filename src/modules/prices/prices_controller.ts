@@ -18,6 +18,7 @@ import cmcHelper from "../../helpers/common/cmc.helper";
 import globalHelper from "../../helpers/common/global.helper";
 // import otcHelper from "../../modules/prices/helper";
 import axios from "axios";
+import { TimePeriods } from "../../constants";
 
 const {
   current_price_coin_counter: CURRENT_PRICE_COIN_COUNTER,
@@ -489,34 +490,96 @@ class PricesController {
       if (findCoinCounter) {
         coin_limit_count = Number(findCoinCounter);
       }
-
+      let now = new Date();
+      let subtractTime = new Date(now);
+      // Calculate different time ranges
+      if (type == "1d") {
+        subtractTime.setHours(subtractTime.getHours() - 8);
+      } else if (type == "1w") {
+        subtractTime.setDate(subtractTime.getDate() - 1);
+      } else {
+        subtractTime.setDate(subtractTime.getDate() - 3);
+      }
+      console.log("subtractTime :>> ", subtractTime, "timeperiod :", type);
       // console.log("endDate>>>>>>>>>>>", endDate);
+      let dbCoinPriceInGraphrecords: any =
+        await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
+          where: {
+            updated_at: { [Op.gt]: subtractTime },
+            type: type,
+          },
+          logging: true,
+        });
+      console.log(
+        "dbCoinPriceInGraphrecords.count :>> ",
+        dbCoinPriceInGraphrecords.count
+      );
 
-      let dbCoinrecords: any = await Coins.CoinsRead.findAndCountAll({
-        attributes: ["cmc_id"],
-        where: {
-          cmc_id: { [Op.ne]: 0 },
-          // graph_source: { [Op.is]: null },     // not in use
-          // coin_family: coin_family
-        },
-        // include: [
-        //   {
-        //     model: reset_graph_data.ResetGraphRead,
-        //     attributes: ["graph_type", "updated_at"],
-        //     as: "reset_graph_data",
-        //     where: sequelize.literal(
-        //       `(reset_graph_data.updated_at IS NULL OR DATE(reset_graph_data.updated_at) != CURRENT_DATE OR reset_graph_data.graph_type!="${type}")`
-        //     ),
-        //     required: true,
-        //   },
-        // ],
-        // raw: true,
-        group: ["cmc_id"],
-        order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
-        limit: limit,
-        offset: coin_limit_count,
-        logging: true,
-      });
+      let dbCoinrecords: any;
+      if (dbCoinPriceInGraphrecords.count) {
+        dbCoinrecords = dbCoinPriceInGraphrecords;
+      } else {
+        dbCoinrecords = await Coins.CoinsRead.findAndCountAll({
+          attributes: ["cmc_id"],
+          where: {
+            cmc_id: { [Op.ne]: 0 },
+            // graph_source: { [Op.is]: null },     // not in use
+            // coin_family: coin_family
+          },
+          include: [
+            {
+              model: CoinPriceInFiatGraph.CoinPriceInFiatGraphRead,
+              attributes: ["type", "updated_at"], // Specify the columns to return from the graph_data table
+              as: "graph_data",
+              where: {
+                updated_at: { [Op.is]: null }, // Example filter: only include rows where updated_at is not null
+                // Add additional filters here if needed
+                [Op.and]: [
+                  sequelize.where(
+                    sequelize.col("CoinsRead.type"),
+                    sequelize.col("graph_data.type") // Match type with the Coins table
+                  ),
+                ],
+              },
+              // required: true,
+            },
+          ],
+          // raw: true,
+          group: ["cmc_id"],
+          order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
+          limit: limit,
+          offset: coin_limit_count,
+          logging: true,
+        });
+      }
+
+      /********************************BACKUP CODE ********************************/
+      // let dbCoinrecords: any = await Coins.CoinsRead.findAndCountAll({
+      //   attributes: ["cmc_id"],
+      //   where: {
+      //     cmc_id: { [Op.ne]: 0 },
+      // graph_source: { [Op.is]: null },     // not in use
+      // coin_family: coin_family
+      // },
+      // include: [
+      //   {
+      //     model: reset_graph_data.ResetGraphRead,
+      //     attributes: ["graph_type", "updated_at"],
+      //     as: "reset_graph_data",
+      //     where: sequelize.literal(
+      //       `(reset_graph_data.updated_at IS NULL OR DATE(reset_graph_data.updated_at) != CURRENT_DATE OR reset_graph_data.graph_type!="${type}")`
+      //     ),
+      //     required: true,
+      //   },
+      // ],
+      // raw: true,
+      //   group: ["cmc_id"],
+      //   order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
+      //   limit: limit,
+      //   offset: coin_limit_count,
+      //   logging: true,
+      // });
+      /********************************BACKUP CODE ********************************/
 
       let ids: any[] = [];
       const groupedCount = dbCoinrecords.count; // This is an array of grouped results

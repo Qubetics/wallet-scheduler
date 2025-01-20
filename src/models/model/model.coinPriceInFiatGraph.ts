@@ -49,14 +49,14 @@ let dataObj = {
     type: DataTypes.DOUBLE,
     allowNull: true,
   },
-  // created_at: {
-  //   type: DataTypes.DATE,
-  //   allowNull: false,
-  // },
-  // updated_at: {
-  //   type: DataTypes.DATE,
-  //   allowNull: true,
-  // },
+  created_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  updated_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 };
 let dataObjIndex = {
   createdAt: "created_at",

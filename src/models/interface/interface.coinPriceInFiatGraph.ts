@@ -8,6 +8,6 @@ export interface CoinPriceInFiatGraphModel {
   price_change_24h?: number | 0;
   price_change_percentage_24h?: number | 0;
   volume_24h?: number | 0;
-  // created_at?: string;
-  // updated_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }

@@ -4,6 +4,7 @@ import { CoinModel } from "../interface/interface.coins";
 import db from "../../helpers/common/db";
 import { CoinPriceInFiat } from "./model.coinPriceInFiat";
 import reset_graph_data from "./reset_graph_data";
+import { CoinPriceInFiatGraph } from "./model.coinPriceInFiatGraph";
 
 interface CoinCreationModel extends Optional<CoinModel, "coin_id"> {}
 interface CoinInstance extends Model<CoinModel, CoinCreationModel>, CoinModel {}
@@ -165,6 +166,12 @@ CoinsRead.hasOne(reset_graph_data.ResetGraphRead, {
   foreignKey: "cmc_id",
   sourceKey: "cmc_id",
   as: "reset_graph_data",
+});
+
+CoinsRead.hasOne(CoinPriceInFiatGraph.CoinPriceInFiatGraphRead, {
+  foreignKey: "cmc_id",
+  sourceKey: "cmc_id",
+  as: "graph_data",
 });
 
 export const Coins = {
