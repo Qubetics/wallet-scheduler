@@ -45,7 +45,7 @@ let dataObj = {
     type: DataTypes.DOUBLE,
     allowNull: true,
   },
-  voulme_24h: {
+  volume_24h: {
     type: DataTypes.DOUBLE,
     allowNull: true,
   },
