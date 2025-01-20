@@ -505,7 +505,7 @@ class PricesController {
       let dbCoinPriceInGraphrecords: any =
         await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
           where: {
-            updated_at: { [Op.gt]: subtractTime },
+            updated_at: { [Op.lt]: subtractTime },
             type: type,
           },
           logging: true,
