@@ -507,6 +507,7 @@ class PricesController {
           where: {
             updated_at: { [Op.lt]: subtractTime },
             type: type,
+            fiat_type: "USD",
           },
           order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
           limit: limit,
@@ -538,6 +539,7 @@ class PricesController {
               where: {
                 // updated_at: { [Op.is]: null }, // Example filter: only include rows where updated_at is not null
                 type: type,
+                fiat_type: "USD",
                 // Add additional filters here if needed
                 // [Op.and]: [
                 //   sequelize.where(
