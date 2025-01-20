@@ -93,7 +93,7 @@ class CronJobs {
   };
 
   public getCoinGraphDataDaily = async () => {
-    schedule.scheduleJob("0 */2 * * * *", async function () {
+    schedule.scheduleJob("0/15 */2 * * * *", async function () {
       const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
       const startDateMoment = moment()
         .subtract(1, "day")
@@ -110,7 +110,7 @@ class CronJobs {
   };
 
   public getCoinGraphDataWeekly = async () => {
-    schedule.scheduleJob("0 */2 * * * *", async function () {
+    schedule.scheduleJob("0 */3 * * * *", async function () {
       console.log("call getCoinGraphDataWeekly :>> ");
 
       const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
@@ -130,7 +130,7 @@ class CronJobs {
   };
 
   public getCoinGraphDataMonthly = async () => {
-    schedule.scheduleJob("0 */3 * * * *", async function () {
+    schedule.scheduleJob("0 */4 * * * *", async function () {
       console.log("call getCoinGraphDataMonthly :>> ");
 
       const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
@@ -150,7 +150,7 @@ class CronJobs {
   };
 
   public getCoinGraphDataYearly = async () => {
-    schedule.scheduleJob("0 */4 * * * *", async function () {
+    schedule.scheduleJob("0 */5 * * * *", async function () {
       console.log("call getCoinGraphDataYearly :>> ");
 
       const endDateMoment = moment().format("YYYY-MM-DD HH:mm");
