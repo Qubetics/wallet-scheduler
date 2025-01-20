@@ -508,13 +508,16 @@ class PricesController {
             updated_at: { [Op.lt]: subtractTime },
             type: type,
           },
+          order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
+          limit: limit,
+          offset: coin_limit_count,
           logging: true,
         });
 
-      console.log(
-        "dbCoinPriceInGraphrecords.count :>> ",
-        dbCoinPriceInGraphrecords.count
-      );
+      // console.log(
+      //   "dbCoinPriceInGraphrecords.count :>> ",
+      //   dbCoinPriceInGraphrecords.count
+      // );
 
       let dbCoinrecords: any;
       if (dbCoinPriceInGraphrecords.count) {
@@ -533,16 +536,17 @@ class PricesController {
               attributes: ["type", "updated_at"], // Specify the columns to return from the graph_data table
               as: "graph_data",
               where: {
-                updated_at: { [Op.is]: null }, // Example filter: only include rows where updated_at is not null
+                // updated_at: { [Op.is]: null }, // Example filter: only include rows where updated_at is not null
+                type: type,
                 // Add additional filters here if needed
-                [Op.and]: [
-                  sequelize.where(
-                    sequelize.col("CoinsRead.type"),
-                    sequelize.col("graph_data.type") // Match type with the Coins table
-                  ),
-                ],
+                // [Op.and]: [
+                //   sequelize.where(
+                //     sequelize.col("CoinsRead.type"),
+                //     sequelize.col("graph_data.type") // Match type with the Coins table
+                //   ),
+                // ],
               },
-              // required: true,
+              required: false, // Set to false for LEFT JOIN
             },
           ],
           // raw: true,
