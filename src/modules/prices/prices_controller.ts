@@ -501,8 +501,10 @@ class PricesController {
         subtractTime.setDate(subtractTime.getDate() - 3);
       }
       console.log("subtractTime :>> ", subtractTime, "timeperiod :", type);
+      let dbCoinrecords: any;
+
       // console.log("endDate>>>>>>>>>>>", endDate);
-      let dbCoinPriceInGraphrecords: any =
+      dbCoinrecords =
         await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
           where: {
             updated_at: { [Op.lt]: subtractTime },
@@ -520,10 +522,7 @@ class PricesController {
       //   dbCoinPriceInGraphrecords.count
       // );
 
-      let dbCoinrecords: any;
-      if (dbCoinPriceInGraphrecords.count) {
-        dbCoinrecords = dbCoinPriceInGraphrecords;
-      } else {
+      if (dbCoinrecords.count) {
         dbCoinrecords = await Coins.CoinsRead.findAndCountAll({
           attributes: ["cmc_id"],
           where: {
