@@ -800,6 +800,8 @@ class PricesController {
                 fiat_type: code,
                 type: type,
               };
+              console.log("sparkline length zero :>> ", where);
+
               let currentUTCDate: string = new Date()
                 .toISOString()
                 .replace(/T/, " ")
@@ -807,6 +809,14 @@ class PricesController {
               const updateData: any = {
                 updated_at: currentUTCDate,
               };
+
+              console.log(
+                "sparkline length zero :>> ",
+                where,
+                "updateData :",
+                updateData
+              );
+
               // if (recordExist?.coin_type == null) {
               //   updateData.coin_type = recordExist?.coin_type;
               // }
@@ -815,6 +825,7 @@ class PricesController {
                 updateData,
                 {
                   where: where,
+                  logging: true, // Enable logging
                 }
               );
             }
