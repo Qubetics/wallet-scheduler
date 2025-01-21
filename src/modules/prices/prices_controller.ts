@@ -520,7 +520,8 @@ class PricesController {
         });
 
       console.log("dbCoinrecords.count :>> ", dbCoinrecords.count);
-
+      let groupedCount = dbCoinrecords.count; // This is an array of grouped results
+      let totalRecords = dbCoinrecords.rows.length; // Total number of unique groups (cmc_id)
       if (dbCoinrecords.count == 0) {
         console.log("inside :>> ");
         dbCoinrecords = await Coins.CoinsRead.findAndCountAll({
@@ -537,16 +538,8 @@ class PricesController {
               attributes: ["type", "updated_at"], // Specify the columns to return from the graph_data table
               as: "graph_data",
               where: {
-                // updated_at: { [Op.is]: null }, // Example filter: only include rows where updated_at is not null
                 type: type,
                 fiat_type: "USD",
-                // Add additional filters here if needed
-                // [Op.and]: [
-                //   sequelize.where(
-                //     sequelize.col("CoinsRead.type"),
-                //     sequelize.col("graph_data.type") // Match type with the Coins table
-                //   ),
-                // ],
               },
               required: false, // Set to false for LEFT JOIN
             },
@@ -560,6 +553,8 @@ class PricesController {
         });
 
         console.log("dbCoinrecords.count outside:>> ", dbCoinrecords.count);
+        groupedCount = dbCoinrecords.count; // This is an array of grouped results
+        totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
       }
 
       /********************************BACKUP CODE ********************************/
@@ -591,8 +586,6 @@ class PricesController {
       /********************************BACKUP CODE ********************************/
 
       let ids: any[] = [];
-      const groupedCount = dbCoinrecords.count; // This is an array of grouped results
-      const totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
 
       console.log("totalRecords :>> ", totalRecords);
       if (!totalRecords) {
