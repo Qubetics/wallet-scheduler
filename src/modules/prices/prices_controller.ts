@@ -873,7 +873,7 @@ class PricesController {
 
       return;
     } catch (error: any) {
-      console.error(`err`, "historical data type", type, error);
+      console.error(`err`, "historical data type", ids, type, error);
       if (error?.response?.data?.status?.error_message) {
         let message = error.response.data.status.error_message;
         let position = message.includes('No data found for "id"');
