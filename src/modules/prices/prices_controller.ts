@@ -641,8 +641,11 @@ class PricesController {
         );
         var data = await rp(requestOptionsForListing);
         if (data) {
+          let currentUTCDate: string = new Date()
+            .toISOString()
+            .replace(/T/, " ")
+            .replace(/\..+/, "");
           for await (let id of ids as any) {
-            let created_at;
             let fiat_type = code;
             let sparkline: any = [];
 
@@ -802,10 +805,6 @@ class PricesController {
               };
               console.log("sparkline length zero :>> ", where);
 
-              let currentUTCDate: string = new Date()
-                .toISOString()
-                .replace(/T/, " ")
-                .replace(/\..+/, "");
               const updateData: any = {
                 updated_at: currentUTCDate,
               };
