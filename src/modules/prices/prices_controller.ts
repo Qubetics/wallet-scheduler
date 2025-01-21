@@ -870,22 +870,32 @@ class PricesController {
 
       return;
     } catch (error: any) {
-      console.error(`err`, "historical data type", ids, type, error);
+      console.error(
+        `err`,
+        "historical data type",
+        ids,
+        type,
+        "error =>",
+        error?.message
+      );
       if (error?.response?.data?.status?.error_message) {
         let message = error.response.data.status.error_message;
         let position = message.includes('No data found for "id"');
         let position1 = message.includes("No items found");
 
         if (position || position1) {
-          await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.destroy({
-            where: {
-              cmc_id: {
-                [Op.in]: ids,
+          let updateGraphNotFound =
+            await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.destroy({
+              where: {
+                cmc_id: {
+                  [Op.in]: ids,
+                },
               },
-            },
-          });
+            });
 
-          await Coins.CoinsWrite.update(
+          console.log("updateGraphNotFound :>> ", updateGraphNotFound);
+
+          let updateCoinNotFound = await Coins.CoinsWrite.update(
             { cmc_id: 0 },
             {
               where: {
@@ -895,6 +905,7 @@ class PricesController {
               },
             }
           );
+          console.log("updateCoinNotFound :>> ", updateCoinNotFound);
         }
       }
       return;
