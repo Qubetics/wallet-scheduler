@@ -753,20 +753,25 @@ class PricesController {
                 ); // slicing sparkline data
 
                 if (getGraphData.status) {
+                  let currentUTCDate: string = new Date()
+                    .toISOString()
+                    .replace(/T/, " ")
+                    .replace(/\..+/, "");
                   const updateData: any = {
                     sparkline: getGraphData.graphData,
                     cmc_id: id,
+                    updated_at: currentUTCDate,
                   };
                   // if (recordExist?.coin_type == null) {
                   //   updateData.coin_type = recordExist?.coin_type;
                   // }
-                  const updated: any =
-                    await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
-                      updateData,
-                      {
-                        where: where,
-                      }
-                    );
+
+                  await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+                    updateData,
+                    {
+                      where: where,
+                    }
+                  );
                   // console.log("sparkline_Updated:::", updated);
                 }
               } else {
