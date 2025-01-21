@@ -519,11 +519,15 @@ class PricesController {
           logging: true,
         });
 
-      console.log("dbCoinrecords.count :>> ", dbCoinrecords.count);
+      console.log(
+        "dbCoinrecords.count :>> ",
+        dbCoinrecords.count,
+        "type :",
+        type
+      );
       let groupedCount = dbCoinrecords.count; // This is an array of grouped results
       let totalRecords = dbCoinrecords.rows.length; // Total number of unique groups (cmc_id)
       if (dbCoinrecords.count == 0) {
-        console.log("inside :>> ");
         dbCoinrecords = await Coins.CoinsRead.findAndCountAll({
           attributes: ["cmc_id"],
           where: {
@@ -552,7 +556,12 @@ class PricesController {
           logging: true,
         });
 
-        console.log("dbCoinrecords.count outside:>> ", dbCoinrecords.count);
+        console.log(
+          "dbCoinrecords.count inside:>> ",
+          dbCoinrecords.count,
+          "type :",
+          type
+        );
         groupedCount = dbCoinrecords.count; // This is an array of grouped results
         totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
       }
