@@ -794,6 +794,29 @@ class PricesController {
                 });
                 // }
               }
+            } else {
+              let where: any = {
+                cmc_id: id,
+                fiat_type: code,
+                type: type,
+              };
+              let currentUTCDate: string = new Date()
+                .toISOString()
+                .replace(/T/, " ")
+                .replace(/\..+/, "");
+              const updateData: any = {
+                updated_at: currentUTCDate,
+              };
+              // if (recordExist?.coin_type == null) {
+              //   updateData.coin_type = recordExist?.coin_type;
+              // }
+
+              await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+                updateData,
+                {
+                  where: where,
+                }
+              );
             }
 
             // let reset_data_exist: any =
