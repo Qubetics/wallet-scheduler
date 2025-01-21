@@ -799,12 +799,12 @@ class PricesController {
                 // }
               }
             } else {
-              let where: any = {
+              let whereCond: any = {
                 cmc_id: id,
                 fiat_type: code,
                 type: type,
               };
-              console.log("sparkline length zero :>> ", where);
+              // console.log("sparkline length zero :>> ", where);
 
               const updateData: any = {
                 updated_at: currentUTCDate,
@@ -812,7 +812,7 @@ class PricesController {
 
               console.log(
                 "sparkline length zero :>> ",
-                where,
+                whereCond,
                 "updateData :",
                 updateData
               );
@@ -821,13 +821,16 @@ class PricesController {
               //   updateData.coin_type = recordExist?.coin_type;
               // }
 
-              await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
-                updateData,
-                {
-                  where: where,
-                  logging: true, // Enable logging
-                }
-              );
+              let updateQuery =
+                await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+                  updateData,
+                  {
+                    where: whereCond,
+                    // logging: true, // Enable logging
+                  }
+                );
+
+              console.log("updateQuery :>> ", updateQuery);
             }
 
             // let reset_data_exist: any =
