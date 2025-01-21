@@ -806,16 +806,7 @@ class PricesController {
               };
               // console.log("sparkline length zero :>> ", where);
 
-              const updateData: any = {
-                updated_at: currentUTCDate,
-              };
-
-              console.log(
-                "sparkline length zero :>> ",
-                whereCond,
-                "updateData :",
-                updateData
-              );
+              console.log("sparkline length zero :>> ", whereCond);
 
               // if (recordExist?.coin_type == null) {
               //   updateData.coin_type = recordExist?.coin_type;
@@ -823,7 +814,9 @@ class PricesController {
 
               let updateQuery =
                 await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
-                  updateData,
+                  {
+                    updated_at: currentUTCDate,
+                  },
                   {
                     where: whereCond,
                     // logging: true, // Enable logging
