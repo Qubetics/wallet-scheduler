@@ -187,8 +187,8 @@ class PricesController {
                         },
                       });
                     if (coin_data) {
-                      where.coin_id = coin_data?.coin_id;
-                      delete where.cmc_id;
+                      // where.coin_id = coin_data?.coin_id;
+                      // delete where.cmc_id;
                       checkIfCoinExist =
                         await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
                           attributes: ["id", "coin_id"],
@@ -202,29 +202,29 @@ class PricesController {
                   }
                   let coin_id: number = 0;
                   if (checkIfCoinExist) {
-                    coin_id = checkIfCoinExist.coin_id;
+                    // coin_id = checkIfCoinExist.coin_id;
                     // console.log(
                     //   "obj?.quote[code]?.price",
                     //   obj?.quote[code]?.price
                     // );
-                    const val =
-                      await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-                        {
-                          cmc_id: obj.id,
-                          coin_id: coin_id,
-                          value: obj?.quote[code]?.price || 0,
-                          price_change_24h: obj.quote[code].percent_change_24h,
-                          price_change_percentage_24h:
-                            obj.quote[code].percent_change_24h,
-                          volume_24h: obj.quote[code].volume_24h,
-                          total_supply: obj.total_supply,
-                          latest_price: latest_price,
-                          latest_price_source: "current",
-                        },
-                        {
-                          where: where,
-                        }
-                      );
+
+                    await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+                      {
+                        // cmc_id: obj.id,      // no need to update
+                        // coin_id: coin_id,    // no need to update
+                        value: obj?.quote[code]?.price || 0,
+                        price_change_24h: obj.quote[code].percent_change_24h,
+                        price_change_percentage_24h:
+                          obj.quote[code].percent_change_24h,
+                        volume_24h: obj.quote[code].volume_24h,
+                        total_supply: obj.total_supply,
+                        latest_price: latest_price,
+                        latest_price_source: "current",
+                      },
+                      {
+                        where: where,
+                      }
+                    );
                   } else {
                     let coin = await Coins.CoinsRead.findOne({
                       attributes: [
@@ -243,29 +243,29 @@ class PricesController {
                       //   "aaaobj?.quote[code].price",
                       //   obj?.quote[code].price
                       // );
-                      let crypto =
-                        await CoinPriceInFiat.CoinPriceInFiatWrite.create({
-                          coin_id: coin.coin_id,
-                          coin_name: obj.name,
-                          coin_family: coin.coin_family,
-                          max_supply: obj.max_supply || 0,
-                          cmc_id: coin.cmc_id,
-                          circulating: obj.circulating_supply || 0,
-                          total_supply: obj.total_supply,
-                          rank: obj.cmc_rank || 0,
-                          market_cap: obj?.quote[code]?.market_cap || 0,
-                          fiat_type: code.toLowerCase(),
-                          coin_symbol: obj.symbol,
-                          value: obj?.quote[code].price || 0,
-                          price_change_24h:
-                            obj.quote[code].percent_change_24h || 0,
-                          price_change_percentage_24h:
-                            obj.quote[code].percent_change_24h || 0,
-                          volume_24h: obj.quote[code].volume_24h || 0,
-                          token_address: coin.token_address,
-                          latest_price: latest_price,
-                          latest_price_source: "current",
-                        });
+
+                      await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+                        coin_id: coin.coin_id,
+                        coin_name: obj.name,
+                        coin_family: coin.coin_family,
+                        max_supply: obj.max_supply || 0,
+                        cmc_id: coin.cmc_id,
+                        circulating: obj.circulating_supply || 0,
+                        total_supply: obj.total_supply,
+                        rank: obj.cmc_rank || 0,
+                        market_cap: obj?.quote[code]?.market_cap || 0,
+                        fiat_type: code.toLowerCase(),
+                        coin_symbol: obj.symbol,
+                        value: obj?.quote[code].price || 0,
+                        price_change_24h:
+                          obj.quote[code].percent_change_24h || 0,
+                        price_change_percentage_24h:
+                          obj.quote[code].percent_change_24h || 0,
+                        volume_24h: obj.quote[code].volume_24h || 0,
+                        token_address: coin.token_address,
+                        latest_price: latest_price,
+                        latest_price_source: "current",
+                      });
                     }
                   }
                   // if (coin_id > 0) {
