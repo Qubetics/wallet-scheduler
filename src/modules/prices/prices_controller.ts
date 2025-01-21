@@ -641,6 +641,7 @@ class PricesController {
         );
         var data = await rp(requestOptionsForListing);
         if (data) {
+          let created_at;
           let currentUTCDate: string = new Date()
             .toISOString()
             .replace(/T/, " ")
