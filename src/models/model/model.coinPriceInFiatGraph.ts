@@ -59,8 +59,8 @@ let dataObj = {
   },
 };
 let dataObjIndex = {
-  createdAt: "created_at",
-  updatedAt: "updated_at",
+  // createdAt: "created_at",
+  // updatedAt: "updated_at",
   indexes: [
     {
       unique: false,
