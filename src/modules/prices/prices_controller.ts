@@ -471,6 +471,8 @@ class PricesController {
     type: "1d" | "1w" | "1m" | "1y",
     coin_limit: number
   ) => {
+    let ids: any[] = [];
+
     try {
       // let currencyCount = await modelCounter.CounterRead.count();
       // let family_data = Object.keys(COIN_FAMILY).find(
@@ -593,8 +595,6 @@ class PricesController {
       //   logging: true,
       // });
       /********************************BACKUP CODE ********************************/
-
-      let ids: any[] = [];
 
       console.log("totalRecords :>> ", totalRecords);
       if (!totalRecords) {
@@ -834,8 +834,34 @@ class PricesController {
       );
 
       return;
-    } catch (err) {
-      console.error(`err`, "historical data type", type, err);
+    } catch (error: any) {
+      console.error(`err`, "historical data type", type, error);
+      if (error?.response?.data?.status?.error_message) {
+        let message = error.response.data.status.error_message;
+        let position = message.includes('No data found for "id"');
+        let position1 = message.includes("No items found");
+
+        if (position || position1) {
+          await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.destroy({
+            where: {
+              cmc_id: {
+                [Op.in]: ids,
+              },
+            },
+          });
+
+          await Coins.CoinsWrite.update(
+            { cmc_id: 0 },
+            {
+              where: {
+                cmc_id: {
+                  [Op.in]: ids,
+                },
+              },
+            }
+          );
+        }
+      }
       return;
     }
   };
