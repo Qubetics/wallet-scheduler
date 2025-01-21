@@ -494,13 +494,15 @@ class PricesController {
       let subtractTime = new Date(now);
       // Calculate different time ranges
       if (type == "1d") {
-        subtractTime.setHours(subtractTime.getHours() - 8);
+        subtractTime.setHours(subtractTime.getHours() - 4);
       } else if (type == "1w") {
+        subtractTime.setHours(subtractTime.getHours() - 6);
+      } else if (type == "1m") {
         subtractTime.setDate(subtractTime.getDate() - 1);
       } else {
         subtractTime.setDate(subtractTime.getDate() - 3);
       }
-      console.log("subtractTime :>> ", subtractTime, "timeperiod :", type);
+      console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
       let dbCoinrecords: any;
 
       // console.log("endDate>>>>>>>>>>>", endDate);
@@ -517,12 +519,10 @@ class PricesController {
           logging: true,
         });
 
-      // console.log(
-      //   "dbCoinPriceInGraphrecords.count :>> ",
-      //   dbCoinPriceInGraphrecords.count
-      // );
+      console.log("dbCoinrecords.count :>> ", dbCoinrecords.count);
 
-      if (dbCoinrecords.count) {
+      if (dbCoinrecords.count == 0) {
+        console.log("inside :>> ");
         dbCoinrecords = await Coins.CoinsRead.findAndCountAll({
           attributes: ["cmc_id"],
           where: {
@@ -558,6 +558,8 @@ class PricesController {
           offset: coin_limit_count,
           logging: true,
         });
+
+        console.log("dbCoinrecords.count outside:>> ", dbCoinrecords.count);
       }
 
       /********************************BACKUP CODE ********************************/
