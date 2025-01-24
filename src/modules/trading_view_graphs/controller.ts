@@ -66,6 +66,7 @@ class tradingViewController {
                 'token_address',
                 'graph_source',
                 'graph_pair',
+                'is_on_trading_view'
             ],
             where: {
                 is_on_trading_view: { [Op.in]: [1, 2] },
@@ -193,7 +194,147 @@ class tradingViewController {
         //         );
         //     }
         // }
+
+        // Loop through each coin and update the graph source
+        let coinFamily = config.STATIC_COIN_FAMILY;
+        for (let coin of coinData) {
+            try {
+                let response: any;
+                if (
+                    coin.is_on_trading_view == 1 && (
+                        coin.coin_family == coinFamily.ETH ||
+                        coin.coin_family == coinFamily.BNB ||
+                        coin.coin_family == coinFamily.SOL ||
+                        coin.coin_family == coinFamily.POL)
+                ) {
+                    response = await this.processMoralisTradingView(coin)
+                } else {
+                    response = await this.processsTradingView(coin)
+                }
+                console.log('getTradingViewTokens', response);
+                if (response) {
+                    continue;
+                }
+            } catch (error) {
+                console.error('Error updating coin data for symbol:', coin?.coin_symbol, error);
+                await Coins.CoinsWrite.update(
+                    {
+                        is_on_trading_view: 0,
+                    },
+                    { where: { coin_id: coin.coin_id } }
+                );
+            }
+
+        }
     }
+
+
+    private async processMoralisTradingView(data: any) {
+        if (data) {
+            const chain = data?.coin_family ? this.getChainName(data?.coin_family) : null;
+            const apiUrl = data?.coin_family ? this.buildApiUrl(data?.coin_family, data?.token_address, chain) : null;
+            console.log('moralis graph apiUrl', apiUrl);
+            if (!apiUrl) {
+                console.warn(`Unsupported coin family: ${data?.coin_family}`);
+                return { status: true, message: `Unsupported coin family: ${data?.coin_family}` };
+            }
+            try {
+                // Fetch data from Moralis API
+                const response = await axios.get(apiUrl, {
+                    headers: { 'x-api-key': config.MORALIS_KEY },
+                });
+
+                const pairs = response?.data?.pairs;
+                let message: string = '';
+                if (pairs?.length > 0) {
+                    // const firstPair = pairs[0];
+                    const activePair = await pairs.find((pair: any) => pair?.inactive_pair === false || pair?.inactivePair === false);
+                    if (activePair) {
+                        let pairAddress: string | null = null;
+                        let rawExchangeName: string | null = null;
+                        if (data?.coin_family == 5) { //solana
+                            pairAddress = activePair?.pairAddress || null;
+                            rawExchangeName = activePair?.exchangeName || null;
+                        } else {
+                            pairAddress = activePair?.pair_address || null;
+                            rawExchangeName = activePair?.exchange_name || null;
+                        }
+                        const graphSource = rawExchangeName
+                            ? this.formatExchangeName(rawExchangeName)
+                            : null;
+
+                        if (pairAddress) {
+                            // Update the database with graph source and pair
+                            await Coins.CoinsWrite.update(
+                                {
+                                    graph_source: graphSource,
+                                    graph_pair: activePair.pair_label,
+                                    pair_address: pairAddress,
+                                    is_on_trading_view: 3
+                                },
+                                { where: { coin_id: data.coin_id } }
+                            );
+                            message = `Pair address found for coin ID: ${data?.coin_id}, Symbol: ${data?.coin_symbol} Token address: ${data?.token_address}`
+
+                        } else {
+                            message = `Pair address not found for coin ID: ${data?.coin_id}, Symbol: ${data?.coin_symbol} Token address: ${data?.token_address}`
+                            this.processsTradingView(data)
+                        }
+                    } else {
+                        message = `No active pair found for coin ID: ${data?.coin_id}, Symbol: ${data?.coin_symbol} Token address: ${data?.token_address}`;
+                        this.processsTradingView(data)
+                    }
+                } else {
+                    message = `No pairs found for coin ID: ${data?.coin_id}, Symbol: ${data?.coin_symbol} Token address: ${data?.token_address}`;
+                    this.processsTradingView(data)
+                }
+                console.warn(message);
+                return { status: true, message: message };
+            } catch (err: any) {
+                console.error(
+                    `Error processing coin ID: ${data.coin_id}, Symbol: ${data.coin_symbol} Token address: ${data.token_address}`,
+                    err?.message || err
+                );
+                await Coins.CoinsWrite.update(
+                    {
+                        is_on_trading_view: 1
+                    },
+                    { where: { coin_id: data.coin_id } }
+                );
+                return { status: false, message: `Error processing coin ID: ${data.coin_id}, Symbol: ${data.coin_symbol} Token address: ${data.token_address}` };
+            }
+        }
+    }
+
+    private getChainName = (coinFamily: number): string | null => {
+        const chains: any = {
+            1: 'bsc',
+            2: 'eth',
+            4: 'polygon'
+        };
+        return chains[coinFamily] || null;
+    };
+
+
+    private buildApiUrl = (coinFamily: number, tokenAddress: string, chain: string | null): string | null => {
+        if (coinFamily === 5) {
+            return `https://solana-gateway.moralis.io/token/mainnet/${tokenAddress}/pairs`;
+        }
+        if (chain) {
+            return `https://deep-index.moralis.io/api/v2.2/erc20/${tokenAddress}/pairs?chain=${chain}`;
+        }
+        return null;
+    };
+
+    // Utility function to format exchange names
+    private formatExchangeName = (exchangeName: string): string => {
+        return exchangeName
+            .split(' ') // Split the string by spaces
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word
+            .join('') // Join without spaces
+            .replace(/v(\d+)/gi, 'V$1'); // Handle 'v3' to 'V3'
+    };
+
 
 
     // Function to validate the response based on exchange name
@@ -287,7 +428,7 @@ class tradingViewController {
                         graph_pair: graph_pair,
                         is_on_trading_view: 4
                     },
-                    { where: { coin_id: data.id } }
+                    { where: { coin_id: data.coin_id } }
                 );
                 message = `'Graph source found:', ${graph_source}`;
             } else {
@@ -298,7 +439,7 @@ class tradingViewController {
                         graph_pair: null,
                         is_on_trading_view: 0,
                     },
-                    { where: { coin_id: data.id } }
+                    { where: { coin_id: data.coin_id } }
                 );
             }
             console.log(message);
@@ -309,7 +450,7 @@ class tradingViewController {
                 {
                     is_on_trading_view: 2,
                 },
-                { where: { coin_id: data.id } }
+                { where: { coin_id: data.coin_id } }
             );
             return { status: false, message: `Error updating coin data for symbol:, ${symbol}, ${error}` };
         }
