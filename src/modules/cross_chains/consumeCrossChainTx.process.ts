@@ -194,8 +194,8 @@ class CosnumeCrossChainTxProcess {
               coin_family == 1
                 ? TOKENS.BEP721
                 : coin_family == 2 || coin_family == 4
-                ? TOKENS.ERC721
-                : TOKENS.ERC721;
+                  ? TOKENS.ERC721
+                  : TOKENS.ERC721;
 
             let tokens: any = await Coins.CoinsRead.findAll({
               attributes: [
@@ -237,12 +237,12 @@ class CosnumeCrossChainTxProcess {
               coin_family == 1
                 ? config.TOKENS.BSC_TOKEN_TYPE
                 : coin_family == 2
-                ? config.TOKENS.ETH_TOKEN_TYPE
-                : coin_family == 4
-                ? config.TOKENS.POL_TOKEN_TYPE
-                : coin_family == 5
-                ? config.TOKENS.SOL_TOKEN_TYPE
-                : config.TOKENS.TRX_TOKEN_TYPE;
+                  ? config.TOKENS.ETH_TOKEN_TYPE
+                  : coin_family == 4
+                    ? config.TOKENS.POL_TOKEN_TYPE
+                    : coin_family == 5
+                      ? config.TOKENS.SOL_TOKEN_TYPE
+                      : config.TOKENS.TRX_TOKEN_TYPE;
 
             redisClient.client_write.set(
               set_coins || "",
@@ -893,6 +893,7 @@ class CosnumeCrossChainTxProcess {
       const pairs = response?.data?.pairs;
       if (!pairs?.length) {
         console.warn(`No pairs found for Token address: ${data.token_address}`);
+        await this.updateCoinStatus(data, 2);
         return;
       }
 
@@ -905,6 +906,7 @@ class CosnumeCrossChainTxProcess {
         console.warn(
           `No active pairs found for token address: ${data.token_address}`
         );
+        await this.updateCoinStatus(data, 2);
         return;
       }
 
@@ -930,12 +932,32 @@ class CosnumeCrossChainTxProcess {
             },
           }
         );
+      } else {
+        console.warn(
+          ` pairAddress not found, Token address: ${data.token_address}`
+        );
+        await this.updateCoinStatus(data, 2);
       }
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : "Unknown error";
       console.error(`Error in moralisTradingview: ${errMsg}`, error);
+      await this.updateCoinStatus(data, 1);
       return;
     }
+  }
+
+  private async updateCoinStatus(data: MoralisData, status: number): Promise<void> {
+    await Coins.CoinsWrite.update(
+      {
+        is_on_trading_view: status,
+      },
+      {
+        where: {
+          token_address: data.token_address,
+          coin_family: data.coin_family,
+        },
+      }
+    );
   }
 
   // Utility function to format exchange names
