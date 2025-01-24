@@ -73,6 +73,7 @@ class PricesController {
           // logging: true,
         });
       let coin_data_count: number = 0;
+      // console.log('currency_data >>>', currency_data);
       if (currency_data.count > 0) {
         const codes = currency_data.rows.map((el: any) => el.currency_code);
         const cmcIds: number[] = [];
@@ -93,7 +94,7 @@ class PricesController {
           }
         }
         // console.log(
-        //   `${coin_family} >>>>cmcIds====================================================+++++`,
+        //   // `${coin_family} >>>>cmcIds====================================================+++++`,
         //   cmcIds,
         //   currency_data.rows
         // );
@@ -202,7 +203,7 @@ class PricesController {
                   }
                   let coin_id: number = 0;
                   if (checkIfCoinExist) {
-                    // coin_id = checkIfCoinExist.coin_id;
+                    coin_id = checkIfCoinExist.coin_id;
                     // console.log(
                     //   "obj?.quote[code]?.price",
                     //   obj?.quote[code]?.price
@@ -210,8 +211,6 @@ class PricesController {
 
                     await CoinPriceInFiat.CoinPriceInFiatWrite.update(
                       {
-                        // cmc_id: obj.id,      // no need to update
-                        // coin_id: coin_id,    // no need to update
                         value: obj?.quote[code]?.price || 0,
                         price_change_24h: obj.quote[code].percent_change_24h,
                         price_change_percentage_24h:
@@ -226,7 +225,7 @@ class PricesController {
                       }
                     );
                   } else {
-                    let coin = await Coins.CoinsRead.findOne({
+                    let coin: any = await Coins.CoinsRead.findOne({
                       attributes: [
                         "coin_id",
                         "coin_family",
@@ -272,23 +271,16 @@ class PricesController {
                   //     await price_alerts_controller.sendPriceAlerts(coin_id, code, latest_price.price);
                   // }
                   /** update latest record in history candle */
-                  if (coin_id > 0) {
-                    const graphSourceExist = await Coins.CoinsRead.findOne({
-                      attributes: ["coin_id"],
-                      where: {
-                        cmc_id: obj.id,
-                        graph_source: { [Op.is]: null },
-                      },
-                      raw: true,
-                    });
-                    if (!graphSourceExist) {
-                      await this.update_history_last_price(
-                        latest_price,
-                        obj.id,
-                        code,
-                        where
-                      );
-                    }
+                  // console.log('code >>>', code, 'coin_id >>>', coin_id);
+                  if (coin_id > 0 && code?.toLowerCase() == 'usd') {
+                    // console.log('code >>>', code, 'coin_id >>>', coin_id);
+                    await this.update_history_last_price(
+                      latest_price,
+                      obj.id,
+                      code,
+                      where
+                    );
+
                   }
                 } else {
                   // console.log('latest_price >>>.', latest_price);
@@ -363,7 +355,7 @@ class PricesController {
     //   "where >>>>>",
     //   where
     // );
-    if (where.fiat_type != "USD") return;
+    // if (where.fiat_type != "USD") return;
     // console.log(
     //   "--------------------- update history last price--------------",
     //   id,
@@ -440,7 +432,7 @@ class PricesController {
         }
       }
     } else {
-      let types = ["1d"];
+      let types = ["1d", "1w", "1m", "1y"];
       for (let i = 0; i < types.length; i++) {
         let create_data: any = {
           // coin_id: coin_id,
@@ -639,7 +631,7 @@ class PricesController {
           startDate,
           endDate
         );
-        var data = await rp(requestOptionsForListing);
+        let data = await rp(requestOptionsForListing);
         if (data) {
           let created_at;
           let currentUTCDate: string = new Date()
@@ -744,13 +736,13 @@ class PricesController {
               // console.log("recordExist >>>>", recordExist);
 
               if (recordExist) {
-                sparkline = await this.compare_update_prices(
-                  sparkline,
-                  recordExist,
-                  id,
-                  code,
-                  type
-                );
+                // sparkline = await this.compare_update_prices(
+                //   sparkline,
+                //   recordExist,
+                //   id,
+                //   code,
+                //   type
+                // );
 
                 let getGraphData: any = await globalHelper.setGraphData(
                   sparkline
@@ -1065,8 +1057,8 @@ class PricesController {
           let query_data: string = iterator?.mainnet_token_address
             ? `?address=${iterator.mainnet_token_address}`
             : iterator?.token_address
-            ? `?address=${iterator.token_address}`
-            : `?symbol=${iterator.coin_symbol}`;
+              ? `?address=${iterator.token_address}`
+              : `?symbol=${iterator.coin_symbol}`;
           try {
             let result: any = await cmcHelper.cmcApi(`info${query_data}`);
             if (result && result.data) {
@@ -1207,7 +1199,7 @@ class PricesController {
                 if (last_time_stamp !== "") {
                   let diff: any = Math.abs(
                     new Date(last_time_stamp).getTime() -
-                      new Date(sparkline?.timestamp).getTime()
+                    new Date(sparkline?.timestamp).getTime()
                   );
                   minutes = Math.floor(diff / 1000 / 60);
                   if (minutes >= 5) {
@@ -1219,7 +1211,7 @@ class PricesController {
 
                 if (
                   new Date(sparkline?.timestamp).getTime() >=
-                    new Date(compare_date).getTime() &&
+                  new Date(compare_date).getTime() &&
                   minutes >= 5
                 ) {
                   latest_sparkline.push(sparkline);
