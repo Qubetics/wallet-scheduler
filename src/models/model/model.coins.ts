@@ -107,7 +107,11 @@ let dataObj = {
   is_on_trading_view: {
     type: DataTypes.TINYINT,
     allowNull: true,
-  },
+  },    
+  is_on_moralis_inactive: {
+    type: DataTypes.TINYINT,
+    allowNull: true,
+},
 };
 let dataObjIndex = {
   indexes: [

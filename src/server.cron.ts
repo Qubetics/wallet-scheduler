@@ -24,6 +24,10 @@ const {
   pls: PLS,
 } = config.STATIC_COIN_FAMILY;
 
+const {
+  moralis_graph_counter: MORALIS_GRAPH_COUNTER,
+} = config.REDISKEYS.COIN_LIMIT_COUNT_FIELD;
+
 class CronJobs {
   constructor() {
     /** Update Gas Prices */
@@ -56,6 +60,7 @@ class CronJobs {
     // this.moralisTradingviewBSC();
     // this.moralisTradingviewMATIC();
     // this.moralisTradingviewSOL();
+    this.moralisTradingviewWidget()
 
     this.moralisTradingview(); // call custom token kafka consumer
 
@@ -255,6 +260,11 @@ class CronJobs {
   //   });
   // };
 
+  public moralisTradingviewWidget = async () => {
+    schedule.scheduleJob('*/5 * * * *', async function () {
+        await TradingViewGraphs.moralisTradingviewChartWidget(MORALIS_GRAPH_COUNTER);
+    });
+}
   public async moralisTradingview() {
     setTimeout(async () => {
       await CosnumeCrossChainTxProcess.moralisTradingviewChartWidgets();

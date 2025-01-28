@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import { config } from '../../config';
 import { Coins } from '../../models/model';
 import axios from 'axios';
+import redisClient from '../../helpers/common/redis';
 
 class tradingViewController {
     constructor() {
@@ -70,7 +71,8 @@ class tradingViewController {
             ],
             where: {
                 is_on_trading_view: { [Op.in]: [1, 2] },
-                token_type: { [Op.or]: [{ [Op.in]: ['ERC20', 'BEP20', 'SPL', 'TRC20'] }, { [Op.is]: null }] },
+                // token_type: { [Op.or]: [{ [Op.in]: ['ERC20', 'BEP20', 'SPL', 'TRC20'] }, { [Op.is]: null }] },
+                token_type: {[Op.in]: ['ERC20', 'BEP20', 'SPL', 'TRC20']}
             },
             limit: 5,
             order: [['coin_id', 'ASC']],
@@ -79,122 +81,7 @@ class tradingViewController {
 
 
         if (!coinData || coinData.length === 0) return; // Exit if no data
-
-        // const exchanges = [
-        //     { name: 'BINANCE', url: (symbol: string) => `https://api.binance.com/api/v3/exchangeInfo?symbol=${symbol}USDT` },
-        //     { name: 'OKX', url: (symbol: string) => `https://www.okx.com/api/v5/market/ticker?instId=${symbol}-USDT` },
-        //     { name: 'BYBIT', url: (symbol: string) => `https://api.bybit.com/v5/market/instruments-info?category=spot&symbol=${symbol}USDT` },
-        //     { name: 'BITGET', url: (symbol: string) => `https://api.bitget.com/api/v2/spot/public/symbols?symbol=${symbol}USDT` },
-        //     { name: 'BITMART', url: (symbol: string) => `https://api-cloud.bitmart.com/spot/quotation/v3/ticker?symbol=${symbol}_USDT` },
-        //     { name: 'COINBASE', url: (symbol: string) => `https://api.coinbase.com/api/v3/brokerage/market/products/?product_ids=${symbol}-USDT` },
-        //     { name: 'MEXC', url: (symbol: string) => `https://api.mexc.com/api/v3/exchangeInfo?symbol=${symbol}USDT` },
-        //     { name: 'GATEIO', url: (symbol: string) => `https://api.gateio.ws/api/v4/spot/currency_pairs/${symbol}_USDT` }
-
-        // ];
-        // const usdtExchanges = [
-        //     { name: 'BINANCE', url: (symbol: string) => `https://api.binance.com/api/v3/exchangeInfo?symbol=${symbol}USD` },
-        //     { name: 'OKX', url: (symbol: string) => `https://www.okx.com/api/v5/market/ticker?instId=${symbol}-USD` },
-        //     { name: 'BYBIT', url: (symbol: string) => `https://api.bybit.com/v5/market/instruments-info?category=spot&symbol=${symbol}USD` },
-        //     { name: 'BITGET', url: (symbol: string) => `https://api.bitget.com/api/v2/spot/public/symbols?symbol=${symbol}USD` },
-        //     { name: 'BITMART', url: (symbol: string) => `https://api-cloud.bitmart.com/spot/quotation/v3/ticker?symbol=${symbol}_USD` },
-        //     { name: 'COINBASE', url: (symbol: string) => `https://api.coinbase.com/api/v3/brokerage/market/products/?product_ids=${symbol}-USD` },
-        //     { name: 'MEXC', url: (symbol: string) => `https://api.mexc.com/api/v3/exchangeInfo?symbol=${symbol}USD` },
-        //     { name: 'GATEIO', url: (symbol: string) => `https://api.gateio.ws/api/v4/spot/currency_pairs/${symbol}_USD` }
-
-        // ];
-
-        // // Helper function to find the exchange source
-        // const getExchangeSource = async (symbol: string) => {
-        //     const exchangesSource = symbol.toLowerCase() == 'usdt' ? usdtExchanges : exchanges;
-        //     // console.log('exchangesSource >>>', exchangesSource);
-        //     for (let exchange of exchangesSource) {
-        //         try {
-        //             // console.log('exchange.url(symbol) ', exchange.url(symbol));
-        //             const response = await axios.get(exchange.url(symbol));
-        //             // Simplified exchange response validation
-        //             if (isValidExchangeResponse(exchange, response)) {
-        //                 return exchange.name;
-        //             }
-        //             // if ((exchange.name === 'BINANCE' && response.data?.code === undefined) ||
-        //             //     (exchange.name === 'OKX' && response.data?.code === 0) ||
-        //             //     (exchange.name === 'BYBIT' && response.data?.result?.list?.length > 0) ||
-        //             //     (exchange.name === 'BITGET' && response.data.code === '00000' && response.data.data?.length > 0) ||
-        //             //     (exchange.name === 'BITMART' && response?.data?.code === 1000 && response?.data?.data !== undefined) ||
-        //             //     (exchange.name === 'COINBASE' && response?.data?.products?.length > 0) ||
-        //             //     (exchange.name === 'MEXC' && response?.data?.symbols?.length > 0) ||
-        //             //     (exchange.name === 'GATEIO' && response?.data?.label === undefined)
-        //             // ) {
-        //             //     return exchange.name;
-        //             // }
-        //         } catch (error: any) {
-        //             console.error(`Error fetching from ${exchange.name}:`, error.message);
-        //         }
-        //     }
-        //     return null; // If no exchange source is found
-        // };
-
-        // // Function to validate the response based on exchange name
-        // const isValidExchangeResponse = (exchange: { name: string }, response: any) => {
-        //     switch (exchange.name) {
-        //         case 'BINANCE':
-        //             return response.data?.code === undefined;
-        //         case 'OKX':
-        //             return response.data?.code === "0";
-        //         case 'BYBIT':
-        //             return response.data?.result?.list?.length > 0;
-        //         case 'BITGET':
-        //             return response.data.code === '00000' && response.data.data?.length > 0;
-        //         case 'BITMART':
-        //             return response?.data?.code === 1000 && response?.data?.data !== undefined;
-        //         case 'COINBASE':
-        //             return response?.data?.products?.length > 0;
-        //         case 'MEXC':
-        //             return response?.data?.symbols?.length > 0;
-        //         case 'GATEIO':
-        //             return response?.data?.label === undefined;
-        //         default:
-        //             return false;
-        //     }
-        // };
-
-        // Loop through each coin and update the graph source
-        // for (let coin of coinData) {
-        //     let graph_source = null;
-        //     const symbol = `${coin.coin_symbol?.toUpperCase()}`;
-        //     try {
-        //         console.log('Checking symbol:', symbol);
-        //         graph_source = await getExchangeSource(symbol);
-
-        //         if (graph_source) {
-        //             const graph_pair = symbol?.toLowerCase() == 'usdt' ? `${symbol}USD` : `${symbol}USDT`;
-        //             console.log('Graph source found:', graph_source);
-        //             await Coins.CoinsWrite.update(
-        //                 {
-        //                     graph_source: graph_source,
-        //                     graph_pair: graph_pair,
-        //                 },
-        //                 { where: { coin_id: coin.coin_id } }
-        //             );
-        //         } else {
-        //             console.log('No valid graph source for symbol:', symbol);
-        //             await Coins.CoinsWrite.update(
-        //                 {
-        //                     is_on_trading_view: 0,
-        //                 },
-        //                 { where: { coin_id: coin.coin_id } }
-        //             );
-        //         }
-        //     } catch (error) {
-        //         console.error('Error updating coin data for symbol:', symbol, error);
-        //         await Coins.CoinsWrite.update(
-        //             {
-        //                 is_on_trading_view: 0,
-        //             },
-        //             { where: { coin_id: coin.coin_id } }
-        //         );
-        //     }
-        // }
-
+ 
         // Loop through each coin and update the graph source
         let coinFamily = config.STATIC_COIN_FAMILY;
         for (let coin of coinData) {
@@ -284,8 +171,40 @@ class tradingViewController {
                             this.processsTradingView(data)
                         }
                     } else {
-                        message = `No active pair found for coin ID: ${data?.coin_id}, Symbol: ${data?.coin_symbol} Token address: ${data?.token_address}`;
-                        this.processsTradingView(data)
+                        const firstPair = pairs[0];
+                        // console.log('firstPair >>>>', firstPair);
+                        let pairAddress: string | null = null;
+                        let graph_pair: string | null = null;
+                        let rawExchangeName: string | null = null;
+                        if (data?.coin_family == 4) {
+                            pairAddress = firstPair?.pairAddress || null;
+                            rawExchangeName = firstPair?.exchangeName || null;
+                            graph_pair = firstPair?.pairLabel || null;
+                        } else {
+                            pairAddress = firstPair?.pair_address || null;
+                            rawExchangeName = firstPair?.exchange_name || null;
+                            graph_pair = firstPair?.pair_label || null;
+                        }
+                        const graphSource = rawExchangeName
+                            ? this.formatExchangeName(rawExchangeName)
+                            : null;
+                        if (pairAddress) {
+                            // Update the database with graph source and pair
+                            await Coins.CoinsWrite.update(
+                                {
+                                    graph_source: graphSource,
+                                    graph_pair: graph_pair,
+                                    pair_address: pairAddress,
+                                    is_on_trading_view: 3,
+                                    is_on_moralis_inactive: 1
+                                },
+                                { where: { coin_id: data.coin_id } }
+                            );
+                            message = `Pair address found for coin ID: ${data?.coin_id}, Symbol: ${data?.coin_symbol} Token address: ${data?.token_address}`
+                        } else {
+                            message = `Pair address not found for coin ID: ${data?.coin_id}, Symbol: ${data?.coin_symbol} Token address: ${data?.token_address}`
+                            this.processsTradingView(data)
+                        }
                     }
                 } else {
                     message = `No pairs found for coin ID: ${data?.coin_id}, Symbol: ${data?.coin_symbol} Token address: ${data?.token_address}`;
@@ -456,6 +375,73 @@ class tradingViewController {
                 { where: { coin_id: data.coin_id } }
             );
             return { status: false, message: `Error updating coin data for symbol:, ${symbol}, ${error}` };
+        }
+    }
+
+    public async moralisTradingviewChartWidget(MORALIS_GRAPH_COUNTER: string) {
+        console.log('MORALIS_GRAPH_COUNTER >>', MORALIS_GRAPH_COUNTER,);
+        try {
+            let coin_limit_count = 0;
+            let limit = 5;
+            let redis_key = `${MORALIS_GRAPH_COUNTER}`
+
+            let findCoinCounter = await redisClient.getKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, redis_key);
+            if (findCoinCounter && Number(findCoinCounter) > 0) {
+                coin_limit_count = Number(findCoinCounter);
+            } else {
+                coin_limit_count = 0;
+            }true
+            const tradingviewTokens = await Coins.CoinsRead.findAll({
+                attributes: [
+                    'coin_id',
+                    'coin_symbol',
+                    'coin_family',
+                    'is_token',
+                    'token_address',
+                    'graph_source',
+                    'graph_pair',
+                    'pair_address'
+                ],
+                where: {
+                    is_token: 1,
+                    // coin_family: coinFamily,
+                    coin_family: { [Op.in]: [1, 3, 4, 6, 7, 8] },
+                    // token_type: tokenType,
+                    token_type: { [Op.in]: ['ERC20', 'BEP20', 'CRC20'] },
+                    // pair_address: { [Op.eq]: null },
+                },
+                order: [['coin_id', 'ASC']],
+                offset: coin_limit_count,
+                limit: limit,
+                logging: true
+            });
+            if (tradingviewTokens?.length > 0) {
+                for (let i = 0; i < tradingviewTokens.length; i++) {
+                    const token = tradingviewTokens[i];
+                    const { coin_id, token_address } = token;
+
+                    if (!token_address) {
+                        console.warn(`Skipping token with ID: ${coin_id}, as it has no token_address`);
+                        continue;
+                    }
+
+                    const tradingResponse = await this.processMoralisTradingView(token);
+                    console.log('tradingResponse >>>', tradingResponse);
+                    if (tradingResponse) {
+                        continue;
+                    }
+                }
+            }
+
+            if (tradingviewTokens?.length < limit) {
+                coin_limit_count = 0;
+                await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, redis_key, coin_limit_count.toString())
+            } else {
+                coin_limit_count = coin_limit_count + limit;
+                await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, redis_key, coin_limit_count.toString());
+            }
+        } catch (error) {
+            console.log("🔥 ~ moralisTradingviewChartWidget error", error);
         }
     }
 

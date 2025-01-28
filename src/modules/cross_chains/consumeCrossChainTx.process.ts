@@ -903,10 +903,48 @@ class CosnumeCrossChainTxProcess {
       );
 
       if (!activePair) {
-        console.warn(
-          `No active pairs found for token address: ${data.token_address}`
-        );
-        await this.updateCoinStatus(data, 2);
+        const firstPair = pairs[0];
+        let pairAddress: string | null = null;
+        let rawExchangeName: string | null = null;
+        let graph_pair: string | null = null;
+        if (data?.coin_family == 4) {
+            pairAddress = firstPair?.pairAddress || null;
+            rawExchangeName = firstPair?.exchangeName || null;
+            graph_pair = firstPair?.pairLabel || null;
+        } else {
+            pairAddress = firstPair?.pair_address || null;
+            rawExchangeName = firstPair?.exchange_name || null;
+            graph_pair = firstPair?.pair_label || null;
+        }
+        const graphSource = rawExchangeName
+            ? this.formatExchangeName(rawExchangeName)
+            : null;
+
+        if (pairAddress) {
+          await Coins.CoinsWrite.update(
+            {
+              graph_source: graphSource,
+              graph_pair:graph_pair,
+              pair_address: pairAddress,
+              is_on_trading_view: 3,
+              is_on_moralis_inactive: 1
+            },
+            {
+              where: {
+                token_address: data.token_address,
+                coin_family: data.coin_family,
+              },
+            }
+          );
+          console.warn(
+            `Pair address found for Token address: ${data?.token_address}`
+          );
+        } else {
+          console.warn(
+            ` pairAddress not found, Token address: ${data.token_address}`
+          );
+          await this.updateCoinStatus(data, 2);
+        }
         return;
       }
 
@@ -924,6 +962,7 @@ class CosnumeCrossChainTxProcess {
             graph_source: graphSource,
             graph_pair: activePair?.pair_label || activePair?.pairLabel || null,
             pair_address: pairAddress,
+            is_on_trading_view: 3,
           },
           {
             where: {
@@ -931,6 +970,9 @@ class CosnumeCrossChainTxProcess {
               coin_family: data.coin_family,
             },
           }
+        );
+        console.warn(
+          `Pair address 22 found for Token address: ${data?.token_address}`
         );
       } else {
         console.warn(
