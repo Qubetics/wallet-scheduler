@@ -219,41 +219,41 @@ class CronJobs {
   // }
 
   /* moralis Chart Widget TradingView */
-  public moralisTradingviewETH = async () => {
-    schedule.scheduleJob("*/5 * * * *", async function () {
-      await PricesController.moralisTradingviewChartWidget(
-        "eth",
-        COIN_FAMILY.ETH,
-        "ERC20"
-      );
-    });
-  };
+  // public moralisTradingviewETH = async () => {
+  //   schedule.scheduleJob("*/5 * * * *", async function () {
+  //     await PricesController.moralisTradingviewChartWidget(
+  //       "eth",
+  //       COIN_FAMILY.ETH,
+  //       "ERC20"
+  //     );
+  //   });
+  // };
 
-  public moralisTradingviewBSC = async () => {
-    schedule.scheduleJob("*/6 * * * *", async function () {
-      await PricesController.moralisTradingviewChartWidget(
-        "bsc",
-        COIN_FAMILY.BNB,
-        "BEP20"
-      );
-    });
-  };
+  // public moralisTradingviewBSC = async () => {
+  //   schedule.scheduleJob("*/6 * * * *", async function () {
+  //     await PricesController.moralisTradingviewChartWidget(
+  //       "bsc",
+  //       COIN_FAMILY.BNB,
+  //       "BEP20"
+  //     );
+  //   });
+  // };
 
-  public moralisTradingviewMATIC = async () => {
-    schedule.scheduleJob("*/7 * * * *", async function () {
-      await PricesController.moralisTradingviewChartWidget(
-        "polygon",
-        COIN_FAMILY.POL,
-        "ERC20"
-      );
-    });
-  };
+  // public moralisTradingviewMATIC = async () => {
+  //   schedule.scheduleJob("*/7 * * * *", async function () {
+  //     await PricesController.moralisTradingviewChartWidget(
+  //       "polygon",
+  //       COIN_FAMILY.POL,
+  //       "ERC20"
+  //     );
+  //   });
+  // };
 
-  public moralisTradingviewSOL = async () => {
-    schedule.scheduleJob("*/8 * * * *", async function () {
-      await PricesController.moralisTradingviewChartWidgetSOL();
-    });
-  };
+  // public moralisTradingviewSOL = async () => {
+  //   schedule.scheduleJob("*/8 * * * *", async function () {
+  //     await PricesController.moralisTradingviewChartWidgetSOL();
+  //   });
+  // };
 
   public async moralisTradingview() {
     setTimeout(async () => {

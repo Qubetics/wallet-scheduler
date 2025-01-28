@@ -217,12 +217,12 @@ class tradingViewController {
                 }
             } catch (error) {
                 console.error('Error updating coin data for symbol:', coin?.coin_symbol, error);
-                await Coins.CoinsWrite.update(
-                    {
-                        is_on_trading_view: 0,
-                    },
-                    { where: { coin_id: coin.coin_id } }
-                );
+                // await Coins.CoinsWrite.update(
+                //     {
+                //         is_on_trading_view: 0,
+                //     },
+                //     { where: { coin_id: coin.coin_id } }
+                // );
             }
 
         }
@@ -251,13 +251,16 @@ class tradingViewController {
                     const activePair = await pairs.find((pair: any) => pair?.inactive_pair === false || pair?.inactivePair === false);
                     if (activePair) {
                         let pairAddress: string | null = null;
+                        let graph_pair: string | null = null;
                         let rawExchangeName: string | null = null;
                         if (data?.coin_family == 5) { //solana
                             pairAddress = activePair?.pairAddress || null;
                             rawExchangeName = activePair?.exchangeName || null;
+                            graph_pair = activePair?.pairLabel || null;
                         } else {
                             pairAddress = activePair?.pair_address || null;
                             rawExchangeName = activePair?.exchange_name || null;
+                            graph_pair = activePair?.pair_label || null;
                         }
                         const graphSource = rawExchangeName
                             ? this.formatExchangeName(rawExchangeName)
@@ -268,7 +271,7 @@ class tradingViewController {
                             await Coins.CoinsWrite.update(
                                 {
                                     graph_source: graphSource,
-                                    graph_pair: activePair.pair_label,
+                                    graph_pair: graph_pair,
                                     pair_address: pairAddress,
                                     is_on_trading_view: 3
                                 },
