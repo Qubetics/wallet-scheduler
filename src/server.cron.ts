@@ -194,7 +194,7 @@ class CronJobs {
   };
 
   public tradingViewGraphData = async () => {
-    schedule.scheduleJob("*/1 * * * *", async function () {
+    schedule.scheduleJob("*/3 * * * *", async function () {
       await TradingViewGraphs.getTradingViewTokens();
     });
   };
@@ -262,9 +262,9 @@ class CronJobs {
 
   public moralisTradingviewWidget = async () => {
     schedule.scheduleJob('*/5 * * * *', async function () {
-        await TradingViewGraphs.moralisTradingviewChartWidget(MORALIS_GRAPH_COUNTER);
+      await TradingViewGraphs.moralisTradingviewChartWidget(MORALIS_GRAPH_COUNTER);
     });
-}
+  }
   public async moralisTradingview() {
     setTimeout(async () => {
       await CosnumeCrossChainTxProcess.moralisTradingviewChartWidgets();

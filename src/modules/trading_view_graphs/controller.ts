@@ -72,7 +72,7 @@ class tradingViewController {
             where: {
                 is_on_trading_view: { [Op.in]: [1, 2] },
                 // token_type: { [Op.or]: [{ [Op.in]: ['ERC20', 'BEP20', 'SPL', 'TRC20'] }, { [Op.is]: null }] },
-                token_type: {[Op.in]: ['ERC20', 'BEP20', 'SPL', 'TRC20']}
+                token_type: { [Op.in]: ['ERC20', 'BEP20', 'SPL', 'TRC20'] }
             },
             limit: 5,
             order: [['coin_id', 'ASC']],
@@ -81,7 +81,7 @@ class tradingViewController {
 
 
         if (!coinData || coinData.length === 0) return; // Exit if no data
- 
+
         // Loop through each coin and update the graph source
         let coinFamily = config.STATIC_COIN_FAMILY;
         for (let coin of coinData) {
@@ -213,13 +213,16 @@ class tradingViewController {
                 console.warn(message);
                 return { status: true, message: message };
             } catch (err: any) {
+                console.log('moralis graph errrrr >>>', err.response?.status)
+                let is_on_trading_view = (err?.response?.status === 400 || err?.response?.status === 500) ? 2 : 1;
+                console.log('is_on_trading_view >>>', is_on_trading_view);
                 console.error(
                     `Error processing coin ID: ${data.coin_id}, Symbol: ${data.coin_symbol} Token address: ${data.token_address}`,
                     err?.message || err
                 );
                 await Coins.CoinsWrite.update(
                     {
-                        is_on_trading_view: 1
+                        is_on_trading_view: is_on_trading_view
                     },
                     { where: { coin_id: data.coin_id } }
                 );
@@ -382,7 +385,7 @@ class tradingViewController {
         console.log('MORALIS_GRAPH_COUNTER >>', MORALIS_GRAPH_COUNTER,);
         try {
             let coin_limit_count = 0;
-            let limit = 5;
+            let limit = 10;
             let redis_key = `${MORALIS_GRAPH_COUNTER}`
 
             let findCoinCounter = await redisClient.getKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, redis_key);
@@ -390,7 +393,7 @@ class tradingViewController {
                 coin_limit_count = Number(findCoinCounter);
             } else {
                 coin_limit_count = 0;
-            }true
+            } true
             const tradingviewTokens = await Coins.CoinsRead.findAll({
                 attributes: [
                     'coin_id',
