@@ -526,7 +526,7 @@ class PricesController {
         dbCoinrecords = await Coins.CoinsRead.findAndCountAll({
           attributes: ["cmc_id"],
           where: {
-            cmc_id: { [Op.ne]: 0 },
+            cmc_id: { [Op.ne]: 0, [Op.lt]: 50000 },
             // graph_source: { [Op.is]: null },     // not in use
             // coin_family: coin_family
             [Op.and]: [sequelize.literal(`(graph_data.updated_at IS NULL)`)],
