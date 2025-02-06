@@ -4,10 +4,10 @@ import { CoinPriceInFiatModel } from "../interface/interface.coinPriceInFiat";
 import db from "../../helpers/common/db";
 
 interface CoinPriceInFiatCreationModel
-  extends Optional<CoinPriceInFiatModel, "id"> { }
+  extends Optional<CoinPriceInFiatModel, "id"> {}
 interface CoinPriceInFiatInstance
   extends Model<CoinPriceInFiatModel, CoinPriceInFiatCreationModel>,
-  CoinPriceInFiatModel { }
+    CoinPriceInFiatModel {}
 
 let dataObj = {
   id: {
@@ -127,8 +127,8 @@ let dataObj = {
 };
 
 let dataObjIndex = {
-  created_at: 'created_at',
-  updated_at: 'updated_at',
+  created_at: "created_at",
+  updated_at: "updated_at",
   indexes: [
     {
       unique: false,

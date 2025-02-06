@@ -49,6 +49,10 @@ let dataObj = {
     type: DataTypes.DOUBLE,
     allowNull: true,
   },
+  latest_price_source: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   created_at: {
     type: DataTypes.DATE,
     allowNull: true,

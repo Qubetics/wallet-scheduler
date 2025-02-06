@@ -272,7 +272,7 @@ class PricesController {
                   // }
                   /** update latest record in history candle */
                   // console.log('code >>>', code, 'coin_id >>>', coin_id);
-                  if (coin_id > 0 && code?.toLowerCase() == 'usd') {
+                  if (coin_id > 0 && code?.toLowerCase() == "usd") {
                     // console.log('code >>>', code, 'coin_id >>>', coin_id);
                     await this.update_history_last_price(
                       latest_price,
@@ -280,7 +280,6 @@ class PricesController {
                       code,
                       where
                     );
-
                   }
                 } else {
                   // console.log('latest_price >>>.', latest_price);
@@ -420,6 +419,7 @@ class PricesController {
             const updateData: any = {
               sparkline: history_data.graphData,
               cmc_id: id,
+              latest_price_source: "current",
             };
             // if (history?.coin_type == null) {
             //   updateData.coin_type = coin_type;
@@ -550,12 +550,12 @@ class PricesController {
           logging: true,
         });
 
-        console.log(
-          "dbCoinrecords.count inside:>> ",
-          dbCoinrecords.count,
-          "type :",
-          type
-        );
+        // console.log(
+        //   "dbCoinrecords.count inside:>> ",
+        //   dbCoinrecords.count,
+        //   "type :",
+        //   type
+        // );
         groupedCount = dbCoinrecords.count; // This is an array of grouped results
         totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
       }
@@ -588,7 +588,7 @@ class PricesController {
       // });
       /********************************BACKUP CODE ********************************/
 
-      console.log("totalRecords :>> ", totalRecords);
+      // console.log("totalRecords :>> ", totalRecords);
       if (!totalRecords) {
         let counter = 0;
         await redisClient.setKeyValuePair(
@@ -635,9 +635,11 @@ class PricesController {
         if (data) {
           let created_at;
           let currentUTCDate: string = new Date()
-            .toISOString()
+            // .toISOString()
+            .toUTCString()
             .replace(/T/, " ")
             .replace(/\..+/, "");
+          // let currentUTCDate: string = new Date();
           for await (let id of ids as any) {
             let fiat_type = code;
             let sparkline: any = [];
@@ -749,13 +751,14 @@ class PricesController {
                 ); // slicing sparkline data
 
                 if (getGraphData.status) {
-                  let currentUTCDate: string = new Date()
-                    .toISOString()
-                    .replace(/T/, " ")
-                    .replace(/\..+/, "");
-                  const updateData: any = {
+                  // let currentUTCDate: string = new Date()
+                  //   .toISOString()
+                  //   .replace(/T/, " ")
+                  //   .replace(/\..+/, "");
+                  const updateData = {
                     sparkline: getGraphData.graphData,
                     cmc_id: id,
+                    latest_price_source: type,
                     updated_at: currentUTCDate,
                   };
                   // if (recordExist?.coin_type == null) {
@@ -784,6 +787,7 @@ class PricesController {
                   // coin_type: coin_data.coin_symbol,
                   sparkline: sparkline,
                   cmc_id: id,
+                  latest_price_source: type,
                   fiat_type: fiat_type?.toUpperCase(),
                   type: type,
                   // created_at,
@@ -798,24 +802,24 @@ class PricesController {
               };
               // console.log("sparkline length zero :>> ", where);
 
-              console.log("sparkline length zero :>> ", whereCond);
+              // console.log("sparkline length zero :>> ", whereCond);
 
               // if (recordExist?.coin_type == null) {
               //   updateData.coin_type = recordExist?.coin_type;
               // }
 
-              let updateQuery =
-                await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
-                  {
-                    updated_at: currentUTCDate,
-                  },
-                  {
-                    where: whereCond,
-                    // logging: true, // Enable logging
-                  }
-                );
+              // let updateQuery =
+              await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+                {
+                  updated_at: currentUTCDate,
+                },
+                {
+                  where: whereCond,
+                  // logging: true, // Enable logging
+                }
+              );
 
-              console.log("updateQuery :>> ", updateQuery);
+              // console.log("updateQuery :>> ", updateQuery);
             }
 
             // let reset_data_exist: any =
@@ -1057,8 +1061,8 @@ class PricesController {
           let query_data: string = iterator?.mainnet_token_address
             ? `?address=${iterator.mainnet_token_address}`
             : iterator?.token_address
-              ? `?address=${iterator.token_address}`
-              : `?symbol=${iterator.coin_symbol}`;
+            ? `?address=${iterator.token_address}`
+            : `?symbol=${iterator.coin_symbol}`;
           try {
             let result: any = await cmcHelper.cmcApi(`info${query_data}`);
             if (result && result.data) {
@@ -1199,7 +1203,7 @@ class PricesController {
                 if (last_time_stamp !== "") {
                   let diff: any = Math.abs(
                     new Date(last_time_stamp).getTime() -
-                    new Date(sparkline?.timestamp).getTime()
+                      new Date(sparkline?.timestamp).getTime()
                   );
                   minutes = Math.floor(diff / 1000 / 60);
                   if (minutes >= 5) {
@@ -1211,7 +1215,7 @@ class PricesController {
 
                 if (
                   new Date(sparkline?.timestamp).getTime() >=
-                  new Date(compare_date).getTime() &&
+                    new Date(compare_date).getTime() &&
                   minutes >= 5
                 ) {
                   latest_sparkline.push(sparkline);
