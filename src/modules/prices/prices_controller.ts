@@ -790,7 +790,8 @@ class PricesController {
                   latest_price_source: type,
                   fiat_type: fiat_type?.toUpperCase(),
                   type: type,
-                  // created_at,
+                  created_at,
+                  updated_at: currentUTCDate,
                 });
                 // }
               }
