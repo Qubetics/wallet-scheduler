@@ -399,6 +399,7 @@ class PricesController {
               const updateData: any = {
                 sparkline: history_data.graphData,
                 cmc_id: id,
+                latest_price_source: "current",
               };
               // if (history?.coin_type == null) {
               //   updateData.coin_type = coin_type;
@@ -604,8 +605,10 @@ class PricesController {
       // Example: Iterate over groups
       if (totalRecords > 0) {
         await groupedRows.forEach((group: any) => {
-          // console.log(`cmc_id: ${group.cmc_id}}`);
-          ids.push(group.cmc_id);
+          if (group.cmc_id < 50000) {
+            // console.log(`cmc_id: ${group.cmc_id}}`);
+            ids.push(group.cmc_id);
+          }
         });
       }
 
@@ -635,11 +638,9 @@ class PricesController {
         if (data) {
           let created_at;
           let currentUTCDate: string = new Date()
-            // .toISOString()
-            .toUTCString()
+            .toISOString()
             .replace(/T/, " ")
             .replace(/\..+/, "");
-          // let currentUTCDate: string = new Date();
           for await (let id of ids as any) {
             let fiat_type = code;
             let sparkline: any = [];
