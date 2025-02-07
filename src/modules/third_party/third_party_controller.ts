@@ -14,11 +14,9 @@ class ThirdPartyController {
         if (responce.status == 200) {
           await GasPrice.GasPriceWrite.update(
             {
-              safe_gas_price: Math.floor(responce.data.result.SafeGasPrice),
-              propose_gas_price: Math.floor(
-                responce.data.result.ProposeGasPrice
-              ),
-              fast_gas_price: Math.floor(responce.data.result.FastGasPrice),
+              safe_gas_price: Number(responce.data.result.SafeGasPrice),
+              propose_gas_price: Number(responce.data.result.ProposeGasPrice),
+              fast_gas_price: Number(responce.data.result.FastGasPrice),
             },
             {
               where: { coin_family: ETH },
@@ -42,11 +40,9 @@ class ThirdPartyController {
         if (responce.status == 200) {
           await GasPrice.GasPriceWrite.update(
             {
-              safe_gas_price: Math.floor(responce.data.result.SafeGasPrice),
-              propose_gas_price: Math.floor(
-                responce.data.result.ProposeGasPrice
-              ),
-              fast_gas_price: Math.floor(responce.data.result.FastGasPrice),
+              safe_gas_price: Number(responce.data.result.SafeGasPrice),
+              propose_gas_price: Number(responce.data.result.ProposeGasPrice),
+              fast_gas_price: Number(responce.data.result.FastGasPrice),
             },
             {
               where: { coin_family: BNB },
@@ -71,15 +67,11 @@ class ThirdPartyController {
         if (responce.status == 200) {
           await GasPrice.GasPriceWrite.update(
             {
-              safe_gas_price: Math.floor(
-                responce.data.low.suggestedMaxFeePerGas
-              ),
-              propose_gas_price: Math.floor(
+              safe_gas_price: Number(responce.data.low.suggestedMaxFeePerGas),
+              propose_gas_price: Number(
                 responce.data.medium.suggestedMaxFeePerGas
               ),
-              fast_gas_price: Math.floor(
-                responce.data.high.suggestedMaxFeePerGas
-              ),
+              fast_gas_price: Number(responce.data.high.suggestedMaxFeePerGas),
             },
             {
               where: { coin_family: POL },
