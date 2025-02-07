@@ -12,11 +12,32 @@ class ThirdPartyController {
       await axios.get(url).then(async (responce) => {
         // console.log(' responce.data', responce);
         if (responce.status == 200) {
+          let SafeGasPrice = parseFloat(responce.data.result.SafeGasPrice);
+          let ProposeGasPrice = parseFloat(
+            responce.data.result.ProposeGasPrice
+          );
+          let FastGasPrice = parseFloat(responce.data.result.FastGasPrice);
+
+          // Round to 6 decimal places if necessary
+          if (SafeGasPrice.toString().split(".")[1]?.length > 6) {
+            SafeGasPrice = parseFloat(SafeGasPrice.toFixed(6));
+          }
+
+          // Round to 6 decimal places if necessary
+          if (ProposeGasPrice.toString().split(".")[1]?.length > 6) {
+            ProposeGasPrice = parseFloat(ProposeGasPrice.toFixed(6));
+          }
+
+          // Round to 6 decimal places if necessary
+          if (FastGasPrice.toString().split(".")[1]?.length > 6) {
+            FastGasPrice = parseFloat(FastGasPrice.toFixed(6));
+          }
+
           await GasPrice.GasPriceWrite.update(
             {
-              safe_gas_price: Number(responce.data.result.SafeGasPrice),
-              propose_gas_price: Number(responce.data.result.ProposeGasPrice),
-              fast_gas_price: Number(responce.data.result.FastGasPrice),
+              safe_gas_price: SafeGasPrice,
+              propose_gas_price: ProposeGasPrice,
+              fast_gas_price: FastGasPrice,
             },
             {
               where: { coin_family: ETH },
@@ -38,11 +59,31 @@ class ThirdPartyController {
       let url: string = `${config.BNB_GAS_FEE_URL}${config.BNB_GAS_FEE_API_KEY}`;
       await axios.get(url).then(async (responce) => {
         if (responce.status == 200) {
+          let SafeGasPrice = parseFloat(responce.data.result.SafeGasPrice);
+          let ProposeGasPrice = parseFloat(
+            responce.data.result.ProposeGasPrice
+          );
+          let FastGasPrice = parseFloat(responce.data.result.FastGasPrice);
+
+          // Round to 6 decimal places if necessary
+          if (SafeGasPrice.toString().split(".")[1]?.length > 6) {
+            SafeGasPrice = parseFloat(SafeGasPrice.toFixed(6));
+          }
+
+          // Round to 6 decimal places if necessary
+          if (ProposeGasPrice.toString().split(".")[1]?.length > 6) {
+            ProposeGasPrice = parseFloat(ProposeGasPrice.toFixed(6));
+          }
+
+          // Round to 6 decimal places if necessary
+          if (FastGasPrice.toString().split(".")[1]?.length > 6) {
+            FastGasPrice = parseFloat(FastGasPrice.toFixed(6));
+          }
           await GasPrice.GasPriceWrite.update(
             {
-              safe_gas_price: Number(responce.data.result.SafeGasPrice),
-              propose_gas_price: Number(responce.data.result.ProposeGasPrice),
-              fast_gas_price: Number(responce.data.result.FastGasPrice),
+              safe_gas_price: SafeGasPrice,
+              propose_gas_price: ProposeGasPrice,
+              fast_gas_price: FastGasPrice,
             },
             {
               where: { coin_family: BNB },
@@ -65,13 +106,43 @@ class ThirdPartyController {
       await axios.get(url).then(async (responce) => {
         // console.log('pol responce >>>', responce.data);
         if (responce.status == 200) {
+          let lowSuggestedMaxFeePerGas = parseFloat(
+            responce.data.low.suggestedMaxFeePerGas
+          );
+          let mediumSuggestedMaxFeePerGas = parseFloat(
+            responce.data.medium.suggestedMaxFeePerGas
+          );
+          let highSuggestedMaxFeePerGas = parseFloat(
+            responce.data.high.suggestedMaxFeePerGas
+          );
+
+          // Round to 6 decimal places if necessary
+          if (lowSuggestedMaxFeePerGas.toString().split(".")[1]?.length > 6) {
+            lowSuggestedMaxFeePerGas = parseFloat(
+              lowSuggestedMaxFeePerGas.toFixed(6)
+            );
+          }
+
+          // Round to 6 decimal places if necessary
+          if (
+            mediumSuggestedMaxFeePerGas.toString().split(".")[1]?.length > 6
+          ) {
+            mediumSuggestedMaxFeePerGas = parseFloat(
+              mediumSuggestedMaxFeePerGas.toFixed(6)
+            );
+          }
+
+          // Round to 6 decimal places if necessary
+          if (highSuggestedMaxFeePerGas.toString().split(".")[1]?.length > 6) {
+            highSuggestedMaxFeePerGas = parseFloat(
+              highSuggestedMaxFeePerGas.toFixed(6)
+            );
+          }
           await GasPrice.GasPriceWrite.update(
             {
-              safe_gas_price: Number(responce.data.low.suggestedMaxFeePerGas),
-              propose_gas_price: Number(
-                responce.data.medium.suggestedMaxFeePerGas
-              ),
-              fast_gas_price: Number(responce.data.high.suggestedMaxFeePerGas),
+              safe_gas_price: lowSuggestedMaxFeePerGas,
+              propose_gas_price: mediumSuggestedMaxFeePerGas,
+              fast_gas_price: highSuggestedMaxFeePerGas,
             },
             {
               where: { coin_family: POL },
