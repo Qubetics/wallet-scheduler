@@ -1,28 +1,28 @@
 import schedule from "node-schedule";
 import moment from "moment";
 import { config } from "./config";
-const COIN_FAMILY = config.STATIC_COIN_FAMILY;
+// const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 import {
   ThirdPartyController,
   PricesController,
   update_balance_controller,
   PendingCrossChainProcess,
   CosnumeCrossChainTxProcess,
-  OnOffRampController,
+  // OnOffRampController,
   TradingViewGraphs,
 } from "./modules/index";
 
-const {
-  eth: ETH,
-  btc: BTC,
-  bnb: BNB,
-  sol: SOL,
-  ada: ADA,
-  matic: MATIC,
-  avax: AVAX,
-  cro: CRO,
-  pls: PLS,
-} = config.STATIC_COIN_FAMILY;
+// const {
+//   eth: ETH,
+//   btc: BTC,
+//   bnb: BNB,
+//   sol: SOL,
+//   ada: ADA,
+//   matic: MATIC,
+//   avax: AVAX,
+//   cro: CRO,
+//   pls: PLS,
+// } = config.STATIC_COIN_FAMILY;
 
 const {
   moralis_graph_counter: MORALIS_GRAPH_COUNTER,

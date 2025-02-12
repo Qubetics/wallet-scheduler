@@ -87,10 +87,10 @@ let dataObj = {
         type: DataTypes.STRING,
         allowNull: true
     },
-    speedup: {
-        type: DataTypes.ENUM('slow', 'average', 'fast'),
-        allowNull: true
-    },
+    // speedup: {
+    //     type: DataTypes.ENUM('slow', 'average', 'fast'),
+    //     allowNull: true
+    // },
     nonce: {
         type: DataTypes.INTEGER,
         allowNull: true
@@ -127,18 +127,18 @@ let dataObj = {
         type: DataTypes.STRING(191),
         allowNull: true
     },
-    country_code: {
-        type: DataTypes.STRING(191),
-        allowNull: true
-    },
+    // country_code: {
+    //     type: DataTypes.STRING(191),
+    //     allowNull: true
+    // },
     order_status: {
         type: DataTypes.ENUM('pending', 'processing', 'completed'),
         allowNull: true
     },
-    referral_upgrade_level: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
+    // referral_upgrade_level: {
+    //     type: DataTypes.STRING,
+    //     allowNull: true
+    // },
     order_failed_reason: {
         type: DataTypes.STRING,
         allowNull: true
