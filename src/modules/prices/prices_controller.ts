@@ -441,9 +441,9 @@ class PricesController {
           cmc_id: id,
           type: types[i],
           fiat_type: code,
-          volume_24h: latest_price.volume_24h,
-          price_change_24h: latest_price.price_change_24h,
-          price_change_percentage_24h: latest_price.price_change_24h,
+          // volume_24h: latest_price.volume_24h,
+          // price_change_24h: latest_price.price_change_24h,
+          // price_change_percentage_24h: latest_price.price_change_24h,
           sparkline: [latest_price],
         };
         await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.create(
@@ -1040,7 +1040,7 @@ class PricesController {
       let data: any = await Coins.CoinsWrite.findAndCountAll({
         attributes: [
           "coin_id",
-          "mainnet_token_address",
+          // "mainnet_token_address",
           "token_address",
           "coin_symbol",
         ],
@@ -1060,9 +1060,7 @@ class PricesController {
       if (data?.count > 0) {
         console.log("data.rows >>.", data.rows);
         for await (const iterator of data.rows) {
-          let query_data: string = iterator?.mainnet_token_address
-            ? `?address=${iterator.mainnet_token_address}`
-            : iterator?.token_address
+          let query_data: string = iterator?.token_address
             ? `?address=${iterator.token_address}`
             : `?symbol=${iterator.coin_symbol}`;
           try {
@@ -1205,7 +1203,7 @@ class PricesController {
                 if (last_time_stamp !== "") {
                   let diff: any = Math.abs(
                     new Date(last_time_stamp).getTime() -
-                      new Date(sparkline?.timestamp).getTime()
+                    new Date(sparkline?.timestamp).getTime()
                   );
                   minutes = Math.floor(diff / 1000 / 60);
                   if (minutes >= 5) {
@@ -1217,7 +1215,7 @@ class PricesController {
 
                 if (
                   new Date(sparkline?.timestamp).getTime() >=
-                    new Date(compare_date).getTime() &&
+                  new Date(compare_date).getTime() &&
                   minutes >= 5
                 ) {
                   latest_sparkline.push(sparkline);

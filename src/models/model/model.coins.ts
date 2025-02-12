@@ -24,10 +24,10 @@ let dataObj = {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  coin_gicko_alias: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
+  // coin_gicko_alias: {
+  //   type: DataTypes.STRING,
+  //   allowNull: true,
+  // },
   coin_image: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -60,14 +60,14 @@ let dataObj = {
     type: DataTypes.DOUBLE,
     allowNull: true,
   },
-  usd_price: {
-    type: DataTypes.FLOAT,
-    allowNull: true,
-  },
-  withdraw_limit: {
-    type: DataTypes.FLOAT,
-    allowNull: true,
-  },
+  // usd_price: {
+  //   type: DataTypes.FLOAT,
+  //   allowNull: true,
+  // },
+  // withdraw_limit: {
+  //   type: DataTypes.FLOAT,
+  //   allowNull: true,
+  // },
   token_abi: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -76,14 +76,14 @@ let dataObj = {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  mainnet_token_address: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
-  uuid: {
-    type: DataTypes.STRING,
-    allowNull: true,
-  },
+  // mainnet_token_address: {
+  //   type: DataTypes.STRING,
+  //   allowNull: true,
+  // },
+  // uuid: {
+  //   type: DataTypes.STRING,
+  //   allowNull: true,
+  // },
   for_swap: {
     type: DataTypes.TINYINT,
     allowNull: true,
@@ -123,10 +123,10 @@ let dataObjIndex = {
       unique: false,
       fields: ["coin_symbol"],
     },
-    {
-      unique: false,
-      fields: ["coin_gicko_alias"],
-    },
+    // {
+    //   unique: false,
+    //   fields: ["coin_gicko_alias"],
+    // },
     {
       unique: false,
       fields: ["coin_family"],

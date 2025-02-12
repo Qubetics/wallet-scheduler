@@ -202,8 +202,8 @@ class CosnumeCrossChainTxProcess {
                 "coin_id",
                 "coin_name",
                 "coin_symbol",
-                "mainnet_token_address",
-                "coin_gicko_alias",
+                // "mainnet_token_address",
+                // "coin_gicko_alias",
                 "coin_image",
                 "coin_family",
                 "coin_status",
@@ -213,9 +213,9 @@ class CosnumeCrossChainTxProcess {
                 "cmc_id",
                 "is_on_cmc",
                 "usd_price",
-                "withdraw_limit",
+                // "withdraw_limit",
                 "token_abi",
-                "uuid",
+                // "uuid",
                 "token_address",
                 "for_swap",
                 "added_by",
@@ -558,8 +558,8 @@ class CosnumeCrossChainTxProcess {
                     coin_id: coins_data.coin_id,
                     coin_family: coin_family,
                     balance: userBalance || 0,
-                    balance_blocked: walletData.balance_blocked,
-                    user_withdraw_limit: walletData.user_withdraw_limit,
+                    // balance_blocked: walletData.balance_blocked,
+                    // user_withdraw_limit: walletData.user_withdraw_limit,
                     default_wallet: walletData.default_wallet,
                     is_verified: walletData.is_verified,
                     status: 1,
@@ -634,8 +634,8 @@ class CosnumeCrossChainTxProcess {
                   let notificationData: any = {
                     message: notiMsg,
                     amount: Number(amount),
-                    alert_price: null,
-                    fiat_type: null,
+                    // alert_price: null,
+                    // fiat_type: null,
                     from_user_id: 0,
                     to_user_id: to_user_id,
                     notification_type: "Deposit",
@@ -644,10 +644,10 @@ class CosnumeCrossChainTxProcess {
                     coin_symbol: coin_symbol,
                     coin_family: coin_family,
                     coin_id: coins_data.coin_id,
-                    resent_count: null,
+                    // resent_count: null,
                     view_status: null,
                     state: "sent",
-                    coin_price_in_usd: null,
+                    // coin_price_in_usd: null,
                     wallet_address: destinationAddr,
                     created_at: new Date(),
                     updated_at: new Date(),
@@ -830,23 +830,23 @@ class CosnumeCrossChainTxProcess {
         let rawExchangeName: string | null = null;
         let graph_pair: string | null = null;
         if (data?.coin_family == 4) {
-            pairAddress = firstPair?.pairAddress || null;
-            rawExchangeName = firstPair?.exchangeName || null;
-            graph_pair = firstPair?.pairLabel || null;
+          pairAddress = firstPair?.pairAddress || null;
+          rawExchangeName = firstPair?.exchangeName || null;
+          graph_pair = firstPair?.pairLabel || null;
         } else {
-            pairAddress = firstPair?.pair_address || null;
-            rawExchangeName = firstPair?.exchange_name || null;
-            graph_pair = firstPair?.pair_label || null;
+          pairAddress = firstPair?.pair_address || null;
+          rawExchangeName = firstPair?.exchange_name || null;
+          graph_pair = firstPair?.pair_label || null;
         }
         const graphSource = rawExchangeName
-            ? this.formatExchangeName(rawExchangeName)
-            : null;
+          ? this.formatExchangeName(rawExchangeName)
+          : null;
 
         if (pairAddress) {
           await Coins.CoinsWrite.update(
             {
               graph_source: graphSource,
-              graph_pair:graph_pair,
+              graph_pair: graph_pair,
               pair_address: pairAddress,
               is_on_trading_view: 3,
               is_on_moralis_inactive: 1

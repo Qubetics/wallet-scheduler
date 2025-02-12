@@ -23,14 +23,14 @@ let dataObj = {
     type: DataTypes.DOUBLE,
     allowNull: false
   },
-  alert_price: {
-    type: DataTypes.DOUBLE,
-    allowNull: true
-  },
-  fiat_type: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+  // alert_price: {
+  //   type: DataTypes.DOUBLE,
+  //   allowNull: true
+  // },
+  // fiat_type: {
+  //   type: DataTypes.STRING,
+  //   allowNull: true
+  // },
   from_user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -63,10 +63,10 @@ let dataObj = {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  resent_count: {
-    type: DataTypes.INTEGER,
-    allowNull: true,
-  },
+  // resent_count: {
+  //   type: DataTypes.INTEGER,
+  //   allowNull: true,
+  // },
   view_status: {
     type: DataTypes.INTEGER,
     allowNull: true,
@@ -75,10 +75,10 @@ let dataObj = {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  coin_price_in_usd: {
-    type: DataTypes.JSON,
-    allowNull: true,
-  },
+  // coin_price_in_usd: {
+  //   type: DataTypes.JSON,
+  //   allowNull: true,
+  // },
   wallet_address: {
     type: DataTypes.STRING,
     allowNull: true,
