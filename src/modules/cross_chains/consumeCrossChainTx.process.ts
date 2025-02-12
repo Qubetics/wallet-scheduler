@@ -561,9 +561,9 @@ class CosnumeCrossChainTxProcess {
                     // balance_blocked: walletData.balance_blocked,
                     // user_withdraw_limit: walletData.user_withdraw_limit,
                     default_wallet: walletData.default_wallet,
-                    is_verified: walletData.is_verified,
+                    // is_verified: walletData.is_verified,
                     status: 1,
-                    is_deleted: walletData.is_deleted,
+                    // is_deleted: walletData.is_deleted,
                     sort_order: null,
                     is_private_wallet: walletData.is_private_wallet,
                   });
