@@ -3,14 +3,14 @@ import { config } from "../../config";
 import { DeviceToken } from "../../models/model";
 // import dbHelper from "../dbHelper";
 // import axios from "axios";
-import { EthHelper } from "../../modules/on_off_ramps/ethhelper";
-import { bnbHelper } from "../../modules/on_off_ramps/bnbHelper";
-import { NonEvmHelper } from "../../modules/on_off_ramps/btc_helper";
-import { Tron_Helper } from "../../modules/on_off_ramps/tron_helper";
+// import { EthHelper } from "../../modules/on_off_ramps/ethhelper";
+// import { bnbHelper } from "../../modules/on_off_ramps/bnbHelper";
+// import { NonEvmHelper } from "../../modules/on_off_ramps/btc_helper";
+// import { Tron_Helper } from "../../modules/on_off_ramps/tron_helper";
 import { pushNotification } from "./push_notification";
 import { Op } from "sequelize";
 
-var BigNumber = require("bignumber.js");
+let BigNumber = require("bignumber.js");
 // var FCM = require("fcm-node");
 
 export const bigNumberSafeMath = function (
@@ -206,47 +206,5 @@ export const sendNotification = async function sendNotification(
   //   }
   // });
 };
-export const getBalances = async function getBalances(
-  coin_data: any,
-  wallet_address: string
-) {
-  try {
-    let balance: any = "0";
-    switch (coin_data.coin_family) {
-      case config.STATIC_COIN_FAMILY.ETH:
-        console.log("eth eth");
-        balance = (
-          await EthHelper.get_balance(
-            coin_data.is_token,
-            coin_data.token_address,
-            wallet_address
-          )
-        ).toString();
-        break;
-      case config.STATIC_COIN_FAMILY.BNB:
-        console.log("bnb bnb");
-        balance = (
-          await bnbHelper.get_balance(
-            coin_data.is_token,
-            coin_data.token_address,
-            wallet_address
-          )
-        ).toString();
-        break;
-      case config.STATIC_COIN_FAMILY.BTC:
-        console.log("btc btc");
-        balance = (await NonEvmHelper.get_balance(wallet_address)).toString();
-        break;
-      case config.STATIC_COIN_FAMILY.TRX:
-        console.log("trx trx");
-        balance = (
-          await Tron_Helper.TRX_Fetch_Balance(wallet_address, coin_data)
-        ).toString();
-        break;
-    }
-    return { status: true, balance: balance };
-  } catch (err: any) {
-    console.error("Error in UpdateBalance>>>>>.. ", err);
-    return { status: false, balance: "0" };
-  }
-};
+
+
