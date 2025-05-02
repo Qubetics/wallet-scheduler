@@ -15,3 +15,4 @@ export * from "./model.custom_tokens";
 // export * from './model_coin_price_in_fiat_otc';
 // export * from './model.coinPriceInFiatGraphOtc';
 
+export * from './model.day_coin_prices'

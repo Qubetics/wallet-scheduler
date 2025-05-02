@@ -5,9 +5,10 @@ import {
   Coins,
   CoinPriceInFiatGraph,
   CMCDataNotExistModel,
+  DayCoinPrice
 } from "../../models/model/index";
 import redisClient from "../../helpers/common/redis";
-import { Op } from "sequelize";
+import { Op, Sequelize } from "sequelize";
 import rp from "request-promise";
 import price_alerts_controller from "../price_alerts/price_alerts.controller";
 import sequelize from "sequelize";
@@ -19,6 +20,7 @@ import globalHelper from "../../helpers/common/global.helper";
 // import otcHelper from "../../modules/prices/helper";
 import axios from "axios";
 import { TimePeriods } from "../../constants";
+import { bigNumberSafeMath, exponentialToDecimal } from "../../helpers/common/globalFunctions";
 
 const {
   current_price_coin_counter: CURRENT_PRICE_COIN_COUNTER,
@@ -1510,6 +1512,160 @@ class PricesController {
       console.log("::Error log:: updateFiatPrice :>> ", error);
       return false;
     }
+  }
+
+  public async updateTicsPrice() {
+    try {
+      const currency_data = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
+        attributes: ["currency_code", "price_in_usd"],
+        where: {
+          currency_code: { [Op.ne]: "USD" },
+        },
+        raw: true,
+        order: [["currency_id", "asc"]],
+      });
+      
+      if (currency_data.count === 0) return;
+  
+      const result = await axios.get('https://api-testnet.qubetics.work/qubetics/explorer/current-token-price');
+      const ticsUsdPrice = result?.data?.data || 0;
+      const coin_family = COIN_FAMILY?.TICS ? COIN_FAMILY?.TICS : 7
+  
+      const coin_data = await Coins.CoinsRead.findOne({
+        attributes: ["coin_id", "cmc_id"],
+        where: {
+          coin_name: { [Op.like]: 'Qubetics' },
+          coin_symbol: { [Op.like]: 'tics' },
+          coin_family: coin_family,
+        },
+      });
+  
+      if (!coin_data || coin_data === null) {
+        console.log("TICS coin not found");
+        return;
+      }
+  
+      const coin_id = coin_data.coin_id;
+      let price_change_percentage_24h = 0;
+  
+      const usdRecord = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+        where: { fiat_type: 'usd', coin_id },
+      });
+      if (usdRecord) {
+        let compare_price: number | string = await exponentialToDecimal(usdRecord?.value);
+        let dayPrice = await this.coinCompareDayPrice(coin_id);
+        if (dayPrice > 0) {
+            compare_price = dayPrice;
+        }
+        price_change_percentage_24h = await this.percentageCalulator(ticsUsdPrice, compare_price);
+
+        await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+          { value: ticsUsdPrice, price_change_24h: price_change_percentage_24h ,price_change_percentage_24h: price_change_percentage_24h },
+          { where: { fiat_type: 'usd', coin_id } }
+        );
+
+        await this.saveDayCoinPrice(coin_id, ticsUsdPrice, coin_family);
+
+      } else {
+        await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+          coin_id,
+          fiat_type: 'usd',
+          coin_symbol: 'TICS',
+          coin_name: 'Qubetics',
+          coin_family: coin_family,
+          cmc_id: coin_data?.cmc_id,
+          value: ticsUsdPrice,
+          price_change_24h: 0,
+          price_change_percentage_24h: 0,
+          market_cap: 0,
+          circulating: 0,
+          total_supply: 0,
+          rank: 0,
+          volume_24h: 0,
+          max_supply: 0,
+          latest_price: null,
+          latest_price_source: null,
+        });
+      }
+
+      for (const currency of currency_data.rows) {
+        const { currency_code, price_in_usd }: any = currency;
+        const fiat_type = currency_code.toLowerCase();
+        const convertedValue = ticsUsdPrice * parseFloat(price_in_usd);
+  
+        const existingRecord = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+          where: { fiat_type, coin_id },
+        });
+  
+        if (existingRecord) {
+          await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+            { value: convertedValue , price_change_24h: price_change_percentage_24h ,price_change_percentage_24h: price_change_percentage_24h },
+            { where: { fiat_type, coin_id } }
+          );
+        } else {
+          await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+            coin_id,
+            fiat_type,
+            coin_symbol: 'TICS',
+            coin_name: 'Qubetics',
+            coin_family: coin_family,
+            cmc_id: coin_data?.cmc_id,
+            value: convertedValue,
+            price_change_24h: 0,
+            price_change_percentage_24h: 0,
+            market_cap: 0,
+            circulating: 0,
+            total_supply: 0,
+            rank: 0,
+            volume_24h: 0,
+            max_supply: 0,
+            latest_price: null,
+            latest_price_source: null,
+          });
+        }
+      }
+  
+    } catch (error) {
+      console.log("::Error log:: updateTicsPrice :>> ", error);
+      return false;
+    }
+  }
+  
+  private saveDayCoinPrice = async (coin_id: number, price: number, coin_family: number) => {
+    let dataToSave: any = {
+        coin_id: coin_id,
+        coin_family: coin_family,
+        price: price,
+    }
+    await DayCoinPrice.DayCoinPriceWrite.create(dataToSave);
+  }
+
+  private coinCompareDayPrice = async (coin_id: number) => {
+    let result = await DayCoinPrice.DayCoinPriceRead.findOne({
+        attributes: ['price'],
+        where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) AND coin_id = :coin_id`),
+        order: [['id', 'desc']],
+        replacements: { coin_id },
+        raw: true
+    });
+    let price = result?.price ? result.price : 0;
+    if (price <= 0) {
+      result = await DayCoinPrice.DayCoinPriceRead.findOne({
+          attributes: ['price'],
+          where: { coin_id },
+          order: [['id', 'desc']],
+          raw: true
+      });
+      price = result?.price ?? 0;
+  }
+    return price;
+  }
+
+  private percentageCalulator = async (new_price: any, original_price: any) => {
+    let price_change_percentage_24h = await bigNumberSafeMath(new_price, '-', original_price);
+    price_change_percentage_24h = await bigNumberSafeMath(price_change_percentage_24h, '/', original_price);
+    price_change_percentage_24h = await bigNumberSafeMath(price_change_percentage_24h, '*', 100);
+    return price_change_percentage_24h.toString();
   }
 }
 
