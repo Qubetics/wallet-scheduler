@@ -1,7 +1,7 @@
 import axios from "axios";
 import { config } from "../../config";
 // import { RabbitMq } from '../../helpers/common/rabbitmq.helper';
-import eth_web3 from "../../helpers/common/web3.helper";
+import etherJs from "../../helpers/common/web3.helper";
 import blockchain_helper from "../../helpers/common/blockchain.helper";
 import non_evm_helper from "../../helpers/common/non.evm.helper";
 import {
@@ -13,7 +13,6 @@ import {
 import { Op } from "sequelize";
 import redisClient from "../../helpers/common/redis";
 import TrnxHistoryModel from "../../models/model/model.trnxHistory";
-import { AbiItem } from "web3-utils";
 import BigNumber from "bignumber.js";
 import {
   bigNumberSafeMath,
@@ -27,19 +26,20 @@ import { Boolean, ADDED_BY, COINS, TOKENS } from "../../constants";
 import { cross_chain_helper } from "./helper";
 import kafkaHelper from "../../helpers/common/kafka.helper";
 import NonEvmHelper from "../../helpers/common/non.evm.helper";
+import { ethers } from "ethers";
 
 const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 
 class CosnumeCrossChainTxProcess {
-  public Eth_Web3_Url: any;
-  // public Matic_Web3_Url: any;
-  public Bnb_Web3_Url: any;
-  public Pol_Web3_Url: any;
-  public Abi: any;
+  
+  public Eth_Ether_Url: ethers.JsonRpcProvider;
+  public Bsc_Ether_Url: ethers.JsonRpcProvider;
+  public Pol_Ether_Url: ethers.JsonRpcProvider;
+
   constructor() {
-    this.Eth_Web3_Url = eth_web3.eth_web3;
-    this.Bnb_Web3_Url = eth_web3.bsc_web3;
-    this.Pol_Web3_Url = eth_web3.pol_web3;
+    this.Eth_Ether_Url = etherJs.etherEth;
+    this.Bsc_Ether_Url = etherJs.etherBsc;
+    this.Pol_Ether_Url = etherJs.etherPol;
   }
 
   public async startTxStatusUpdateQueue() {
@@ -262,16 +262,16 @@ class CosnumeCrossChainTxProcess {
             );
           }
 
-          let web3_object: any = "";
+          let ether_object: ethers.JsonRpcProvider = this.Eth_Ether_Url;
           let depositQuery: any = null;
           if (coin_family == COIN_FAMILY.ETH) {
-            web3_object = this.Eth_Web3_Url;
+            ether_object = this.Eth_Ether_Url;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.ETH_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
           } else if (coin_family == COIN_FAMILY.POL) {
-            web3_object = this.Pol_Web3_Url;
+            ether_object = this.Pol_Ether_Url;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.POL_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
@@ -296,7 +296,7 @@ class CosnumeCrossChainTxProcess {
               "${config.BSC_WALLET_ADDRESS",
               config.BSC_WALLET_ADDRESS
             );
-            web3_object = this.Bnb_Web3_Url;
+            ether_object = this.Bsc_Ether_Url;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.BSC_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
@@ -327,9 +327,8 @@ class CosnumeCrossChainTxProcess {
             let to_user_id: any = wallet_data.user_id;
             if (tran_exist == null) {
               let from_address = "";
-              let gasReverted: number | undefined = 0;
+              let gasReverted: BigNumber | undefined = new BigNumber(0);
               let gas_price: number = 0;
-              let gasUsed: number = 0;
               let blockId: number = 0;
               let transaction_fee: number = 0;
               let userBalance: number | null = 0;
@@ -341,8 +340,7 @@ class CosnumeCrossChainTxProcess {
                 coin_family == COIN_FAMILY.BNB ||
                 coin_family == COIN_FAMILY.POL
               ) {
-                let { getTransaction, getTransactionReceipt } = web3_object.eth;
-                const transactionReceipt = await getTransactionReceipt(
+                const transactionReceipt = await ether_object.getTransactionReceipt(
                   transactionId
                 );
                 // console.log('transactionReceipt >>>', transactionReceipt);
@@ -352,32 +350,33 @@ class CosnumeCrossChainTxProcess {
                   transactionReceipt?.blockHash != null
                 ) {
                   trans_status = true;
-                  const transaction = await getTransaction(transactionId);
-                  from_address = transaction.from;
+                  const transaction: any = await ether_object.getTransaction(transactionId);
 
-                  gasUsed = transactionReceipt.gasUsed
-                    ? transactionReceipt.gasUsed
-                    : 0;
-                  const gasPrice = parseFloat(transaction.gasPrice) || 0;
-                  const gasTotal = transaction.gas || 0;
-                  if (gasTotal > 0 && gasUsed > 0) {
-                    const gasDiff = gasTotal - gasUsed;
-                    gasReverted = gasPrice * gasDiff;
+                  if (transaction) {
+                    from_address = transactionReceipt.from || '';
+
+                    // let gasReverted: BigNumber | undefined = new BigNumber(0);
+                    const gasUsed: BigNumber = new BigNumber(transactionReceipt?.gasUsed?.toString() || "0");
+
+                    const gasPrice: BigNumber = new BigNumber(transaction.gasPrice?.toString() || "0");
+                    const gasTotal: BigNumber = new BigNumber(transaction?.gasLimit?.toString() || "0");
+
+                    if (gasTotal.isGreaterThan(0) && gasUsed.isGreaterThan(0)) {
+                        const gasDiff = gasTotal.minus(gasUsed);
+                        gasReverted = gasPrice.multipliedBy(gasDiff);
+                    }
+                    gas_price = Number(ethers.formatUnits(gasPrice.toString(), 9));
+                    blockId = transaction.blockNumber
                   }
-                  gas_price = web3_object.utils.fromWei(
-                    gasPrice.toString(),
-                    "Gwei"
-                  );
-                  blockId = transaction.blockNumber;
                 }
                 if (swftc_coin.contact !== null && swftc_coin.contact !== "") {
                   /** User ERC-20 token Balance */
                   let balance =
                     await blockchain_helper.getUserERC20TokenBalance(
                       swftc_coin.contact,
-                      config.CONTRACT_ABI as AbiItem[],
+                      config.CONTRACT_ABI,
                       destinationAddr,
-                      web3_object
+                      ether_object
                     );
 
                   userBalance = balance !== null ? Number(balance) : null;
@@ -385,7 +384,7 @@ class CosnumeCrossChainTxProcess {
                   /** User Native Coin Balance */
                   let balance = await blockchain_helper.get_balance(
                     destinationAddr,
-                    web3_object,
+                    ether_object,
                     true
                   );
                   userBalance = balance !== null ? Number(balance) : null;

@@ -1,23 +1,23 @@
 import { config } from "./../../config";
 import CryptoJS from "crypto-js";
-import { AbiItem } from "web3-utils";
-import eth_web3 from "../../helpers/common/web3.helper";
 import blockchain_helper from "../../helpers/common/blockchain.helper";
 import non_evm_helper from "../../helpers/common/non.evm.helper";
 import { OnOffRampFiatsModel } from "../../models/model";
 import * as isoCountries from 'i18n-iso-countries';
 import axios from "axios";
 import { Op } from "sequelize";
+import { ethers } from "ethers";
+import etherJs from "../../helpers/common/web3.helper";
 
 const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 
 class on_off_helper {
-    public Eth_Web3_Url: any;
-    // public Matic_Web3_Url: any;
-    public Bnb_Web3_Url: any;
+    public Eth_Ether_Url: ethers.JsonRpcProvider;
+    public Bsc_Ether_Url: ethers.JsonRpcProvider;
+
     constructor() {
-        this.Eth_Web3_Url = eth_web3.eth_web3;
-        this.Bnb_Web3_Url = eth_web3.eth_web3
+        this.Eth_Ether_Url = etherJs.etherEth;
+        this.Bsc_Ether_Url = etherJs.etherBsc;
     }
     public async create_access_token() {
         try {
@@ -230,7 +230,7 @@ class on_off_helper {
         try {
 
             if (coin_family == 2) {
-                let token_data: any = await blockchain_helper.searchTokenNew(address, config.CONTRACT_ABI as AbiItem[], this.Eth_Web3_Url)
+                let token_data: any = await blockchain_helper.searchTokenNew(address, config.CONTRACT_ABI, this.Eth_Ether_Url)
                 return Math.pow(10, parseInt(token_data?.decimals))
             } /*else if (coin_family == 4) {
                 let token_data: any = await PolyHelper.searchToken(address)
@@ -239,7 +239,7 @@ class on_off_helper {
                 let token_data: any = await non_evm_helper.searchToken(address)
                 return Math.pow(10, parseInt(token_data?.decimals))
             } else if (coin_family == 1) {
-                let token_data: any = await blockchain_helper.searchTokenNew(address, config.CONTRACT_ABI as AbiItem[], this.Bnb_Web3_Url)
+                let token_data: any = await blockchain_helper.searchTokenNew(address, config.CONTRACT_ABI, this.Bsc_Ether_Url)
                 return Math.pow(10, parseInt(token_data?.decimals))
             } else {
                 // console.log("Invalid Coin_Family")

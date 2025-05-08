@@ -1,12 +1,13 @@
-import { AbiItem } from "web3-utils";
 import { bigNumberSafeMath } from "../common/globalFunctions";
+import { ethers } from "ethers";
+
 class blockchain_helper {
 
     public get_balance = async (address: string, rpc_object: any, inMatic: boolean) => {
         try {
-            const balanceInWei = await rpc_object.eth.getBalance(address);
+            const balanceInWei = await rpc_object.getBalance(address);
             if (inMatic == true) {
-                const balanceInMatic = rpc_object.utils.fromWei(balanceInWei, "ether");
+                const balanceInMatic = ethers.formatEther(balanceInWei);
                 return balanceInMatic;
             }
             return balanceInWei;
@@ -17,16 +18,16 @@ class blockchain_helper {
         }
     }
 
-    public async getUserERC20TokenBalance(tokenAddress: string | null | undefined, tokenAbi: AbiItem[], walletAddress: string, rpc_object: any): Promise<number | null> {
+    public async getUserERC20TokenBalance(tokenAddress: string | null | undefined, tokenAbi: any, walletAddress: string, rpc_object: any): Promise<number | null> {
         try {
             if (tokenAddress) {
-                const contract = await new rpc_object.eth.Contract(tokenAbi, tokenAddress);
-                const decimals = await contract.methods.decimals().call();
-                const balance = await contract.methods.balanceOf(walletAddress).call();
+                const contract = new ethers.Contract(tokenAddress, tokenAbi, rpc_object);
+                const decimals = await contract.decimals();
+                const balance = await contract.balanceOf(walletAddress);
                 const tokenBalance = await bigNumberSafeMath(balance, "/", Math.pow(10, decimals));
                 return tokenBalance;
             } else {
-                return null;
+                return 0;
             }
         } catch (err) {
             console.log("🔥 ~ ~ getUserERC20TokenBalance error", err);
@@ -34,18 +35,24 @@ class blockchain_helper {
         }
     }
 
-    public async searchTokenNew(tokenAddress: string | null | undefined, tokenAbi: AbiItem[], rpc_object: any) {
+    public async searchTokenNew(tokenAddress: string | null | undefined, tokenAbi: any, rpc_object: any) {
         try {
-            const contract = new rpc_object.eth.Contract(tokenAbi, tokenAddress);
-            const decimals = await contract.methods.decimals().call();
-            const name = await contract.methods.name().call();
-            const symbol = await contract.methods.symbol().call();
-            const data = { decimals, name, symbol };
-            if (!data) {
-                throw new Error("ERROR in searchTokenNew ");
-            } else {
-                return data;
-            }
+            if (!tokenAddress) throw new Error("ERROR in searchTokenNew ");
+            const contract = new ethers.Contract(tokenAddress, tokenAbi, rpc_object);
+            const [decimals, name, symbol] = await Promise.all([
+              contract.decimals(),
+              contract.name(),
+              contract.symbol()
+            ]);
+      
+            const data = { 
+              decimals: Number(decimals), 
+              name, 
+              symbol 
+            };
+            
+            if (!data) throw new Error("ERROR in searchTokenNew ");
+            return data;
         }
         catch (error) {
             console.error("search_token_new error", error)
@@ -53,7 +60,7 @@ class blockchain_helper {
             return data;
         }
     }
-    public async return_decimals(address: string, coin_family: number, tokenAbi: AbiItem[], rpc_object: any) {
+    public async return_decimals(address: string, coin_family: number, tokenAbi: any, rpc_object: any) {
         try {
 
             if (coin_family == 2 || coin_family == 1) {

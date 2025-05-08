@@ -6,10 +6,9 @@ import { Wallets } from '.././../models/model/index';
 // import { getBalances } from "../../helpers/common/globalFunctions";
 import kafkaHelper from "../../helpers/common/kafka.helper";
 
-import web3 from "../../helpers/common/web3.helper";
+import etherJs from "../../helpers/common/web3.helper";
 import blockchain_helper from "../../helpers/common/blockchain.helper";
 import non_evm_helper from "../../helpers/common/non.evm.helper";
-import { AbiItem } from "web3-utils";
 
 class UpdateBalanceController {
     public async update_wallet_balance() {
@@ -63,13 +62,13 @@ class UpdateBalanceController {
                         let fetch_balance =
                             await blockchain_helper.getUserERC20TokenBalance(
                                 coin_data.token_address,
-                                config.CONTRACT_ABI as AbiItem[],
+                                config.CONTRACT_ABI,
                                 wallet_address,
-                                web3.eth_web3
+                                etherJs.etherEth
                             );
                         balance = fetch_balance ? fetch_balance.toString : "0";
                     } else {
-                        let fetch_balance = await blockchain_helper.get_balance(wallet_address, web3.eth_web3, true);
+                        let fetch_balance = await blockchain_helper.get_balance(wallet_address, etherJs.etherEth, true);
                         balance = fetch_balance ? fetch_balance.toString : "0";
                     }
                     console.log("eth balance", balance);
@@ -88,13 +87,13 @@ class UpdateBalanceController {
                         let fetch_balance =
                             await blockchain_helper.getUserERC20TokenBalance(
                                 coin_data.token_address,
-                                config.CONTRACT_ABI as AbiItem[],
+                                config.CONTRACT_ABI,
                                 wallet_address,
-                                web3.bsc_web3
+                                etherJs.etherBsc
                             );
                         balance = fetch_balance ? fetch_balance.toString : "0";
                     } else {
-                        let fetch_balance = blockchain_helper.get_balance(wallet_address, web3.bsc_web3, true).toString();
+                        let fetch_balance = blockchain_helper.get_balance(wallet_address, etherJs.etherBsc, true).toString();
                         balance = fetch_balance ? fetch_balance.toString : "0";
                     }
                     console.log("bnb balance", balance);
