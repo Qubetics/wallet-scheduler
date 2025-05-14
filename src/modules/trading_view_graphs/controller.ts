@@ -8,55 +8,6 @@ class tradingViewController {
     constructor() {
     }
 
-    // private async fetchAndUpdate(
-    //     tradingviewTokens: any[],
-    //     exchangeName: string,
-    //     apiEndpoint: (symbol: string) => string,
-    //     isApiResponseValid: (response: any) => boolean
-    // ) {
-    //     const BATCH_SIZE = 20
-    //     for (let i = 0; i < tradingviewTokens.length; i += BATCH_SIZE) {
-    //         const batch = tradingviewTokens.slice(i, i + BATCH_SIZE);
-
-    //         const batchPromises = batch.map(async (token) => {
-    //             const { coin_symbol, id } = token;
-    //             let symbol = `${coin_symbol?.toUpperCase()}`;
-
-    //             switch (exchangeName) {
-    //                 case 'okx':
-    //                     symbol = `${symbol}-USDT`;
-    //                     break;
-    //                 case 'bitmart':
-    //                     symbol = `${symbol}_USDT`;
-    //                     break;
-    //                 default:
-    //                     symbol = `${symbol}USDT`;
-    //                     break;
-    //             }
-
-    //             try {
-    //                 const response = await axios.get(apiEndpoint(symbol));
-    //                 if (isApiResponseValid(response)) {
-    //                     await Coins.CoinsWrite.update(
-    //                         {
-    //                             graph_source: exchangeName,
-    //                             graph_pair: `${coin_symbol?.toLowerCase()}usdt`,
-    //                         },
-    //                         { where: { coin_id: id } }
-    //                     );
-    //                 }
-    //             } catch (err: any) {
-    //                 console.error(
-    //                     `💥 ~  Error processing coin ID: ${id}, Symbol: ${coin_symbol} for ${exchangeName}`,
-    //                     err?.message || err
-    //                 );
-    //             }
-    //         });
-
-    //         await Promise.all(batchPromises);
-    //     }
-    // }
-
     public async getTradingViewTokens() {
         const coinData = await Coins.CoinsRead.findAll({
             attributes: [
@@ -71,7 +22,6 @@ class tradingViewController {
             ],
             where: {
                 is_on_trading_view: { [Op.in]: [1, 2] },
-                // token_type: { [Op.or]: [{ [Op.in]: ['ERC20', 'BEP20', 'SPL', 'TRC20'] }, { [Op.is]: null }] },
                 token_type: { [Op.in]: ['ERC20', 'BEP20', 'SPL', 'TRC20'] }
             },
             limit: 5,
@@ -104,12 +54,6 @@ class tradingViewController {
                 }
             } catch (error) {
                 console.error('Error updating coin data for symbol:', coin?.coin_symbol, error);
-                // await Coins.CoinsWrite.update(
-                //     {
-                //         is_on_trading_view: 0,
-                //     },
-                //     { where: { coin_id: coin.coin_id } }
-                // );
             }
 
         }
@@ -134,7 +78,6 @@ class tradingViewController {
                 const pairs = response?.data?.pairs;
                 let message: string = '';
                 if (pairs?.length > 0) {
-                    // const firstPair = pairs[0];
                     const activePair = await pairs.find((pair: any) => pair?.inactive_pair === false || pair?.inactivePair === false);
                     if (activePair) {
                         let pairAddress: string | null = null;
@@ -172,7 +115,6 @@ class tradingViewController {
                         }
                     } else {
                         const firstPair = pairs[0];
-                        // console.log('firstPair >>>>', firstPair);
                         let pairAddress: string | null = null;
                         let graph_pair: string | null = null;
                         let rawExchangeName: string | null = null;
@@ -317,10 +259,8 @@ class tradingViewController {
         ];
 
         const exchangesSource = symbol.toLowerCase() == 'usdt' ? usdtExchanges : exchanges;
-        // console.log('exchangesSource >>>', exchangesSource);
         for (let exchange of exchangesSource) {
             try {
-                // console.log('exchange.url(symbol) ', exchange.url(symbol));
                 const response = await axios.get(exchange.url(symbol));
                 // Simplified exchange response validation
                 if (this.isValidExchangeResponse(exchange, response)) {
@@ -407,11 +347,8 @@ class tradingViewController {
                 ],
                 where: {
                     is_token: 1,
-                    // coin_family: coinFamily,
                     coin_family: { [Op.in]: [1, 3, 4, 6, 7, 8] },
-                    // token_type: tokenType,
                     token_type: { [Op.in]: ['ERC20', 'BEP20', 'CRC20'] },
-                    // pair_address: { [Op.eq]: null },
                 },
                 order: [['coin_id', 'ASC']],
                 offset: coin_limit_count,
@@ -447,67 +384,6 @@ class tradingViewController {
             console.log("🔥 ~ moralisTradingviewChartWidget error", error);
         }
     }
-
-    // public async tradingviewBinance() {
-    //     const tokens = await this.getTradingViewTokens();
-    //     await this.fetchAndUpdate(
-    //         tokens,
-    //         'binance',
-    //         (symbol) => `https://api.binance.com/api/v3/exchangeInfo?symbol=${symbol}`,
-    //         (response) => response.data?.code == undefined
-    //     );
-    // }
-
-    // public async tradingviewOkx() {
-    //     const tokens = await this.getTradingViewTokens();
-    //     await this.fetchAndUpdate(
-    //         tokens,
-    //         'okx',
-    //         (symbol) => `https://www.okx.com/api/v5/market/ticker?instId=${symbol}`,
-    //         (response) => response.data?.code === 0
-    //     );
-    // }
-
-    // public async tradingviewBybit() {
-    //     const tokens = await this.getTradingViewTokens();
-    //     await this.fetchAndUpdate(
-    //         tokens,
-    //         'bybit',
-    //         (symbol) => `https://api.bybit.com/v5/market/instruments-info?category=spot&symbol=${symbol}`,
-    //         (response) => response.data.list?.length > 0
-    //     );
-    // }
-
-    // public async tradingviewMexc() {
-    //     const tokens = await this.getTradingViewTokens();
-    //     await this.fetchAndUpdate(
-    //         tokens,
-    //         'mexc',
-    //         (symbol) => `https://api.mexc.com/api/v3/exchangeInfo?symbol=${symbol}`,
-    //         (response) => response.data?.code == undefined
-    //     );
-    // }
-
-    // public async tradingviewBitmart() {
-    //     const tokens = await this.getTradingViewTokens();
-    //     await this.fetchAndUpdate(
-    //         tokens,
-    //         'bitmart',
-    //         (symbol) => `https://api-cloud.bitmart.com/spot/quotation/v3/ticker?symbol=${symbol}`,
-    //         (response) => response.data?.code === 1000
-    //     );
-    // }
-
-    // public async tradingviewBitget() {
-    //     const tokens = await this.getTradingViewTokens();
-    //     await this.fetchAndUpdate(
-    //         tokens,
-    //         'bitget',
-    //         (symbol) => `https://api.bitget.com/api/v2/spot/public/symbols?symbol=${symbol}`,
-    //         (response) => response.data?.code === '00000'
-    //     );
-    // }
-
 }
 
 const trading_view_controller = new tradingViewController();

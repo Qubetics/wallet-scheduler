@@ -24,7 +24,6 @@ export interface Data {
 }
 
 export interface Coin {
-  // uuid: string;
   symbol: string;
   name: string;
   color: string;

@@ -13,7 +13,6 @@ class blockchain_helper {
             return balanceInWei;
         } catch (err) {
             console.log('🔥 ~ ~ get_balance error', err);
-            // throw err;
             return null;
         }
     }
@@ -67,7 +66,6 @@ class blockchain_helper {
                 let token_data: any = await this.searchTokenNew(address, tokenAbi, rpc_object)
                 return Math.pow(10, parseInt(token_data?.decimals))
             } else {
-                // console.log("Invalid Coin_Family")
                 return 0;
             }
         } catch (err: any) {

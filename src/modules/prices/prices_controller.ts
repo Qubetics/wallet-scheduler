@@ -17,7 +17,6 @@ import { CoinModel } from "../../models/interface/interface.coins";
 import dbHelper from "../../helpers/dbHelper";
 import cmcHelper from "../../helpers/common/cmc.helper";
 import globalHelper from "../../helpers/common/global.helper";
-// import otcHelper from "../../modules/prices/helper";
 import axios from "axios";
 import { TimePeriods } from "../../constants";
 import { bigNumberSafeMath, exponentialToDecimal } from "../../helpers/common/globalFunctions";
@@ -35,9 +34,6 @@ const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 class PricesController {
   public fetchCmcPrice = async () => {
     try {
-      // let family_data: any = Object.keys(COIN_FAMILY).find(
-      //   (key) => COIN_FAMILY[key] === coin_family
-      // );
       console.log("********* fetchCmcPrice *************");
       /** coins pagination */
       let coin_limit_count: number = 0;
@@ -54,7 +50,6 @@ class PricesController {
 
       /** currencies pagination */
       let currency_limit_count: number = 0;
-      // let currency_limit: number = 3;
       let currency_limit: number = 10;
 
       let findCurrencyCounter: any = await redisClient.getKeyValuePair(
@@ -72,17 +67,14 @@ class PricesController {
           offset: currency_limit_count,
           limit: currency_limit,
           order: [["currency_id", "asc"]],
-          // logging: true,
         });
       let coin_data_count: number = 0;
-      // console.log('currency_data >>>', currency_data);
       if (currency_data.count > 0) {
         const codes = currency_data.rows.map((el: any) => el.currency_code);
         const cmcIds: number[] = [];
 
         let data: any = await Coins.CoinsRead.findAndCountAll({
           attributes: ["cmc_id"],
-          // where: { cmc_id: { [Op.ne]: 0 }, coin_family: coin_family },
           where: { cmc_id: { [Op.ne]: 0 } },
 
           order: [["coin_id", "asc"]],
@@ -95,11 +87,6 @@ class PricesController {
             cmcIds.push(iterator?.cmc_id as number);
           }
         }
-        // console.log(
-        //   // `${coin_family} >>>>cmcIds====================================================+++++`,
-        //   cmcIds,
-        //   currency_data.rows
-        // );
         // Inserting cmc_ids in reset graph data table
         if (cmcIds.length > 0) {
           for (let i: number = 0; i < cmcIds.length; i++) {
@@ -127,18 +114,14 @@ class PricesController {
         if (cmcIds.length > 0) {
           const tokenFormat = cmcIds.toString().replace(/[\[\]']+/g, "");
           const currencyFormat = codes.toString().replace(/[\[\]']+/g, "");
-          // console.log("Entered into condition whether cmc 1 or 2");
           let result: any = await cmcHelper.cmcApi(
             `quotes/latest?id=${tokenFormat}&convert=${currencyFormat}`
           );
 
-          // console.log('result >>>', result);
           const cmcData = result?.data?.data;
           for (const property in cmcData) {
             const obj = cmcData[property];
             for await (let code of codes) {
-              // code = code.toLowerCase()
-              // console.log("code>>", code, "cmc_id>>", obj.id);
               let checkCMCValueExist: any = await CMCDataNotExistModel.findOne({
                 attributes: ["cmc_id"],
                 where: {
@@ -156,7 +139,6 @@ class PricesController {
                     },
                   });
                 }
-                // console.log("price is coming correctly");
                 let latest_price: any = {
                   price: obj.quote[code].price || 0,
                   timestamp: obj.quote[code].last_updated,
@@ -167,7 +149,6 @@ class PricesController {
                 };
                 if (latest_price !== null && latest_price !== "null") {
                   let where: any = { cmc_id: obj.id, fiat_type: code };
-                  // console.log("where>>", where);
 
                   let checkIfCoinExist: any =
                     await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
@@ -190,8 +171,6 @@ class PricesController {
                         },
                       });
                     if (coin_data) {
-                      // where.coin_id = coin_data?.coin_id;
-                      // delete where.cmc_id;
                       checkIfCoinExist =
                         await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
                           attributes: ["id", "coin_id"],
@@ -206,11 +185,6 @@ class PricesController {
                   let coin_id: number = 0;
                   if (checkIfCoinExist) {
                     coin_id = checkIfCoinExist.coin_id;
-                    // console.log(
-                    //   "obj?.quote[code]?.price",
-                    //   obj?.quote[code]?.price
-                    // );
-
                     await CoinPriceInFiat.CoinPriceInFiatWrite.update(
                       {
                         value: obj?.quote[code]?.price || 0,
@@ -240,11 +214,6 @@ class PricesController {
                     });
                     if (coin) {
                       coin_id = coin.coin_id;
-                      // console.log(
-                      //   "aaaobj?.quote[code].price",
-                      //   obj?.quote[code].price
-                      // );
-
                       await CoinPriceInFiat.CoinPriceInFiatWrite.create({
                         coin_id: coin.coin_id,
                         coin_name: obj.name,
@@ -269,13 +238,8 @@ class PricesController {
                       });
                     }
                   }
-                  // if (coin_id > 0) {
-                  //     await price_alerts_controller.sendPriceAlerts(coin_id, code, latest_price.price);
-                  // }
                   /** update latest record in history candle */
-                  // console.log('code >>>', code, 'coin_id >>>', coin_id);
                   if (coin_id > 0 && code?.toLowerCase() == "usd") {
-                    // console.log('code >>>', code, 'coin_id >>>', coin_id);
                     await this.update_history_last_price(
                       latest_price,
                       obj.id,
@@ -283,11 +247,8 @@ class PricesController {
                       where
                     );
                   }
-                } else {
-                  // console.log('latest_price >>>.', latest_price);
                 }
               } else {
-                // console.log("no price for this >>", code, obj.id);
                 if (checkCMCValueExist) {
                   console.log(" CMC id Exist");
                 } else {
@@ -312,19 +273,12 @@ class PricesController {
       currency_limit_count = currency_limit_count + currency_limit;
       let currency_counter =
         currency_limit_count >= currency_data.count ? 0 : currency_limit_count;
-      // console.log(
-      //   "currency_counter >>>",
-      //   currency_counter,
-      //   " >>>>>>",
-      //   family_data
-      // );
 
       if (currency_counter == 0) {
         /** update coins pagination */
         coin_limit_count = coin_limit_count + limit;
         let counter =
           coin_limit_count >= coin_data_count ? 0 : coin_limit_count;
-        // console.log("coin counter >>>", counter, " >>>>>>", family_data);
         await redisClient.setKeyValuePair(
           config.REDISKEYS.COIN_LIMIT_COUNTS,
           `${CURRENT_PRICE_COIN_COUNTER}`,
@@ -348,23 +302,6 @@ class PricesController {
     code: string,
     where: any
   ) => {
-    // console.log(
-    //   "---------------------update history last price--------------",
-    //   id,
-    //   "------",
-    //   code,
-    //   "where >>>>>",
-    //   where
-    // );
-    // if (where.fiat_type != "USD") return;
-    // console.log(
-    //   "--------------------- update history last price--------------",
-    //   id,
-    //   "------",
-    //   code,
-    //   "where >>>>>",
-    //   where
-    // );
     const historyExistData =
       await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
         attributes: [`id`, `sparkline`, `type`],
@@ -374,23 +311,13 @@ class PricesController {
       for (let history of historyExistData.rows) {
         let history_sparkline: any =
           history.sparkline !== null ? history.sparkline : [];
-        // console.log('history_sparkline >>>>', history_sparkline?.length);
         if (history_sparkline.length > 0) {
           const cleanedData = history_sparkline.filter(
             (item: any) => item !== null
           );
-          // console.log('cleanedData >>>>', cleanedData?.length);
           let last_record = cleanedData[cleanedData?.length - 1];
-          // console.log('last_record >>>', last_record);
-          // console.log('latest_price >>>', latest_price);
-
           const existingTimestamp = new Date(last_record?.timestamp).getTime();
           const latestTimestamp = new Date(latest_price?.timestamp).getTime();
-          // console.log(
-          //   "sparkline333 >>>>",
-          //   latestTimestamp >
-          //   existingTimestamp
-          // );
           if (latestTimestamp > existingTimestamp) {
             cleanedData.push(latest_price);
             const history_data: any = await globalHelper.setGraphData(
@@ -403,10 +330,6 @@ class PricesController {
                 cmc_id: id,
                 latest_price_source: "current",
               };
-              // if (history?.coin_type == null) {
-              //   updateData.coin_type = coin_type;
-              // }
-              // console.log('history_data.graphData >>>', history_data?.graphData?.length);
               await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
                 updateData,
                 { where: { id: history.id } }
@@ -424,9 +347,6 @@ class PricesController {
               cmc_id: id,
               latest_price_source: "current",
             };
-            // if (history?.coin_type == null) {
-            //   updateData.coin_type = coin_type;
-            // }
             await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
               updateData,
               { where: { id: history.id } }
@@ -438,14 +358,9 @@ class PricesController {
       let types = ["1d", "1w", "1m", "1y"];
       for (let i = 0; i < types.length; i++) {
         let create_data: any = {
-          // coin_id: coin_id,
-          // coin_type: coin_type ? coin_type : null,
           cmc_id: id,
           type: types[i],
           fiat_type: code,
-          // volume_24h: latest_price.volume_24h,
-          // price_change_24h: latest_price.price_change_24h,
-          // price_change_percentage_24h: latest_price.price_change_24h,
           sparkline: [latest_price],
         };
         await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.create(
@@ -469,11 +384,6 @@ class PricesController {
     let ids: any[] = [];
 
     try {
-      // let currencyCount = await modelCounter.CounterRead.count();
-      // let family_data = Object.keys(COIN_FAMILY).find(
-      //   (key) => COIN_FAMILY[key] === coin_family
-      // );
-
       console.log("********* fetchgraphdata *************");
       /** coins pagination */
       let coin_limit_count = 0;
@@ -483,7 +393,6 @@ class PricesController {
         `${type}_${GRAPH_DATA_COIN_COUNTER}`
       );
 
-      // let findCoinCounter = await redisClient.getKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, `${type}_${GRAPH_DATA_COIN_COUNTER}`);
       if (findCoinCounter) {
         coin_limit_count = Number(findCoinCounter);
       }
@@ -502,7 +411,6 @@ class PricesController {
       console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
       let dbCoinrecords: any;
 
-      // console.log("endDate>>>>>>>>>>>", endDate);
       dbCoinrecords =
         await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
           where: {
@@ -529,8 +437,6 @@ class PricesController {
           attributes: ["cmc_id"],
           where: {
             cmc_id: { [Op.ne]: 0, [Op.lt]: 50000 },
-            // graph_source: { [Op.is]: null },     // not in use
-            // coin_family: coin_family
             [Op.and]: [sequelize.literal(`(graph_data.updated_at IS NULL)`)],
           },
           include: [
@@ -552,46 +458,10 @@ class PricesController {
           offset: coin_limit_count,
           logging: true,
         });
-
-        // console.log(
-        //   "dbCoinrecords.count inside:>> ",
-        //   dbCoinrecords.count,
-        //   "type :",
-        //   type
-        // );
         groupedCount = dbCoinrecords.count; // This is an array of grouped results
         totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
       }
 
-      /********************************BACKUP CODE ********************************/
-      // let dbCoinrecords: any = await Coins.CoinsRead.findAndCountAll({
-      //   attributes: ["cmc_id"],
-      //   where: {
-      //     cmc_id: { [Op.ne]: 0 },
-      // graph_source: { [Op.is]: null },     // not in use
-      // coin_family: coin_family
-      // },
-      // include: [
-      //   {
-      //     model: reset_graph_data.ResetGraphRead,
-      //     attributes: ["graph_type", "updated_at"],
-      //     as: "reset_graph_data",
-      //     where: sequelize.literal(
-      //       `(reset_graph_data.updated_at IS NULL OR DATE(reset_graph_data.updated_at) != CURRENT_DATE OR reset_graph_data.graph_type!="${type}")`
-      //     ),
-      //     required: true,
-      //   },
-      // ],
-      // raw: true,
-      //   group: ["cmc_id"],
-      //   order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
-      //   limit: limit,
-      //   offset: coin_limit_count,
-      //   logging: true,
-      // });
-      /********************************BACKUP CODE ********************************/
-
-      // console.log("totalRecords :>> ", totalRecords);
       if (!totalRecords) {
         let counter = 0;
         await redisClient.setKeyValuePair(
@@ -608,25 +478,12 @@ class PricesController {
       if (totalRecords > 0) {
         await groupedRows.forEach((group: any) => {
           if (group.cmc_id < 50000) {
-            // console.log(`cmc_id: ${group.cmc_id}}`);
             ids.push(group.cmc_id);
           }
         });
       }
 
       console.log("ids,  :>> ", ids, "type :", type);
-
-      /** currencies pagination */
-      // let currency_limit_count = 0;
-      // let findCurrencyCounter = await redisClient.getKeyValuePair(
-      //   config.REDISKEYS.COIN_LIMIT_COUNTS,
-      //   `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`
-      // );
-      //let findCurrencyCounter = await redisClient.getKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, `${type}_${GRAPH_DATA_CURRENCY_COUNTER}`);
-
-      // if (findCurrencyCounter) {
-      //   currency_limit_count = Number(findCurrencyCounter);
-      // }
 
       if (totalRecords > 0 && ids.length > 0) {
         const code = "USD";
@@ -681,7 +538,6 @@ class PricesController {
                   data?.quote[code?.toUpperCase()] !== undefined &&
                   data?.quote[code?.toUpperCase()] !== null
                 ) {
-                  //console.log('data data22222 >>>>>>', data);
                   created_at = new Date(
                     data.quote[code?.toUpperCase()]?.timestamp
                   )
@@ -702,7 +558,6 @@ class PricesController {
                 }
               });
             }
-            // console.log("sparkline=====================", code, sparkline);
             if (sparkline.length > 0) {
               let where: any = {
                 cmc_id: id,
@@ -713,60 +568,20 @@ class PricesController {
                 await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne({
                   attributes: ["id", "sparkline"],
                   where: where,
-                  // logging: true
                 });
 
-              // if (!recordExist) {
-              //   /** if by cmc id not exist then check by coin id */
-              //   // let coin_data: CoinModel | null = await Coins.CoinsRead.findOne(
-              //   //   {
-              //   //     attributes: ["coin_id"],
-              //   //     where: {
-              //   //       cmc_id: id,
-              //   //     },
-              //   //   }
-              //   // );
-              //   // if (coin_data) {
-              //   // where.coin_id = coin_data?.coin_id;
-              //   // delete where.cmc_id;
-              //   recordExist =
-              //     await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne({
-              //       attributes: [`id`, "sparkline", "coin_type"],
-              //       where: where,
-              //       // logging: true
-              //     });
-              //   // }
-              // }
-              // console.log("recordExist >>>>", "where", where);
-              // console.log("recordExist >>>>", recordExist);
-
               if (recordExist) {
-                // sparkline = await this.compare_update_prices(
-                //   sparkline,
-                //   recordExist,
-                //   id,
-                //   code,
-                //   type
-                // );
-
                 let getGraphData: any = await globalHelper.setGraphData(
                   sparkline
                 ); // slicing sparkline data
 
                 if (getGraphData.status) {
-                  // let currentUTCDate: string = new Date()
-                  //   .toISOString()
-                  //   .replace(/T/, " ")
-                  //   .replace(/\..+/, "");
                   const updateData = {
                     sparkline: getGraphData.graphData,
                     cmc_id: id,
                     latest_price_source: type,
                     updated_at: currentUTCDate,
                   };
-                  // if (recordExist?.coin_type == null) {
-                  //   updateData.coin_type = recordExist?.coin_type;
-                  // }
 
                   await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
                     updateData,
@@ -774,20 +589,9 @@ class PricesController {
                       where: where,
                     }
                   );
-                  // console.log("sparkline_Updated:::", updated);
                 }
               } else {
-                // let coin_data: any = await Coins.CoinsRead.findOne({
-                //   attributes: ["coin_id", "coin_symbol"],
-                //   where: {
-                //     cmc_id: id,
-                //   },
-                //   raw: true,
-                // });
-                // if (coin_data) {
                 await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.create({
-                  // coin_id: coin_data.coin_id,
-                  // coin_type: coin_data.coin_symbol,
                   sparkline: sparkline,
                   cmc_id: id,
                   latest_price_source: type,
@@ -796,7 +600,6 @@ class PricesController {
                   created_at,
                   updated_at: currentUTCDate,
                 });
-                // }
               }
             } else {
               let whereCond: any = {
@@ -804,54 +607,15 @@ class PricesController {
                 fiat_type: code,
                 type: type,
               };
-              // console.log("sparkline length zero :>> ", where);
-
-              // console.log("sparkline length zero :>> ", whereCond);
-
-              // if (recordExist?.coin_type == null) {
-              //   updateData.coin_type = recordExist?.coin_type;
-              // }
-
-              // let updateQuery =
               await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
                 {
                   updated_at: currentUTCDate,
                 },
                 {
                   where: whereCond,
-                  // logging: true, // Enable logging
                 }
               );
-
-              // console.log("updateQuery :>> ", updateQuery);
             }
-
-            // let reset_data_exist: any =
-            //   await reset_graph_data.ResetGraphWrite.findOne({
-            //     where: { cmc_id: id, graph_type: type },
-            //   });
-            // let currentUTCDate: string = new Date()
-            //   .toISOString()
-            //   .replace(/T/, " ")
-            //   .replace(/\..+/, "");
-            // if (!reset_data_exist) {
-            //   await reset_graph_data.ResetGraphWrite.create({
-            //     cmc_id: id,
-            //     graph_type: type,
-            //     created_at: currentUTCDate,
-            //     updated_at: currentUTCDate,
-            //   });
-            // } else {
-            //   await reset_graph_data.ResetGraphWrite.update(
-            //     {
-            //       graph_type: type,
-            //       updated_at: currentUTCDate,
-            //     },
-            //     {
-            //       where: { cmc_id: id },
-            //     }
-            //   );
-            // }
           }
         }
       }
@@ -860,8 +624,6 @@ class PricesController {
       coin_limit_count = coin_limit_count + limit;
 
       let counter = coin_limit_count >= totalRecords ? 0 : coin_limit_count;
-      // console.log("graph coin counter >>>", counter, " >>>>>>", family_data);
-
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
         `${type}_${GRAPH_DATA_COIN_COUNTER}`,
@@ -947,11 +709,6 @@ class PricesController {
         where: { cmc_id: id },
       });
 
-      // console.log(
-      //   "Updating with latest sparkline record:",
-      //   sparklineLatestRecord
-      // );
-
       await CoinPriceInFiat.CoinPriceInFiatWrite.update(
         {
           coin_id: coinData?.coin_id,
@@ -973,58 +730,6 @@ class PricesController {
     }
 
     return sparkline;
-    // if (sparkline?.length > 0) {
-    //   let sparkline_latest_record = sparkline[sparkline?.length - 1];
-
-    //   let existing_last_record: any =
-    //     recordExist.sparkline !== null && recordExist.sparkline.length > 0
-    //       ? recordExist?.sparkline[recordExist.sparkline.length - 1]
-    //       : "";
-    //   // console.log("existing_last_record>>>>>>>>>>>>>>>>>>>>>>>>", existing_last_record)
-
-    //   if (existing_last_record !== "" && existing_last_record != null && existing_last_record != 'null') {
-    //     if (
-    //       new Date(existing_last_record?.timestamp).getTime() >
-    //       new Date(sparkline_latest_record?.timestamp).getTime()
-    //     ) {
-    //       console.log('sparkline_latest_record22 >>>>>>>>', sparkline_latest_record);
-    //       sparkline.push(existing_last_record);
-    //     } else {
-    //       let coin_data: CoinModel | null = await Coins.CoinsRead.findOne({
-    //         attributes: ["coin_id"],
-    //         where: {
-    //           cmc_id: id,
-    //         },
-    //       });
-    //       /** update new sparkline latest price */
-    //       console.log('sparkline_latest_record 11>>>>>>>>', sparkline_latest_record);
-    //       // console.log(
-    //       //   "ddddddsparkline_latest_record?.price",
-    //       //   sparkline_latest_record?.price
-    //       // );
-    //       await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-    //         {
-    //           coin_id: coin_data?.coin_id,
-    //           value: sparkline_latest_record?.price || 0,
-    //           price_change_24h: sparkline_latest_record?.percent_change_24h || 0,
-    //           price_change_percentage_24h:
-    //             sparkline_latest_record?.percent_change_24h || 0,
-    //           volume_24h: sparkline_latest_record?.volume_24h || 0,
-    //           latest_price: sparkline_latest_record,
-    //           latest_price_source: type,
-    //         },
-    //         {
-    //           where: {
-    //             cmc_id: id,
-    //             fiat_type: code,
-    //           },
-    //         }
-    //       );
-
-    //     }
-    //   }
-    // }
-    // return sparkline;
   };
 
   public fetchCmcIds = async () => {
@@ -1042,7 +747,6 @@ class PricesController {
       let data: any = await Coins.CoinsWrite.findAndCountAll({
         attributes: [
           "coin_id",
-          // "mainnet_token_address",
           "token_address",
           "coin_symbol",
         ],
@@ -1187,7 +891,6 @@ class PricesController {
               fiat_type: { [Op.in]: currencies },
               type: graph_type,
             },
-            // logging: true,
             limit: 1,
           });
         if (historyExistData.count > 0) {
@@ -1198,10 +901,7 @@ class PricesController {
             let last_time_stamp: any = "";
             let minutes: number = 0;
             if (history_sparkline.length > 0) {
-              // console.log("sparkline >>>>>", history_sparkline.length);
               for (let sparkline of history_sparkline) {
-                // console.log("compare_date >>>>>", compare_date);
-                // console.log("compare_date >>>>>", sparkline?.timestamp);
                 if (last_time_stamp !== "") {
                   let diff: any = Math.abs(
                     new Date(last_time_stamp).getTime() -
@@ -1221,26 +921,17 @@ class PricesController {
                   minutes >= 5
                 ) {
                   latest_sparkline.push(sparkline);
-                  // console.log('minutes >>>>>', minutes);
                 }
               }
-              // console.log('latest_sparkline >>>>>', latest_sparkline.length);
             }
-            /*if (latest_sparkline.length > 0) {
-                            await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update({ sparkline: latest_sparkline }, { where: { id: history.id } });
-                        }*/
           }
         }
       }
 
       /** update coins pagination */
       coin_limit_count = coin_limit_count + limit;
-      // console.log('coin_limit_count >>>', coin_limit_count, ' >>>>>>', family_data);
-      // console.log('total_count >>>', coin_data, ' >>>>>>', family_data);
-
       let counter =
         coin_limit_count >= coin_data.count ? 0 : coin_limit_count + limit;
-      // console.log('counter >>>', counter, ' >>>>>>', family_data);
 
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
@@ -1318,7 +1009,6 @@ class PricesController {
 
             const pairs = response?.data?.pairs;
             if (pairs?.length > 0) {
-              // const firstPair = pairs[0];
               const activePair = await pairs.find(
                 (pair: any) =>
                   pair?.inactive_pair === false || pair?.inactivePair === false
@@ -1383,7 +1073,6 @@ class PricesController {
         where: {
           is_token: 1,
           coin_family: COIN_FAMILY.SOL,
-          // token_type: "CRC20",
           pair_address: { [Op.eq]: null },
         },
       });
@@ -1419,7 +1108,6 @@ class PricesController {
 
             const pairs = response?.data?.pairs;
             if (pairs?.length > 0) {
-              // const activePair = pairs[0];
               const activePair = await pairs.find(
                 (pair: any) =>
                   pair?.inactive_pair === false || pair?.inactivePair === false
@@ -1483,16 +1171,6 @@ class PricesController {
       let requestOptionsForListing = await cmcHelper.cmcFiatCurrencyData(
         cryptoSymbols
       );
-      // let result = await axios
-      //   .request(requestOptionsForListing)
-      //   .then((response) => {
-      //     // console.log(JSON.stringify(response.data));
-      //     return response.data;
-      //   })
-      //   .catch((error) => {
-      //     console.log("::Error log:: updateFiatPrice catch", error);
-      //     return false;
-      //   });
       var result = await rp(requestOptionsForListing);
 
       if (result && result.data) {

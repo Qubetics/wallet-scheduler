@@ -54,18 +54,7 @@ class on_off_helper {
             return false
         }
     }
-    // public async alchemySign(timestamp: number) {
-    //     try {
-    //         let appId: string = config.ALCHEMY.APP_ID || ''
-    //         let appsecret: string = config.ALCHEMY.APPSECRET
-    //         const message: string = appId + appsecret + timestamp;
-    //         let sha1Hash: string = CryptoJS.SHA1(message).toString();
-    //         return sha1Hash
-    //     } catch (err: any) {
-    //         console.error("err in alchemySign", err);
-    //         return false;
-    //     }
-    // }
+
     public async get_grouped_data_alchemy(obj: any) {
         try {
             let groupedData: any = obj.reduce((acc: any, item: any) => {
@@ -232,17 +221,13 @@ class on_off_helper {
             if (coin_family == 2) {
                 let token_data: any = await blockchain_helper.searchTokenNew(address, config.CONTRACT_ABI, this.Eth_Ether_Url)
                 return Math.pow(10, parseInt(token_data?.decimals))
-            } /*else if (coin_family == 4) {
-                let token_data: any = await PolyHelper.searchToken(address)
-                return Math.pow(10, parseInt(token_data?.decimals))
-            } */else if (coin_family == 6) {
+            } else if (coin_family == 6) {
                 let token_data: any = await non_evm_helper.searchToken(address)
                 return Math.pow(10, parseInt(token_data?.decimals))
             } else if (coin_family == 1) {
                 let token_data: any = await blockchain_helper.searchTokenNew(address, config.CONTRACT_ABI, this.Bsc_Ether_Url)
                 return Math.pow(10, parseInt(token_data?.decimals))
             } else {
-                // console.log("Invalid Coin_Family")
                 return 0;
             }
         } catch (err: any) {

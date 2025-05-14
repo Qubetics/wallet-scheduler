@@ -6,11 +6,9 @@ const { ETH: ETH, BNB: BNB, POL: POL } = config.STATIC_COIN_FAMILY;
 
 class ThirdPartyController {
   public updateGasPrice = async () => {
-    // console.error("success ~ ~ updateGasPrice",);
     try {
       let url: string = `${config.ETH_GAS_FEE_URL}${config.ETH_GAS_FEE_API_KEY}`;
       await axios.get(url).then(async (responce) => {
-        // console.log(' responce.data', responce);
         if (responce.status == 200) {
           let SafeGasPrice = parseFloat(responce.data.result.SafeGasPrice);
           let ProposeGasPrice = parseFloat(
@@ -54,7 +52,6 @@ class ThirdPartyController {
   };
 
   public updateBNBGasPrice = async () => {
-    // console.error("success ~ ~ updateBNBGasPrice");
     try {
       let url: string = `${config.BNB_GAS_FEE_URL}${config.BNB_GAS_FEE_API_KEY}`;
       await axios.get(url).then(async (responce) => {
@@ -100,11 +97,9 @@ class ThirdPartyController {
   };
 
   public updatePolGasPrice = async () => {
-    // console.error("success ~ ~ updatePolGasPrice");
     try {
       let url: string = `${config.POL_GAS_FEE_URL}${config.POL_GAS_FEE_API_KEY}/networks/137/suggestedGasFees`;
       await axios.get(url).then(async (responce) => {
-        // console.log('pol responce >>>', responce.data);
         if (responce.status == 200) {
           let lowSuggestedMaxFeePerGas = parseFloat(
             responce.data.low.suggestedMaxFeePerGas

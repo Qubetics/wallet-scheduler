@@ -80,34 +80,6 @@ let dataObj = {
     type: DataTypes.DOUBLE,
     allowNull: true,
   },
-  // roi: {
-  //   type: DataTypes.DOUBLE,
-  //   allowNull: true,
-  // },
-  // open: {
-  //   type: DataTypes.DOUBLE,
-  //   allowNull: true,
-  // },
-  // high: {
-  //   type: DataTypes.DOUBLE,
-  //   allowNull: true,
-  // },
-  // average: {
-  //   type: DataTypes.DOUBLE,
-  //   allowNull: true,
-  // },
-  // close: {
-  //   type: DataTypes.DOUBLE,
-  //   allowNull: true,
-  // },
-  // low: {
-  //   type: DataTypes.DOUBLE,
-  //   allowNull: true,
-  // },
-  // change_price: {
-  //   type: DataTypes.DOUBLE,
-  //   allowNull: true,
-  // },
   latest_price: {
     type: DataTypes.JSON,
     allowNull: true,
@@ -116,14 +88,6 @@ let dataObj = {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  // created_at: {
-  //   type: DataTypes.DATE,
-  //   allowNull: true,
-  // },
-  // updated_at: {
-  //   type: DataTypes.DATE,
-  //   allowNull: true,
-  // },
 };
 
 let dataObjIndex = {

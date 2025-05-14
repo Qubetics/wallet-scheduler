@@ -35,7 +35,6 @@ class CMCHelper {
             method: "get",
             url: url,
             headers: header,
-            // timeout: 5000,
           });
         }
       } else {
@@ -103,7 +102,6 @@ class CMCHelper {
             headers: { api_key: `${config.CMC_PRODUCT.COIN_ZONE_KEY}` },
             json: true,
             gzip: true,
-            // timeout: 5000,
           };
         }
         console.log("working fine 1111,cmc_historical_data");
@@ -161,7 +159,6 @@ class CMCHelper {
             headers: { api_key: `${config.CMC_PRODUCT.COIN_ZONE_KEY}` },
             json: true,
             gzip: true,
-            // timeout: 5000,
           };
         }
         console.log("working fine 1111,cmc_historical_data");

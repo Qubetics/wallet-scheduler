@@ -65,7 +65,3 @@ export const CurrencyFiat = {
   CurrencyFiatWrite: CurrencyFiatWrite,
   CurrencyFiatRead: CurrencyFiatRead,
 };
-// export default {
-//     CurrencyFiatWrite:CurrencyFiatWrite,
-//     CurrencyFiatRead:CurrencyFiatRead,
-// };

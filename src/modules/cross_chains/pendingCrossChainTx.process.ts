@@ -28,13 +28,6 @@ class PendingCrossChainProcess {
                     )
                 }
             }
-            // await TrnxHistoryModel.update({
-            //     order_status: 'failed'
-            // }, {
-            //     where: {
-            //         blockchain_status: 'failed', type: 'cross_chain', order_id: { [Op.ne]: null }, [Op.or]: [{ order_status: 'pending' }, { order_status: 'processing' }]
-            //     }
-            // })
         } catch (err: any) {
             console.error("💥 ~ getTransactionFromDB error", err)
         }
@@ -47,9 +40,6 @@ class PendingCrossChainProcess {
     }) {
         try {
             await KafkaHelper.produceMessage(config.PENDING_CROSS_CHAIN_TX_TOPIC, data)
-            // await RabbitMq.assertQueue(config.PENDING_CROSS_CHAIN_TX_TOPIC || '')
-            // await RabbitMq.sendToQueue(config.PENDING_CROSS_CHAIN_TX_TOPIC, Buffer.from(JSON.stringify(data)))
-
         } catch (err: any) {
             console.error("💥 ~ addTxToQueue error", err)
         }

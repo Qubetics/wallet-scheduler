@@ -1,28 +1,14 @@
 import schedule from "node-schedule";
 import moment from "moment";
 import { config } from "./config";
-// const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 import {
   ThirdPartyController,
   PricesController,
   update_balance_controller,
   PendingCrossChainProcess,
   CosnumeCrossChainTxProcess,
-  // OnOffRampController,
   TradingViewGraphs,
 } from "./modules/index";
-
-// const {
-//   eth: ETH,
-//   btc: BTC,
-//   bnb: BNB,
-//   sol: SOL,
-//   ada: ADA,
-//   matic: MATIC,
-//   avax: AVAX,
-//   cro: CRO,
-//   pls: PLS,
-// } = config.STATIC_COIN_FAMILY;
 
 const {
   moralis_graph_counter: MORALIS_GRAPH_COUNTER,
@@ -34,32 +20,22 @@ class CronJobs {
     this.updateEthGasPriceCron();
     this.updateBNBGasPriceCron();
     this.updatePOLGasPriceCron();
-    /**  */
 
     /** Update Cmc Ids*/
     this.updateCmcIds();
-    /**  */
 
-    // /** Graph data */
+    /** Graph data */
     this.updateFiatCoinPriceCron();
     this.getCoinGraphDataDaily();
     this.getCoinGraphDataWeekly();
     this.getCoinGraphDataMonthly();
     this.getCoinGraphDataYearly();
-    /**  */
     /** cross chain */
     this.getPendingWithdrawalTxProcess();
     this.updateTxStatusProcess();
-    /** Update btc balances of users */
-    // this.updateBtcBalances()
-    // this.updateUsdtBalances()
     this.tradingViewGraphData();
 
     /* moralis Chart Widget TradingView */
-    // this.moralisTradingviewETH();
-    // this.moralisTradingviewBSC();
-    // this.moralisTradingviewMATIC();
-    // this.moralisTradingviewSOL();
     this.moralisTradingviewWidget()
 
     this.moralisTradingview(); // call custom token kafka consumer
@@ -112,7 +88,6 @@ class CronJobs {
         "5m",
         "1d",
         5
-        // COIN_FAMILY.ETH
       );
     });
   };
@@ -132,7 +107,6 @@ class CronJobs {
         "3h",
         "1w",
         5
-        // COIN_FAMILY.ETH
       );
     });
   };
@@ -152,7 +126,6 @@ class CronJobs {
         "12h",
         "1m",
         5
-        // COIN_FAMILY.ETH
       );
     });
   };
@@ -172,7 +145,6 @@ class CronJobs {
         "3d",
         "1y",
         5
-        // COIN_FAMILY.ETH
       );
     });
   };
@@ -201,67 +173,6 @@ class CronJobs {
       await TradingViewGraphs.getTradingViewTokens();
     });
   };
-  // public async updateOnOffRampFiats() {
-  //   schedule.scheduleJob('0 0 */2 * *', async function () {
-  //     // await OnOffRampController.updateFiats('alchemy')
-  //     await OnOffRampController.updateFiats('transak')
-  //   })
-  // }
-  // public async updateTranskToken() {
-  //   schedule.scheduleJob('0 */12 * * *', async function () {
-  //     await OnOffRampController.updateTransakToken()
-  //   })
-  // }
-
-  // public async updateBtcBalances() {
-  //   schedule.scheduleJob("*/2 * * * *", async function () {
-  //     console.log("hy entered into updateBtcBalances")
-  //     await update_balance_controller.updateBtcBalances()
-  //   })
-  // }
-  // public async updateUsdtBalances() {
-  //   schedule.scheduleJob("*/2 * * * *", async function () {
-  //     console.log("hy entered into updateUsdtBalances")
-  //     await update_balance_controller.updateUsdtBalances()
-  //   })
-  // }
-
-  /* moralis Chart Widget TradingView */
-  // public moralisTradingviewETH = async () => {
-  //   schedule.scheduleJob("*/5 * * * *", async function () {
-  //     await PricesController.moralisTradingviewChartWidget(
-  //       "eth",
-  //       COIN_FAMILY.ETH,
-  //       "ERC20"
-  //     );
-  //   });
-  // };
-
-  // public moralisTradingviewBSC = async () => {
-  //   schedule.scheduleJob("*/6 * * * *", async function () {
-  //     await PricesController.moralisTradingviewChartWidget(
-  //       "bsc",
-  //       COIN_FAMILY.BNB,
-  //       "BEP20"
-  //     );
-  //   });
-  // };
-
-  // public moralisTradingviewMATIC = async () => {
-  //   schedule.scheduleJob("*/7 * * * *", async function () {
-  //     await PricesController.moralisTradingviewChartWidget(
-  //       "polygon",
-  //       COIN_FAMILY.POL,
-  //       "ERC20"
-  //     );
-  //   });
-  // };
-
-  // public moralisTradingviewSOL = async () => {
-  //   schedule.scheduleJob("*/8 * * * *", async function () {
-  //     await PricesController.moralisTradingviewChartWidgetSOL();
-  //   });
-  // };
 
   public moralisTradingviewWidget = async () => {
     schedule.scheduleJob('*/5 * * * *', async function () {

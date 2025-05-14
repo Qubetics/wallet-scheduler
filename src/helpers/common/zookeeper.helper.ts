@@ -17,7 +17,6 @@ class ZookeeprProvider {
             console.debug(`connectZookeeper...`, process.env.ZOOKEEPER_HOST);
             console.debug(`process.env.ZOOKEEPER_PATH...`, process.env.ZOOKEEPER_PATH);
             client.once('connected', () => {
-                // console.log("inside connected zookeeper");
 
                 client.getData(
                     process.env.ZOOKEEPER_PATH || '/qubetics_wallet',

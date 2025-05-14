@@ -1,11 +1,9 @@
-import { Coins, CoinPriceInFiat, PriceAlerts } from "../../models/model/index";
+import { Coins, PriceAlerts } from "../../models/model/index";
 import { NotificationTypes } from "../../constants";
 import dbHelper from "../../helpers/dbHelper";
 import {
   sendNotification,
-  bigNumberSafeMath,
 } from "../../helpers/common/globalFunctions";
-import { Sequelize } from "sequelize";
 
 class PriceAlertsController {
   constructor() {}
@@ -13,7 +11,6 @@ class PriceAlertsController {
   /**
    * send price alerts
    */
-  // public sendPriceAlerts = async (coin_family: number) => {
   public sendPriceAlerts = async (
     coin_id: number,
     fiat_currency: string,
@@ -35,16 +32,8 @@ class PriceAlertsController {
             {
               model: Coins.CoinsRead,
               attributes: ["coin_id", "coin_symbol"],
-              // where: { coin_family: coin_family },
               where: { coin_status: 1 },
               as: "coin_detail",
-              // include: [{
-              //     model: CoinPriceInFiat.CoinPriceInFiatRead,
-              //     attributes: ['value'],
-              //     where: Sequelize.literal('`coin_detail->coin_price_data`.`fiat_type`=`price_alerts`.`fiat_type`'),
-              //     as: 'coin_price_data',
-              //     required: true
-              // }],
               required: true,
             },
           ],
@@ -53,7 +42,6 @@ class PriceAlertsController {
             coin_id: coin_id,
             fiat_type: fiat_currency,
           },
-          // logging: true
         }
       );
       let currentUTCDate: string = new Date()
@@ -62,20 +50,6 @@ class PriceAlertsController {
         .replace(/\..+/, "");
       if (price_alert_data) {
         for await (let alert of price_alert_data) {
-          // let coin = await CoinPriceInFiat.CoinPriceInFiatRead.findOne({
-          //     attributes: ['value'],
-          //     where: {
-          //         coin_id: alert.coin_id,
-          //         fiat_type: alert.fiat_type,
-          //     },
-          //     raw: true,
-          //     // logging: true
-          // });
-          // if (!coin) {
-          //     throw new Error('Coin does not exist.');
-          // }
-
-          // if (alert.coin_detail.coin_price_data.value && alert.price && alert.coin_detail.coin_price_data.value > alert.price && alert.percentage > 0) {
           if (
             updated_price &&
             alert.price &&
@@ -86,13 +60,6 @@ class PriceAlertsController {
               alert?.user_id ? alert.user_id : 0
             );
             console.log("deviceToken >>>>", deviceToken);
-            // let diff = await bigNumberSafeMath(coin.current_price, '-', alert.price);
-            //let diff = await bigNumberSafeMath(alert.price, '-', alert.value);
-            //let percentage = await bigNumberSafeMath(await bigNumberSafeMath(diff, '/', alert.price), '*', 100);
-            //percentage = Number(percentage)
-            //let notificationMsg = `Price  of ${alert.coin_detail.coin_symbol.toUpperCase()} has Increased by ${alert.percentage.toFixed(2)}%`;
-            /////////////////////////
-            // let notificationMsg = `Price Alert - ${alert.coin_detail.coin_symbol.toUpperCase()} price has reached ${updated_price.toFixed(6)} ${alert.fiat_type}`;
             let notificationMsg = `Price Alert - ${alert.coin_detail.coin_symbol.toUpperCase()} price has reached ${alert.price.toFixed(
               6
             )} ${alert.fiat_type}`;
@@ -137,7 +104,6 @@ class PriceAlertsController {
               { status: "sent" },
               { where: { id: alert.id } }
             );
-            // } else if (alert.coin_detail.coin_price_data.value && alert.price && alert.coin_detail.coin_price_data.value < alert.price && alert.percentage < 0) {
           } else if (
             updated_price &&
             alert.price &&
@@ -148,14 +114,6 @@ class PriceAlertsController {
               alert?.user_id ? alert.user_id : 0
             );
             console.log("deviceToken >>>>", deviceToken);
-            // let diff = await bigNumberSafeMath(alert.price, '-', coin.current_price);
-            ////let diff = await bigNumberSafeMath(alert.price, '-', alert.value);
-            //let percentage = await bigNumberSafeMath(await bigNumberSafeMath(diff, '/', alert.price), '*', 100);
-            //percentage = Number(percentage)
-            //let notificationMsg = `Price  of ${alert.coin_detail.coin_symbol.toUpperCase()} has Decreased by ${alert.percentage.toFixed(2)}%`;
-
-            ///////////////
-            // let notificationMsg = `Price Alert - ${alert.coin_detail.coin_symbol.toUpperCase()} price has reached ${updated_price.toFixed(6)} ${alert.fiat_type}`;
             let notificationMsg = `Price Alert - ${alert.coin_detail.coin_symbol.toUpperCase()} price has reached ${alert.price.toFixed(
               6
             )} ${alert.fiat_type}`;
@@ -188,8 +146,6 @@ class PriceAlertsController {
               notification_type: NotificationTypes.ALERT,
               tx_type: "ALERT",
               alert_price: alert.percentage,
-              //   created_at: Date,
-              //   updated_at: Date,
             };
             if (
               typeof deviceToken?.device_token != "undefined" &&
@@ -204,7 +160,6 @@ class PriceAlertsController {
               { where: { id: alert.id } }
             );
           }
-          // }
         }
       }
       return true;

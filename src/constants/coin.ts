@@ -1,10 +1,3 @@
-// export enum COIN_FAMILY {
-//     bnb = 1,
-//     eth = 2,
-//     btc = 3,
-//     //matic = 4,
-//     tron = 6
-// }
 export enum COINS {
     ETH = 'ETH',
     BTC = 'BTC',
