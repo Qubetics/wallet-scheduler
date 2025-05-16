@@ -78,9 +78,9 @@ class ThirdPartyController {
           }
           await GasPrice.GasPriceWrite.update(
             {
-              safe_gas_price: SafeGasPrice,
-              propose_gas_price: ProposeGasPrice,
-              fast_gas_price: FastGasPrice,
+              safe_gas_price: SafeGasPrice > 1 ? SafeGasPrice : 1,
+              propose_gas_price: ProposeGasPrice > 1 ? ProposeGasPrice : 1,
+              fast_gas_price: FastGasPrice > 1 ? FastGasPrice : 1,
             },
             {
               where: { coin_family: BNB },

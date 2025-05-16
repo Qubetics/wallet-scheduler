@@ -398,16 +398,16 @@ class PricesController {
       }
       let now = new Date();
       let subtractTime = new Date(now);
-      // Calculate different time ranges
-      if (type == "1d") {
-        subtractTime.setHours(subtractTime.getHours() - 4);
-      } else if (type == "1w") {
-        subtractTime.setHours(subtractTime.getHours() - 6);
-      } else if (type == "1m") {
-        subtractTime.setDate(subtractTime.getDate() - 1);
-      } else {
-        subtractTime.setDate(subtractTime.getDate() - 3);
-      }
+      // // Calculate different time ranges
+      // if (type == "1d") {
+      //   subtractTime.setHours(subtractTime.getHours() - 4);
+      // } else if (type == "1w") {
+      //   subtractTime.setHours(subtractTime.getHours() - 6);
+      // } else if (type == "1m") {
+      //   subtractTime.setDate(subtractTime.getDate() - 1);
+      // } else {
+      //   subtractTime.setDate(subtractTime.getDate() - 3);
+      // }
       console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
       let dbCoinrecords: any;
 
