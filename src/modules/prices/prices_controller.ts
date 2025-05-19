@@ -1345,6 +1345,193 @@ class PricesController {
     price_change_percentage_24h = await bigNumberSafeMath(price_change_percentage_24h, '*', 100);
     return price_change_percentage_24h.toString();
   }
+
+  public fetchCmcPriceV2 = async () => {
+    try {
+      console.log("********* fetchCmcPriceV2 *************");
+
+      let coin_limit_count: number = 0;
+      const limit: number = 100;
+
+      // Get the current batch counter from Redis
+      const findCoinCounter = await redisClient.getKeyValuePair(
+        config.REDISKEYS.COIN_LIMIT_COUNTS,
+        `${CURRENT_PRICE_COIN_COUNTER}`
+      );
+      
+      // Parse counter if available
+      if (findCoinCounter) {
+        coin_limit_count = Number(findCoinCounter);
+      }
+
+      // Fetch list of coins with non-zero cmc_id from the database (paginated)
+      const coinData = await Coins.CoinsRead.findAndCountAll({
+        attributes: ["cmc_id"],
+        where: { cmc_id: { [Op.ne]: 0 } },
+        order: [["coin_id", "asc"]],
+        limit,
+        offset: coin_limit_count,
+      });
+
+      // Extract CMC IDs from result
+      const cmcIds: any[] = coinData.rows.map((row) => row.cmc_id);
+      const coin_data_count = coinData.count;
+
+      // Add each coin's cmc_id into the reset_graph_data table if not already present
+      if (cmcIds.length > 0) {
+        for (let i: number = 0; i < cmcIds.length; i++) {
+          let id_exist: any = await reset_graph_data.ResetGraphRead.findOne({
+            attributes: ["id"],
+            where: { cmc_id: cmcIds[i] },
+            raw: true,
+          });
+
+          if (id_exist == null) {
+            let currentUTCDate: string = new Date()
+              .toISOString()
+              .replace(/T/, " ")
+              .replace(/\..+/, "");
+
+            await reset_graph_data.ResetGraphWrite.create({
+              cmc_id: cmcIds[i],
+              graph_type: "1d",
+              created_at: currentUTCDate,
+              updated_at: null,
+            });
+          }
+        }
+
+        // Fetch live market data for the coins from CMC API
+        const cmcIdsParam = cmcIds.join(",");
+        const result = await cmcHelper.cmcApi(`quotes/latest?id=${cmcIdsParam}&convert=USD`);
+        const cmcData = result?.data?.data;
+        console.log("🚀 ~ PricesController ~ fetchCmcPriceV2= ~ cmcData:", cmcData);
+
+        // Fetch fiat currency conversion rates from database (excluding USD)
+        const fiatRatesRaw = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
+          attributes: ["currency_code", "price_in_usd"],
+          where: {
+            currency_code: { [Op.ne]: "USD" },
+          },
+          raw: true,
+          order: [["currency_id", "asc"]],
+        });
+
+        // Build a fiat rate map (including USD = 1)
+        const fiatRateMap: Record<string, number> = {
+          USD: 1,
+        };
+        for (const fiat of fiatRatesRaw.rows) {
+          const code = fiat.currency_code.toUpperCase();
+          const rate = fiat.price_in_usd;
+          if (rate && rate > 0) {
+            fiatRateMap[code] = rate;
+          }
+        }
+        console.log("🚀 ~ PricesController ~ fetchCmcPriceV2= ~ fiatRateMap:", fiatRateMap);
+
+        // Loop through each coin's market data from CMC
+        for (const cmcId in cmcData) {
+          const coinObj = cmcData[cmcId];
+          const usdQuote = coinObj.quote?.USD;
+          if (!usdQuote) continue;
+
+          // Construct latest price object
+          const latest_price_usd: any = {
+            price: usdQuote.price || 0,
+            timestamp: usdQuote.last_updated,
+            price_change_24h: usdQuote.percent_change_24h || 0,
+            volume_24h: usdQuote.volume_24h || 0,
+            percent_change_7d: usdQuote.percent_change_7d || 0,
+            percent_change_30d: usdQuote.percent_change_30d || 0,
+          };
+          console.log("🚀 ~ PricesController ~ fetchCmcPriceV2= ~ latest_price_usd:", latest_price_usd, coinObj.symbol);
+
+          // Update prices for each fiat currency
+          for (const fiatCode in fiatRateMap) {
+            const fiatRate = fiatRateMap[fiatCode];
+            const fiatPrice = usdQuote.price * fiatRate;
+
+            const where = { cmc_id: coinObj.id, fiat_type: fiatCode };
+
+            // Check if price record already exists
+            let existingPrice = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+              attributes: ["id", "coin_id"],
+              where,
+              raw: true,
+            });
+
+            let coin_id: number = 0;
+
+            if (!existingPrice) {
+              // If not exists, fetch coin info and insert a new record
+              const coin = await Coins.CoinsRead.findOne({
+                attributes: ["coin_id", "coin_family", "cmc_id", "token_address"],
+                where: { cmc_id: coinObj.id },
+              });
+
+              if (!coin) continue;
+              coin_id = coin.coin_id;
+
+              await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+                coin_id: coin.coin_id,
+                coin_name: coinObj.name,
+                coin_family: coin.coin_family,
+                max_supply: coinObj.max_supply || 0,
+                cmc_id: coinObj.id,
+                circulating: coinObj.circulating_supply || 0,
+                total_supply: coinObj.total_supply,
+                rank: coinObj.cmc_rank || 0,
+                market_cap: usdQuote.market_cap * fiatRate,
+                fiat_type: fiatCode,
+                coin_symbol: coinObj.symbol,
+                value: fiatPrice,
+                price_change_24h: usdQuote.percent_change_24h || 0,
+                price_change_percentage_24h: usdQuote.percent_change_24h || 0,
+                volume_24h: usdQuote.volume_24h * fiatRate,
+                token_address: coin.token_address,
+                latest_price: latest_price_usd,
+                latest_price_source: "converted_from_usd",
+              });
+            } else {
+              // If exists, update the record
+              coin_id = existingPrice.coin_id;
+              await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+                {
+                  value: fiatPrice,
+                  price_change_24h: usdQuote.percent_change_24h,
+                  price_change_percentage_24h: usdQuote.percent_change_24h,
+                  volume_24h: usdQuote.volume_24h * fiatRate,
+                  total_supply: coinObj.total_supply,
+                  latest_price: latest_price_usd,
+                  latest_price_source: "converted_from_usd",
+                },
+                { where }
+              );
+            }
+
+            // For USD, also update the price history table
+            if (coin_id > 0 && fiatCode === "USD") {
+              await this.update_history_last_price(latest_price_usd, coinObj.id, fiatCode, where);
+            }
+          }
+        }
+      }
+
+      // Update the Redis counter for next batch; reset if finished
+      coin_limit_count += limit;
+      const nextCoinCounter = coin_limit_count >= coin_data_count ? 0 : coin_limit_count;
+
+      await redisClient.setKeyValuePair(
+        config.REDISKEYS.COIN_LIMIT_COUNTS,
+        `${CURRENT_PRICE_COIN_COUNTER}`,
+        nextCoinCounter.toString()
+      );
+    } catch (error) {
+      console.error("fetchCmcPrice error", error);
+    }
+  };
+
 }
 
 const third_party_controller = new PricesController();

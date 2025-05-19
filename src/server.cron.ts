@@ -26,6 +26,7 @@ class CronJobs {
 
     /** Graph data */
     this.updateFiatCoinPriceCron();
+    this.updateFiatCoinPriceCronV2();
     this.getCoinGraphDataDaily();
     this.getCoinGraphDataWeekly();
     this.getCoinGraphDataMonthly();
@@ -73,6 +74,12 @@ class CronJobs {
   public updateFiatCoinPriceCron = async () => {
     schedule.scheduleJob("0 */1 * * * *", async function () {
       await PricesController.fetchCmcPrice();
+    });
+  };
+
+  public updateFiatCoinPriceCronV2 = async () => {
+    schedule.scheduleJob("0 */1 * * * *", async function () {
+      await PricesController.fetchCmcPriceV2();
     });
   };
 
