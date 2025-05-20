@@ -1379,27 +1379,27 @@ class PricesController {
 
       // Add each coin's cmc_id into the reset_graph_data table if not already present
       if (cmcIds.length > 0) {
-        for (let i: number = 0; i < cmcIds.length; i++) {
-          let id_exist: any = await reset_graph_data.ResetGraphRead.findOne({
-            attributes: ["id"],
-            where: { cmc_id: cmcIds[i] },
-            raw: true,
-          });
+        // for (let i: number = 0; i < cmcIds.length; i++) {
+        //   let id_exist: any = await reset_graph_data.ResetGraphRead.findOne({
+        //     attributes: ["id"],
+        //     where: { cmc_id: cmcIds[i] },
+        //     raw: true,
+        //   });
 
-          if (id_exist == null) {
-            let currentUTCDate: string = new Date()
-              .toISOString()
-              .replace(/T/, " ")
-              .replace(/\..+/, "");
+        //   if (id_exist == null) {
+        //     let currentUTCDate: string = new Date()
+        //       .toISOString()
+        //       .replace(/T/, " ")
+        //       .replace(/\..+/, "");
 
-            await reset_graph_data.ResetGraphWrite.create({
-              cmc_id: cmcIds[i],
-              graph_type: "1d",
-              created_at: currentUTCDate,
-              updated_at: null,
-            });
-          }
-        }
+        //     await reset_graph_data.ResetGraphWrite.create({
+        //       cmc_id: cmcIds[i],
+        //       graph_type: "1d",
+        //       created_at: currentUTCDate,
+        //       updated_at: null,
+        //     });
+        //   }
+        // }
 
         // Fetch live market data for the coins from CMC API
         const cmcIdsParam = cmcIds.join(",");
