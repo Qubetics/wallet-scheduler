@@ -397,24 +397,24 @@ class PricesController {
         coin_limit_count = Number(findCoinCounter);
       }
       let now = new Date();
-      let subtractTime = new Date(now);
-      // Calculate different time ranges
-      if (type == "1d") {
-        subtractTime.setHours(subtractTime.getHours() - 4);
-      } else if (type == "1w") {
-        subtractTime.setHours(subtractTime.getHours() - 6);
-      } else if (type == "1m") {
-        subtractTime.setDate(subtractTime.getDate() - 1);
-      } else {
-        subtractTime.setDate(subtractTime.getDate() - 3);
-      }
-      console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
+      // let subtractTime = new Date(now);
+      // // Calculate different time ranges
+      // if (type == "1d") {
+      //   subtractTime.setHours(subtractTime.getHours() - 4);
+      // } else if (type == "1w") {
+      //   subtractTime.setHours(subtractTime.getHours() - 6);
+      // } else if (type == "1m") {
+      //   subtractTime.setDate(subtractTime.getDate() - 1);
+      // } else {
+      //   subtractTime.setDate(subtractTime.getDate() - 3);
+      // }
+      // console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
       let dbCoinrecords: any;
 
       dbCoinrecords =
         await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
           where: {
-            updated_at: { [Op.lt]: subtractTime },
+            // updated_at: { [Op.lt]: subtractTime },
             type: type,
             fiat_type: "USD",
           },
@@ -1405,7 +1405,6 @@ class PricesController {
         const cmcIdsParam = cmcIds.join(",");
         const result = await cmcHelper.cmcApi(`quotes/latest?id=${cmcIdsParam}&convert=USD`);
         const cmcData = result?.data?.data;
-        console.log("🚀 ~ PricesController ~ fetchCmcPriceV2= ~ cmcData:", cmcData);
 
         // Fetch fiat currency conversion rates from database (excluding USD)
         const fiatRatesRaw = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
@@ -1428,7 +1427,6 @@ class PricesController {
             fiatRateMap[code] = rate;
           }
         }
-        console.log("🚀 ~ PricesController ~ fetchCmcPriceV2= ~ fiatRateMap:", fiatRateMap);
 
         // Loop through each coin's market data from CMC
         for (const cmcId in cmcData) {
@@ -1445,7 +1443,6 @@ class PricesController {
             percent_change_7d: usdQuote.percent_change_7d || 0,
             percent_change_30d: usdQuote.percent_change_30d || 0,
           };
-          console.log("🚀 ~ PricesController ~ fetchCmcPriceV2= ~ latest_price_usd:", latest_price_usd, coinObj.symbol);
 
           // Update prices for each fiat currency
           for (const fiatCode in fiatRateMap) {
