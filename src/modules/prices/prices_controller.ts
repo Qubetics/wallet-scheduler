@@ -398,16 +398,16 @@ class PricesController {
       }
       let now = new Date();
       let subtractTime = new Date(now);
-      // // Calculate different time ranges
-      // if (type == "1d") {
-      //   subtractTime.setHours(subtractTime.getHours() - 4);
-      // } else if (type == "1w") {
-      //   subtractTime.setHours(subtractTime.getHours() - 6);
-      // } else if (type == "1m") {
-      //   subtractTime.setDate(subtractTime.getDate() - 1);
-      // } else {
-      //   subtractTime.setDate(subtractTime.getDate() - 3);
-      // }
+      // Calculate different time ranges
+      if (type == "1d") {
+        subtractTime.setHours(subtractTime.getHours() - 4);
+      } else if (type == "1w") {
+        subtractTime.setHours(subtractTime.getHours() - 6);
+      } else if (type == "1m") {
+        subtractTime.setDate(subtractTime.getDate() - 1);
+      } else {
+        subtractTime.setDate(subtractTime.getDate() - 3);
+      }
       console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
       let dbCoinrecords: any;
 
@@ -623,7 +623,7 @@ class PricesController {
       /** update coins pagination */
       coin_limit_count = coin_limit_count + limit;
 
-      let counter = coin_limit_count >= totalRecords ? 0 : coin_limit_count;
+      let counter = coin_limit_count >= groupedCount ? 0 : coin_limit_count;
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
         `${type}_${GRAPH_DATA_COIN_COUNTER}`,
