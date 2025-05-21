@@ -12,3 +12,4 @@ export * from './model.cmc_not_exist';
 export * from "./model.on_off_ramp_fiats";
 export * from "./model.custom_tokens";
 export * from './model.day_coin_prices'
+export * from './model.ticsPriceInFiatGraph'

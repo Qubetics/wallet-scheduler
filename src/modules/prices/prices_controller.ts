@@ -5,7 +5,8 @@ import {
   Coins,
   CoinPriceInFiatGraph,
   CMCDataNotExistModel,
-  DayCoinPrice
+  DayCoinPrice,
+  TicsPriceInFiatGraph
 } from "../../models/model/index";
 import redisClient from "../../helpers/common/redis";
 import { Op, Sequelize } from "sequelize";
@@ -1241,9 +1242,10 @@ class PricesController {
           { value: ticsUsdPrice, price_change_24h: price_change_percentage_24h ,price_change_percentage_24h: price_change_percentage_24h },
           { where: { fiat_type: 'usd', coin_id } }
         );
-
-        await this.saveDayCoinPrice(coin_id, ticsUsdPrice, coin_family);
-
+        
+        const timestamp: string = new Date().toISOString();
+        await this.saveDayCoinPrice( coin_id, ticsUsdPrice, coin_family);
+        await this.saveTicsGraphPrice( ticsUsdPrice, timestamp, coin_id );
       } else {
         await CoinPriceInFiat.CoinPriceInFiatWrite.create({
           coin_id,
@@ -1311,11 +1313,27 @@ class PricesController {
   
   private saveDayCoinPrice = async (coin_id: number, price: number, coin_family: number) => {
     let dataToSave: any = {
-        coin_id: coin_id,
-        coin_family: coin_family,
-        price: price,
+      coin_id: coin_id,
+      coin_family: coin_family,
+      price: price,
     }
     await DayCoinPrice.DayCoinPriceWrite.create(dataToSave);
+  }
+  
+  public deleteTicsDailyTablePrice = async () => {
+    await DayCoinPrice.DayCoinPriceWrite.destroy({
+        where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 25 HOUR) AND coin_family = ${config.STATIC_COIN_FAMILY.TICS}`),
+    });
+    return true;
+  }
+
+  private saveTicsGraphPrice = async ( price: number, timestamp : string , coin_id: number ) => {
+    let dataToSave: any = {
+        coin_id : coin_id,
+        price: price,
+        timestamp: timestamp
+    }
+    await TicsPriceInFiatGraph.TicsPriceInFiatGraphWrite.create(dataToSave);
   }
 
   private coinCompareDayPrice = async (coin_id: number) => {

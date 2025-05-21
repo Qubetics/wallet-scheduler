@@ -44,6 +44,7 @@ class CronJobs {
     this.updateFiatPrice();
 
     this.updateTicsPrice();
+    this.deleteTicsDailyTablePrice();
 
   }
 
@@ -199,10 +200,16 @@ class CronJobs {
   };
 
   public updateTicsPrice = async () => {
-    schedule.scheduleJob("0 */5 * * * *", async function () {
+    schedule.scheduleJob("* * * * *", async function () {
       await PricesController.updateTicsPrice();
     });
   };
+
+  public deleteTicsDailyTablePrice = async () => {
+    schedule.scheduleJob("51 23 * * *", async function () {
+        await PricesController.deleteTicsDailyTablePrice();
+    });
+}
 }
 
 new CronJobs();
