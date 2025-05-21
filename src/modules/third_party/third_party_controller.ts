@@ -28,8 +28,14 @@ class ThirdPartyController {
 
           // Round to 6 decimal places if necessary
           if (FastGasPrice.toString().split(".")[1]?.length > 6) {
+            console.log("FastGasPrice",FastGasPrice)
             FastGasPrice = parseFloat(FastGasPrice.toFixed(6));
           }
+          console.log('=============',{
+            safe_gas_price: SafeGasPrice,
+            propose_gas_price: ProposeGasPrice,
+            fast_gas_price: FastGasPrice,
+          })
           if(FastGasPrice>0){
             await GasPrice.GasPriceWrite.update(
               {

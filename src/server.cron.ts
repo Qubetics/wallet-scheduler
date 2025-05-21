@@ -18,33 +18,33 @@ class CronJobs {
   constructor() {
     /** Update Gas Prices */
     this.updateEthGasPriceCron();
-    this.updateBNBGasPriceCron();
-    this.updatePOLGasPriceCron();
+    // this.updateBNBGasPriceCron();
+    // this.updatePOLGasPriceCron();
 
-    /** Update Cmc Ids*/
-    this.updateCmcIds();
+    // /** Update Cmc Ids*/
+    // this.updateCmcIds();
 
-    /** Graph data */
-    // this.updateFiatCoinPriceCron();
-    this.updateFiatCoinPriceCronV2();
-    this.getCoinGraphDataDaily();
-    this.getCoinGraphDataWeekly();
-    this.getCoinGraphDataMonthly();
-    this.getCoinGraphDataYearly();
-    /** cross chain */
-    this.getPendingWithdrawalTxProcess();
-    this.updateTxStatusProcess();
-    this.tradingViewGraphData();
+    // /** Graph data */
+    // // this.updateFiatCoinPriceCron();
+    // this.updateFiatCoinPriceCronV2();
+    // this.getCoinGraphDataDaily();
+    // this.getCoinGraphDataWeekly();
+    // this.getCoinGraphDataMonthly();
+    // this.getCoinGraphDataYearly();
+    // /** cross chain */
+    // this.getPendingWithdrawalTxProcess();
+    // this.updateTxStatusProcess();
+    // this.tradingViewGraphData();
 
-    /* moralis Chart Widget TradingView */
-    this.moralisTradingviewWidget()
+    // /* moralis Chart Widget TradingView */
+    // this.moralisTradingviewWidget()
 
-    this.moralisTradingview(); // call custom token kafka consumer
+    // this.moralisTradingview(); // call custom token kafka consumer
 
-    this.updateFiatPrice();
+    // this.updateFiatPrice();
 
-    this.updateTicsPrice();
-    this.deleteTicsDailyTablePrice();
+    // this.updateTicsPrice();
+    // this.deleteTicsDailyTablePrice();
 
   }
 
