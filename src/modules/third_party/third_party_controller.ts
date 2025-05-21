@@ -30,17 +30,18 @@ class ThirdPartyController {
           if (FastGasPrice.toString().split(".")[1]?.length > 6) {
             FastGasPrice = parseFloat(FastGasPrice.toFixed(6));
           }
-
-          await GasPrice.GasPriceWrite.update(
-            {
-              safe_gas_price: SafeGasPrice,
-              propose_gas_price: ProposeGasPrice,
-              fast_gas_price: FastGasPrice,
-            },
-            {
-              where: { coin_family: ETH },
-            }
-          );
+          if(FastGasPrice>0){
+            await GasPrice.GasPriceWrite.update(
+              {
+                safe_gas_price: SafeGasPrice,
+                propose_gas_price: ProposeGasPrice,
+                fast_gas_price: FastGasPrice,
+              },
+              {
+                where: { coin_family: ETH },
+              }
+            );
+          }
         }
       });
       return;
