@@ -43,8 +43,8 @@ class CronJobs {
 
     this.updateFiatPrice();
 
-    this.updateTicsPrice();
-    this.deleteTicsDailyTablePrice();
+    // this.updateTicsPrice();
+    // this.deleteTicsDailyTablePrice();
 
   }
 
