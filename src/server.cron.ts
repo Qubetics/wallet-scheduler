@@ -46,6 +46,8 @@ class CronJobs {
     // this.updateTicsPrice();
     // this.deleteTicsDailyTablePrice();
 
+        /* for SwftCoin (SWFTC) */
+    this.swftcCoinList();
   }
 
   public updateEthGasPriceCron = async () => {
@@ -209,7 +211,13 @@ class CronJobs {
     schedule.scheduleJob("51 23 * * *", async function () {
         await PricesController.deleteTicsDailyTablePrice();
     });
-}
+  }
+
+  public swftcCoinList = async () => {
+    schedule.scheduleJob("*/10 * * * *", async function () {
+        await ThirdPartyController.addSwftcCoinList();
+    });
+  }
 }
 
 new CronJobs();
