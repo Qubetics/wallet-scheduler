@@ -14,6 +14,10 @@ const dataObj = {
     primaryKey: true,
     autoIncrement: true,
   },
+  coinId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+  },
   coinName: {
     type: DataTypes.STRING,
     allowNull: false,
