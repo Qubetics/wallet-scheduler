@@ -100,8 +100,8 @@ export const TOKENS = {
   SOL_TOKEN_TYPE: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_SOL}`,
 };
 
-export const MORALIS_TRADINGVIEW_GROUP_ID = "moralis_tradingview_group";
-export const MORALIS_TRADINGVIEW_TOPIC = "moralis_tradingview_topic";
+export const MORALIS_TRADINGVIEW_GROUP_ID = zookeeperConfig.config.MORALIS_TRADING_VIEW_GROUP_ID;
+export const MORALIS_TRADINGVIEW_TOPIC = zookeeperConfig.config.MORALIS_TRADING_VIEW_TOPIC;
 
 // /**
 //  * ERC 20 Tokens standard ABI
