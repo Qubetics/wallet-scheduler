@@ -254,7 +254,7 @@ class ThirdPartyController {
                     coin?.coinDecimal !== 0
                       ? Math.pow(10, parseInt(coin?.coinDecimal))
                       : 0,
-                  coin_status: 0,
+                  coin_status: 1,
                 };
                 let findCoin: any = await TBL_COINS_ALIAS_WRITE.create(
                   coin_data_to_save
