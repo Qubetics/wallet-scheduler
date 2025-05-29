@@ -3,6 +3,7 @@ import { config } from "../../config";
 import { Coins, GasPrice } from "../../models/model/index";
 import SWFTCCoinsDataModel from "../../models/model/model.swftc_coins";
 import { Op } from "sequelize";
+import redisClient from "../../helpers/common/redis";
 
 const { ETH: ETH, BNB: BNB, POL: POL, BTC: BTC, TRX: TRX, SOL: SOL } = config.STATIC_COIN_FAMILY;
 
@@ -260,6 +261,19 @@ class ThirdPartyController {
                   coin_data_to_save
                 );
 
+                const rediscoin = {
+                  coin_id: findCoin.coin_id,
+                  is_token: findCoin.is_token,
+                  token_address: findCoin.token_address,
+                  coin_family: findCoin.coin_family,
+                  decimals: findCoin.decimals,
+                  token_type: findCoin.token_type,
+                  coin_symbol: findCoin.coin_symbol,
+                  added_by: findCoin.added_by,
+                  for_swap: findCoin.for_swap
+                }
+                await this.update_token_in_redis_hash(rediscoin);
+
                 let save_data: any = {
                   coinName: coin.coinAllCode,
                   coinCode: coin.coinCode,
@@ -303,6 +317,58 @@ class ThirdPartyController {
       return;
     }
   };
+
+  public async update_token_in_redis_hash(coin_data: any) {
+    try {
+      switch (coin_data.coin_family) {
+        case config.STATIC_COIN_FAMILY.BNB:
+          await redisClient.setKeyValuePair(
+            config.TOKENS.BSC_TOKEN_TYPE,
+            coin_data.token_address,
+            JSON.stringify(coin_data)
+          );
+          break;
+        case config.STATIC_COIN_FAMILY.POL:
+          await redisClient.setKeyValuePair(
+            config.TOKENS.POL_TOKEN_TYPE,
+            coin_data.token_address,
+            JSON.stringify(coin_data)
+          );
+        case config.STATIC_COIN_FAMILY.TICS:
+          await redisClient.setKeyValuePair(
+            config.TOKENS.TICS_TOKEN_TYPE,
+            coin_data.token_address,
+            JSON.stringify(coin_data)
+          );
+        case config.STATIC_COIN_FAMILY.SOL:
+          await redisClient.setKeyValuePair(
+            config.TOKENS.SOL_TOKEN_TYPE,
+            coin_data.token_address,
+            JSON.stringify(coin_data)
+          );
+          break;
+        case config.STATIC_COIN_FAMILY.TRX:
+          await redisClient.setKeyValuePair(
+            config.TOKENS.TRX_TOKEN_TYPE,
+            coin_data.token_address,
+            JSON.stringify(coin_data)
+          );
+          break;
+        default:
+          await redisClient.setKeyValuePair(
+            config.TOKENS.ETH_TOKEN_TYPE,
+            coin_data.token_address,
+            JSON.stringify(coin_data)
+          );
+          break;
+      }
+    } catch (err: any) {
+      let message: any = (err as Error).message;
+      console.log("🔥 ~ update_token_in_redis_hash error", message);
+      return null;
+    }
+
+  }
 }
 
 const third_party_controller = new ThirdPartyController();

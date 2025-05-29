@@ -98,6 +98,7 @@ export const TOKENS = {
   TRX_TOKEN_TYPE: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_TRON}`,
   TRX_TOKEN_TYPE_10: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE10_TRON}`,
   SOL_TOKEN_TYPE: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_SOL}`,
+  TICS_TOKEN_TYPE: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_TICS}`,
 };
 
 export const MORALIS_TRADINGVIEW_GROUP_ID = zookeeperConfig.config.MORALIS_TRADING_VIEW_GROUP_ID;
