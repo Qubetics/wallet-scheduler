@@ -214,6 +214,7 @@ class ThirdPartyController {
             });
             if (!findSWFTCCoin) {
               let coinSymbolCode = coin.coinCode.split("(");
+              const coinName = coin.coinAllCode ? coin.coinAllCode.split("(") : null;
               let findCoin: any = await TBL_COINS_ALIAS_READ.findOne({
                 attributes: ["coin_id", "coin_image"],
                 where: {
@@ -245,7 +246,7 @@ class ThirdPartyController {
                 );
               } else {
                 let coin_data_to_save: any = {
-                  coin_name: coin.coinAllCode,
+                  coin_name: coinName ? coinName[0] : null,
                   coin_symbol: coinSymbolCode[0]?.toUpperCase(),
                   coin_family: coin_family,
                   is_token: coin?.contact ? 1 : null,
