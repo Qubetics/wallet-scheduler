@@ -759,9 +759,16 @@ class PricesController {
         where: {
           coin_status: 1,
           is_on_cmc: 1,
-          cmc_id: {
-            [Op.eq]: 0,
-          },
+          [Op.or]: [
+            {
+              cmc_id: {
+                [Op.eq]: 0,
+              },
+            },
+            {
+              coin_image: null,
+            },
+          ],
         },
         raw: true,
         limit: BATCH_SIZE,
