@@ -735,21 +735,26 @@ class PricesController {
 
   public fetchCmcIds = async () => {
     try {
-      let coin_limit_count: number = 0;
-      let limit: number = 10;
-      let findCoinCounter: any = await redisClient.getKeyValuePair(
+      const BATCH_SIZE = 10;
+      let coin_limit_count = 0;
+
+      // Get current counter from Redis
+      const findCoinCounter = await redisClient.getKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
         FETCH_CMC_IDS_COIN_COUNTER
       );
+
       if (findCoinCounter) {
         coin_limit_count = Number(findCoinCounter);
       }
-      console.log("coin_limit_count>>>>", coin_limit_count);
-      let data: any = await Coins.CoinsWrite.findAndCountAll({
+
+      // Fetch coins that need CMC IDs
+      const data = await Coins.CoinsWrite.findAndCountAll({
         attributes: [
           "coin_id",
           "token_address",
           "coin_symbol",
+          "coin_image"
         ],
         where: {
           coin_status: 1,
@@ -759,81 +764,117 @@ class PricesController {
           },
         },
         raw: true,
-        limit,
+        limit: BATCH_SIZE,
         offset: coin_limit_count,
-        logging: true,
       });
-      console.log("data >>.", data);
+
       if (data?.count > 0) {
-        console.log("data.rows >>.", data.rows);
-        for await (const iterator of data.rows) {
-          let query_data: string = iterator?.token_address
-            ? `?address=${iterator.token_address}`
-            : `?symbol=${iterator.coin_symbol}`;
+        // Process coins in parallel with error handling for each
+        await Promise.all(data.rows.map(async (coin) => {
           try {
-            let result: any = await cmcHelper.cmcApi(`info${query_data}`);
-            if (result && result.data) {
-              let cmcId: any;
-              if (query_data == `?symbol=${iterator.coin_symbol}`) {
-                let cmc_result: any = await dbHelper.find_one_settings(
-                  ["id", "title", "value", "created_at", "updated_at"],
-                  { title: "CMC" }
-                );
-                if (Number(cmc_result.value) == 1) {
-                  cmcId =
-                    result.data.data[
-                      iterator.coin_symbol as keyof typeof String
-                    ][0].id;
-                } else {
-                  cmcId =
-                    result.data.data[
-                      iterator.coin_symbol as keyof typeof String
-                    ][0].id;
-                }
-                console.log("cmcmcmcmcm id >>", cmcId);
-              } else {
-                cmcId = Object.keys(result.data.data)[0];
+            const query_data = coin.token_address
+              ? `?address=${coin.token_address}`
+              : `?symbol=${coin.coin_symbol}`;
+
+            const result = await cmcHelper.cmcApi(`info${query_data}`);
+
+            if (!result?.data?.data) {
+              console.warn(`No CMC data found for coin ${coin.coin_symbol}`);
+              return;
+            }
+
+            let cmcId: number;
+            let image: string | null = null;
+
+            if (query_data.startsWith('?symbol=')) {
+              const symbolData = result.data.data[coin.coin_symbol];
+              if (!symbolData?.[0]?.id) {
+                console.warn(`Invalid CMC response format for symbol ${coin.coin_symbol}`);
+                return;
               }
 
-              await Coins.CoinsWrite.update(
-                {
-                  cmc_id: +cmcId,
-                  is_on_cmc: 1,
-                },
-                {
-                  where: {
-                    coin_id: iterator.coin_id,
-                  },
-                }
-              );
+              cmcId = symbolData[0].id;
+
+              if (!coin.coin_image || coin.coin_image === 'null') {
+                image = symbolData[0].logo;
+              }
+            } else {
+              const dataKeys = Object.keys(result.data.data);
+              if (!dataKeys.length) {
+                console.warn(`No CMC data found for address ${coin.token_address}`);
+                return;
+              }
+
+              cmcId = Number(dataKeys[0]);
+              if (!coin.coin_image || coin.coin_image === 'null') {
+                image = result.data.data[cmcId]?.logo || null;
+              }
             }
-          } catch (err: any) {
+
+            if (!cmcId) {
+              console.warn(`Failed to extract CMC ID for coin ${coin.coin_symbol}`);
+              return;
+            }
+
+            // Standardize image resolution to 200x200 if needed
+            if (image && !image.includes("img/coins/200x200/")) {
+              const resolutions = ['16x16', '32x32', '64x64', '128x128'];
+              for (const resolution of resolutions) {
+                if (image.includes(`img/coins/${resolution}/`)) {
+                  image = image.replace(resolution, '200x200');
+                  break;
+                }
+              }
+            }
+
+            const updateData: any = {
+              cmc_id: cmcId,
+              is_on_cmc: 1,
+            };
+
+            if (image) {
+              updateData.coin_image = image;
+            }
+
             await Coins.CoinsWrite.update(
-              {
-                is_on_cmc: 0,
-              },
+              updateData,
               {
                 where: {
-                  coin_id: iterator.coin_id,
+                  coin_id: coin.coin_id,
+                },
+              }
+            );
+
+          } catch (error: any) {
+            console.error(`Error processing coin ${coin.coin_symbol}:`, error.message);
+
+            // Mark coin as not on CMC if we failed to fetch data
+            await Coins.CoinsWrite.update(
+              { is_on_cmc: 0 },
+              {
+                where: {
+                  coin_id: coin.coin_id,
                 },
               }
             );
           }
-        }
+        }));
       }
 
-      /** update coins pagination */
-      coin_limit_count = coin_limit_count + limit;
-
-      let counter: any = coin_limit_count >= data?.count ? 0 : coin_limit_count;
+      // Update pagination counter
+      const nextCounter = coin_limit_count + BATCH_SIZE >= data?.count
+        ? 0
+        : coin_limit_count + BATCH_SIZE;
 
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
         FETCH_CMC_IDS_COIN_COUNTER,
-        counter.toString()
+        nextCounter.toString()
       );
-    } catch (err: any) {
-      console.error("err in fetchCmcIds", err);
+
+    } catch (error: any) {
+      console.error("Error in fetchCmcIds:", error.message);
+      throw error; // Re-throw to allow caller to handle
     }
   };
 
@@ -1203,13 +1244,13 @@ class PricesController {
         raw: true,
         order: [["currency_id", "asc"]],
       });
-      
+
       if (currency_data.count === 0) return;
-  
+
       const result = await axios.get('https://api-testnet.qubetics.work/qubetics/explorer/current-token-price');
       const ticsUsdPrice = result?.data?.data || 0;
       const coin_family = COIN_FAMILY?.TICS ? COIN_FAMILY?.TICS : 7
-  
+
       const coin_data = await Coins.CoinsRead.findOne({
         attributes: ["coin_id", "cmc_id"],
         where: {
@@ -1218,15 +1259,15 @@ class PricesController {
           coin_family: coin_family,
         },
       });
-  
+
       if (!coin_data || coin_data === null) {
         console.log("TICS coin not found");
         return;
       }
-  
+
       const coin_id = coin_data.coin_id;
       let price_change_percentage_24h = 0;
-  
+
       const usdRecord = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
         where: { fiat_type: 'usd', coin_id },
       });
@@ -1234,18 +1275,18 @@ class PricesController {
         let compare_price: number | string = await exponentialToDecimal(usdRecord?.value);
         let dayPrice = await this.coinCompareDayPrice(coin_id);
         if (dayPrice > 0) {
-            compare_price = dayPrice;
+          compare_price = dayPrice;
         }
         price_change_percentage_24h = await this.percentageCalulator(ticsUsdPrice, compare_price);
 
         await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-          { value: ticsUsdPrice, price_change_24h: price_change_percentage_24h ,price_change_percentage_24h: price_change_percentage_24h },
+          { value: ticsUsdPrice, price_change_24h: price_change_percentage_24h, price_change_percentage_24h: price_change_percentage_24h },
           { where: { fiat_type: 'usd', coin_id } }
         );
-        
+
         const timestamp: string = new Date().toISOString();
-        await this.saveDayCoinPrice( coin_id, ticsUsdPrice, coin_family);
-        await this.saveTicsGraphPrice( ticsUsdPrice, timestamp, coin_id );
+        await this.saveDayCoinPrice(coin_id, ticsUsdPrice, coin_family);
+        await this.saveTicsGraphPrice(ticsUsdPrice, timestamp, coin_id);
       } else {
         await CoinPriceInFiat.CoinPriceInFiatWrite.create({
           coin_id,
@@ -1272,14 +1313,14 @@ class PricesController {
         const { currency_code, price_in_usd }: any = currency;
         const fiat_type = currency_code.toLowerCase();
         const convertedValue = ticsUsdPrice * parseFloat(price_in_usd);
-  
+
         const existingRecord = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
           where: { fiat_type, coin_id },
         });
-  
+
         if (existingRecord) {
           await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-            { value: convertedValue , price_change_24h: price_change_percentage_24h ,price_change_percentage_24h: price_change_percentage_24h },
+            { value: convertedValue, price_change_24h: price_change_percentage_24h, price_change_percentage_24h: price_change_percentage_24h },
             { where: { fiat_type, coin_id } }
           );
         } else {
@@ -1304,13 +1345,13 @@ class PricesController {
           });
         }
       }
-  
+
     } catch (error) {
       console.log("::Error log:: updateTicsPrice :>> ", error);
       return false;
     }
   }
-  
+
   private saveDayCoinPrice = async (coin_id: number, price: number, coin_family: number) => {
     let dataToSave: any = {
       coin_id: coin_id,
@@ -1319,41 +1360,41 @@ class PricesController {
     }
     await DayCoinPrice.DayCoinPriceWrite.create(dataToSave);
   }
-  
+
   public deleteTicsDailyTablePrice = async () => {
     await DayCoinPrice.DayCoinPriceWrite.destroy({
-        where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 25 HOUR) AND coin_family = ${config.STATIC_COIN_FAMILY.TICS}`),
+      where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 25 HOUR) AND coin_family = ${config.STATIC_COIN_FAMILY.TICS}`),
     });
     return true;
   }
 
-  private saveTicsGraphPrice = async ( price: number, timestamp : string , coin_id: number ) => {
+  private saveTicsGraphPrice = async (price: number, timestamp: string, coin_id: number) => {
     let dataToSave: any = {
-        coin_id : coin_id,
-        price: price,
-        timestamp: timestamp
+      coin_id: coin_id,
+      price: price,
+      timestamp: timestamp
     }
     await TicsPriceInFiatGraph.TicsPriceInFiatGraphWrite.create(dataToSave);
   }
 
   private coinCompareDayPrice = async (coin_id: number) => {
     let result = await DayCoinPrice.DayCoinPriceRead.findOne({
-        attributes: ['price'],
-        where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) AND coin_id = :coin_id`),
-        order: [['id', 'desc']],
-        replacements: { coin_id },
-        raw: true
+      attributes: ['price'],
+      where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) AND coin_id = :coin_id`),
+      order: [['id', 'desc']],
+      replacements: { coin_id },
+      raw: true
     });
     let price = result?.price ? result.price : 0;
     if (price <= 0) {
       result = await DayCoinPrice.DayCoinPriceRead.findOne({
-          attributes: ['price'],
-          where: { coin_id },
-          order: [['id', 'desc']],
-          raw: true
+        attributes: ['price'],
+        where: { coin_id },
+        order: [['id', 'desc']],
+        raw: true
       });
       price = result?.price ?? 0;
-  }
+    }
     return price;
   }
 
@@ -1376,7 +1417,7 @@ class PricesController {
         config.REDISKEYS.COIN_LIMIT_COUNTS,
         `${CURRENT_PRICE_COIN_COUNTER}`
       );
-      
+
       // Parse counter if available
       if (findCoinCounter) {
         coin_limit_count = Number(findCoinCounter);
