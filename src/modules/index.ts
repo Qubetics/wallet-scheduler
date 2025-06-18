@@ -6,6 +6,7 @@ import update_balance_controller from "./updating_balance_during_creation/update
 import CosnumeCrossChainTxProcess from "./cross_chains/consumeCrossChainTx.process";
 import PendingCrossChainProcess from "./cross_chains/pendingCrossChainTx.process";
 import TradingViewGraphs from "./trading_view_graphs/controller";
+import NotificationController from "./notifications/notification_controller";
 export {
     ThirdPartyController,
     PricesController,
@@ -13,5 +14,6 @@ export {
     update_balance_controller,
     CosnumeCrossChainTxProcess,
     PendingCrossChainProcess,
-    TradingViewGraphs
+    TradingViewGraphs,
+    NotificationController
 }

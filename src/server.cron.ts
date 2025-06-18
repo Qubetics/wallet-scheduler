@@ -8,6 +8,7 @@ import {
   PendingCrossChainProcess,
   CosnumeCrossChainTxProcess,
   TradingViewGraphs,
+  NotificationController
 } from "./modules/index";
 
 const {
@@ -48,6 +49,9 @@ class CronJobs {
 
         /* for SwftCoin (SWFTC) */
     this.swftcCoinList();
+
+    /* Announcement notification */
+    this.announcementNotification();
   }
 
   public updateEthGasPriceCron = async () => {
@@ -216,6 +220,12 @@ class CronJobs {
   public swftcCoinList = async () => {
     schedule.scheduleJob("0 0 */1 * * *", async function () {
         await ThirdPartyController.addSwftcCoinList();
+    });
+  }
+
+  public announcementNotification = async () => {
+    schedule.scheduleJob('*/1 * * * *', async function () {
+        await NotificationController.instant_announcement_notification();
     });
   }
 }
