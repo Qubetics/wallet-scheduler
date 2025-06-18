@@ -14,23 +14,29 @@ let dataObj: any = {
         primaryKey: true,
         autoIncrement: true,
     },
-    user_id: {
-        type: DataTypes.STRING,
-        allowNull: false,
-    },
     message: {
         type: DataTypes.STRING,
         allowNull: false,
     },
     title: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
     },
     status: {
         type: DataTypes.ENUM('pending','sent'),
         allowNull: false,
         defaultValue: 'pending',
     },
+    imagePath: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: null
+    },
+    type: {
+        type: DataTypes.ENUM('announcement','banner'),
+        allowNull: false,
+        defaultValue: 'announcement'
+    }
 };
 
 const AnnouncementModel = db.db_write.define<AnnouncementInstance>("announcements", dataObj);
