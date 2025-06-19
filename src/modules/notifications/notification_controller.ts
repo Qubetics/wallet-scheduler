@@ -15,7 +15,6 @@ class notificationController {
       const announcements = await TBL_ANNOUNCEMENTS.findAll({
         where: {
           status: "pending",
-          type: 'announcement'
         },
         raw: true,
       });

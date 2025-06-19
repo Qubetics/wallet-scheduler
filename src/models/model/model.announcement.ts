@@ -26,16 +26,6 @@ let dataObj: any = {
         type: DataTypes.ENUM('pending','sent'),
         allowNull: false,
         defaultValue: 'pending',
-    },
-    imagePath: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        defaultValue: null
-    },
-    type: {
-        type: DataTypes.ENUM('announcement','banner'),
-        allowNull: false,
-        defaultValue: 'announcement'
     }
 };
 
