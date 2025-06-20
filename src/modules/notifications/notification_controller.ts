@@ -12,6 +12,7 @@ class notificationController {
 
   public instant_announcement_notification = async () => {
     try {
+      console.log("===================")
       const announcements = await TBL_ANNOUNCEMENTS.findAll({
         where: {
           status: "pending",
@@ -38,10 +39,12 @@ class notificationController {
 
         const device_tokens = await DeviceToken.DeviceTokenRead.findAll({
           attributes: ["id", "user_id", "address", "device_token"],
-          where: { status: 1 },
+          // where: { status: 1 },
+          where: { status: 1, address: "0x0000000000000000000000000000000000000000" },
           limit: limit,
           offset: coin_limit_count,
         });
+        console.log("🚀 ~ notificationController ~ forawait ~ device_tokens:", device_tokens)
 
         if (!device_tokens || device_tokens.length === 0) {
           await redisClient.setKeyValuePair(
