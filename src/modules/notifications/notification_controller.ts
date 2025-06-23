@@ -13,95 +13,92 @@ class notificationController {
   public instant_announcement_notification = async () => {
     try {
       console.log("===================")
-      const announcements = await TBL_ANNOUNCEMENTS.findAll({
-        where: {
-          status: "pending",
-        },
+      const announcement = await TBL_ANNOUNCEMENTS.findOne({
+        where: { status: "pending" },
+        order: [["created_at", "ASC"]],
         raw: true,
       });
-
-      if (!announcements || announcements.length === 0) {
+      console.log("🚀 ~ notificationController ~ instant_announcement_notification= ~ announcement:", announcement)
+      if (!announcement) {
         return false;
       }
 
       let coin_limit_count = 0;
-      const limit = 300;
+      const limit = 500;
 
-      for await (const announcement of announcements) {
-        const findCoinCounter = await redisClient.getKeyValuePair(
+      const findCoinCounter = await redisClient.getKeyValuePair(
+        config.REDISKEYS.COIN_LIMIT_COUNTS,
+        INSTANT_ANNOUNCEMENT_COUNTER
+      );
+
+      if (findCoinCounter) {
+        coin_limit_count = Number(findCoinCounter);
+      }
+
+      const device_tokens = await DeviceToken.DeviceTokenRead.findAll({
+        attributes: ["id", "user_id", "address", "device_token"],
+        // where: { status: 1 },
+        where: { status: 1, address: "0x0000000000000000000000000000000000000000" },
+        group: ['device_id'],
+        limit: limit,
+        offset: coin_limit_count,
+      });
+      console.log("🚀 ~ notificationController ~ forawait ~ device_tokens length: ", device_tokens.length)
+
+      if (!device_tokens || device_tokens.length === 0) {
+        await redisClient.setKeyValuePair(
           config.REDISKEYS.COIN_LIMIT_COUNTS,
-          INSTANT_ANNOUNCEMENT_COUNTER
+          INSTANT_ANNOUNCEMENT_COUNTER,
+          "0"
         );
+      }
 
-        if (findCoinCounter) {
-          coin_limit_count = Number(findCoinCounter);
-        }
+      const tokens: string[] = [];
 
-        const device_tokens = await DeviceToken.DeviceTokenRead.findAll({
-          attributes: ["id", "user_id", "address", "device_token"],
-          // where: { status: 1 },
-          where: { status: 1, address: "0x0000000000000000000000000000000000000000" },
-          group: ['device_id'],
-          limit: limit,
-          offset: coin_limit_count,
-        });
-        console.log("🚀 ~ notificationController ~ forawait ~ device_tokens:", device_tokens)
-
-        if (!device_tokens || device_tokens.length === 0) {
-          await redisClient.setKeyValuePair(
-            config.REDISKEYS.COIN_LIMIT_COUNTS,
-            INSTANT_ANNOUNCEMENT_COUNTER,
-            "0"
-          );
-          break;
-        }
-
-        const tokens: string[] = [];
-
-        for (const device of device_tokens) {
-          if (device.device_token) {
-            tokens.push(device.device_token);
-          }
-        }
-
-        if (tokens.length > 0) {
-          const message = {
-            deviceTokens: tokens,
-            notification: {
-              title: announcement.title,
-              body: announcement.message,
-            },
-            data: {
-              body: announcement.message,
-              title: announcement.title,
-              notification_type: "Announcements",
-              tx_type: "Announcements",
-            },
-          };
-
-          await pushNotification.sendNewNotification(message);
-        }
-
-        if (device_tokens.length < limit) {
-          await redisClient.setKeyValuePair(
-            config.REDISKEYS.COIN_LIMIT_COUNTS,
-            INSTANT_ANNOUNCEMENT_COUNTER,
-            "0"
-          );
-
-          await TBL_ANNOUNCEMENTS.update(
-            { status: "sent" },
-            { where: { id: announcement.id, status: "pending" } }
-          );
-        } else {
-          coin_limit_count += limit;
-          await redisClient.setKeyValuePair(
-            config.REDISKEYS.COIN_LIMIT_COUNTS,
-            INSTANT_ANNOUNCEMENT_COUNTER,
-            coin_limit_count.toString()
-          );
+      for (const device of device_tokens) {
+        if (device.device_token) {
+          tokens.push(device.device_token);
         }
       }
+
+      if (tokens.length > 0) {
+        const message = {
+          deviceTokens: tokens,
+          notification: {
+            title: announcement.title,
+            body: announcement.message,
+          },
+          data: {
+            body: announcement.message,
+            title: announcement.title,
+            notification_type: "Announcements",
+            tx_type: "Announcements",
+          },
+        };
+
+        await pushNotification.sendNewNotification(message);
+      }
+
+      if (device_tokens.length < limit) {
+        await redisClient.setKeyValuePair(
+          config.REDISKEYS.COIN_LIMIT_COUNTS,
+          INSTANT_ANNOUNCEMENT_COUNTER,
+          "0"
+        );
+
+        await TBL_ANNOUNCEMENTS.update(
+          { status: "sent" },
+          { where: { id: announcement.id, status: "pending" } }
+        );
+      } else {
+        coin_limit_count += limit;
+        await redisClient.setKeyValuePair(
+          config.REDISKEYS.COIN_LIMIT_COUNTS,
+          INSTANT_ANNOUNCEMENT_COUNTER,
+          coin_limit_count.toString()
+        );
+      }
+      return true;
     } catch (error) {
       console.error(error);
       return false;
