@@ -1254,7 +1254,7 @@ class PricesController {
 
       if (currency_data.count === 0) return;
 
-      const result = await axios.get('https://api-testnet.qubetics.work/qubetics/explorer/current-token-price');
+      const result = await axios.get('https://evm-api.qubetics.com/qubetics/explorer/current-token-price');
       const ticsUsdPrice = result?.data?.data || 0;
       const coin_family = COIN_FAMILY?.TICS ? COIN_FAMILY?.TICS : 7
 
