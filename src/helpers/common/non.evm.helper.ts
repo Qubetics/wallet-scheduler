@@ -281,6 +281,9 @@ class NonEvmHelpers {
                     } else {
                         reject(false);
                     }
+                }).catch((error) => {
+                    console.error("Axios rpcCall error:", error?.message || error);
+                    reject(false);
                 });
             };
             return new Promise(result);
