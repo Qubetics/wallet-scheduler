@@ -37,8 +37,7 @@ class notificationController {
 
       const device_tokens = await DeviceToken.DeviceTokenRead.findAll({
         attributes: ["id", "user_id", "address", "device_token"],
-        // where: { status: 1 },
-        where: { status: 1, address: "0x0000000000000000000000000000000000000000" },
+        where: { status: 1 },
         group: ['device_token'],
         limit: limit,
         offset: coin_limit_count,
