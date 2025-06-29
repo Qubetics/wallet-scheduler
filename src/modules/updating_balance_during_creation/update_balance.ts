@@ -1,12 +1,24 @@
 import { config } from "../../config";
-import { Wallets } from '.././../models/model/index';
+import { Coins, Wallets } from '.././../models/model/index';
 import kafkaHelper from "../../helpers/common/kafka.helper";
 
 import etherJs from "../../helpers/common/web3.helper";
 import blockchain_helper from "../../helpers/common/blockchain.helper";
 import non_evm_helper from "../../helpers/common/non.evm.helper";
+import redisClient from "../../helpers/common/redis";
+import { ethers } from "ethers";
+import { Op } from "sequelize";
 
 class UpdateBalanceController {
+    public Eth_Ether_Url: ethers.JsonRpcProvider;
+    public Bsc_Ether_Url: ethers.JsonRpcProvider;
+    public Pol_Ether_Url: ethers.JsonRpcProvider;
+
+    constructor() {
+        this.Eth_Ether_Url = etherJs.etherEth;
+        this.Bsc_Ether_Url = etherJs.etherBsc;
+        this.Pol_Ether_Url = etherJs.etherPol;
+    }
     public async update_wallet_balance() {
         console.log('config.BACKEND_WALLET_BALANCE_ADDRESSES_TOPIC', config.BACKEND_WALLET_BALANCE_ADDRESSES_TOPIC);
 
@@ -104,6 +116,137 @@ class UpdateBalanceController {
             return { status: false, balance: "0" };
         }
     };
+
+    public updateCoinDecimals = async () => {
+        try {
+            // let coin_limit_count = 0;
+            const limit = 25;
+            // const findCoinCounter = await redisClient.getKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, 'coin_decimals')
+            // console.log("🚀 ~ updateCoinDecimals ~ findCoinCounter:", findCoinCounter)
+
+            // if (findCoinCounter) {
+            //     coin_limit_count = Number(findCoinCounter);
+            // }
+            // console.log("🚀 ~ updateCoinDecimals ~ :", coin_limit_count)
+            const coins: any = await Coins.CoinsRead.findAll({
+                attributes: ['coin_id', 'is_token', 'token_address', 'coin_family', 'decimals', 'token_type', 'coin_symbol', 'added_by', 'for_swap'],
+                where: {
+                    decimals: 0,
+                    is_token: 1,
+                    token_type: { [Op.notIn]: ['ERC721', 'ERC1155'] }
+                },
+                limit,
+                offset: 0,
+                logging: true
+            });
+
+            if (!coins) {
+                await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, 'coin_decimals', '0')
+            }
+            if (coins.length > 0) {
+                let decimals: number = 0;
+                for (const coin of coins) {
+                    if (coin.coin_family == 2) {
+                        const token_data: any = await blockchain_helper.searchTokenNew(coin.token_address, config.CONTRACT_ABI, this.Eth_Ether_Url)
+                        decimals = Math.pow(10, parseInt(token_data?.decimals))
+                    } else if (coin.coin_family == 6) {
+                        const token_data: any = await non_evm_helper.searchToken(coin.token_address)
+                        decimals = Math.pow(10, parseInt(token_data?.decimals))
+                    } else if (coin.coin_family == 1) {
+                        const token_data: any = await blockchain_helper.searchTokenNew(coin.token_address, config.CONTRACT_ABI, this.Bsc_Ether_Url)
+                        decimals = Math.pow(10, parseInt(token_data?.decimals))
+                    } else if (coin.coin_family == 4) {
+                        const token_data: any = await blockchain_helper.searchTokenNew(coin.token_address, config.CONTRACT_ABI, this.Pol_Ether_Url)
+                        decimals = Math.pow(10, parseInt(token_data?.decimals))
+                    } else if (coin.coin_family == 5) {
+                        const token_data: any = await non_evm_helper.searchSolToken(coin.token_address)
+                        decimals = Math.pow(10, parseInt(token_data?.decimals))
+                    }
+                    if (decimals > 0) {
+                        await Coins.CoinsWrite.update({ decimals: decimals }, { where: { coin_id: coin.coin_id } });
+
+                        const redisCoinData = {
+                            coin_id: coin.coin_id,
+                            is_token: coin.is_token,
+                            token_address: coin.token_address,
+                            coin_family: coin.coin_family,
+                            decimals: decimals,
+                            token_type: coin.token_type,
+                            coin_symbol: coin.coin_symbol,
+                            added_by: coin.added_by,
+                            for_swap: coin.for_swap
+                        }
+                        // await WalletHelper.update_token_in_redis(coinData, 0);
+                        await this.update_token_in_redis_hash(redisCoinData)
+
+                    }
+
+                }
+            }
+            // if (coins.length < limit) {
+            //     await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, 'coin_decimals', '0')
+            // } else {
+            //     coin_limit_count += limit;
+            //     await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, 'coin_decimals', coin_limit_count.toString())
+            // }
+            console.log("\nEND")
+            return true;
+        } catch (err: any) {
+            console.error("Error in updateWalletBalanceByWallet", err)
+        }
+    };
+
+    public async update_token_in_redis_hash(coin_data: any) {
+        try {
+            switch (coin_data.coin_family) {
+                case config.STATIC_COIN_FAMILY.BNB:
+                    console.log('tttttttttttttttttt', config.TOKENS.BSC_TOKEN_TYPE, '----------', coin_data.token_address);
+                    await redisClient.set_hash_table(
+                        config.TOKENS.BSC_TOKEN_TYPE,
+                        coin_data.token_address,
+                        JSON.stringify(coin_data)
+                    );
+                    break;
+                case config.STATIC_COIN_FAMILY.POL:
+                    await redisClient.set_hash_table(
+                        config.TOKENS.POL_TOKEN_TYPE,
+                        coin_data.token_address,
+                        JSON.stringify(coin_data)
+                    );
+                case config.STATIC_COIN_FAMILY.TICS:
+                    await redisClient.set_hash_table(
+                        config.TOKENS.TICS_TOKEN_TYPE,
+                        coin_data.token_address,
+                        JSON.stringify(coin_data)
+                    );
+                case config.STATIC_COIN_FAMILY.SOL:
+                    await redisClient.set_hash_table(
+                        config.TOKENS.SOL_TOKEN_TYPE,
+                        coin_data.token_address,
+                        JSON.stringify(coin_data)
+                    );
+                    break;
+                case config.STATIC_COIN_FAMILY.TRX:
+                    await redisClient.set_hash_table(
+                        config.TOKENS.TRX_TOKEN_TYPE,
+                        coin_data.token_address,
+                        JSON.stringify(coin_data)
+                    );
+                    break;
+                default:
+                    await redisClient.set_hash_table(
+                        config.TOKENS.ETH_TOKEN_TYPE,
+                        coin_data.token_address,
+                        JSON.stringify(coin_data)
+                    );
+                    break;
+            }
+        } catch (err: any) {
+            console.error("Error in update_token_in_redis_hash.", err);
+            return null;
+        }
+
+    }
 }
 const update_balance_controller = new UpdateBalanceController();
 export default update_balance_controller;

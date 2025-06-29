@@ -6,6 +6,14 @@ import { exponentialToDecimal } from "../common/globalFunctions";
 import { Boolean } from "../../constants";
 import { PublicKey, Connection } from "@solana/web3.js"
 import { AccountLayout } from "@solana/spl-token";
+const spltokenReg = require("@solana/spl-token-registry");
+import {
+    mplTokenMetadata,
+    fetchDigitalAsset,
+} from "@metaplex-foundation/mpl-token-metadata";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { publicKey } from "@metaplex-foundation/umi";
+
 
 class NonEvmHelpers {
     public TRX_FULLNODE: string = config.NODE.TRX_RPC_URL
@@ -351,6 +359,34 @@ class NonEvmHelpers {
         } catch (error: any) {
             console.log("🔥 ~ ~ getTransaction error", error);
             return error.message;
+        }
+    };
+
+    public searchSolToken = async (token_address: string) => {
+        try {
+            const umi = createUmi(config.NODE.SOL_RPC_URL).use(mplTokenMetadata());
+            const myPublicKey = publicKey(token_address);
+            const asset = await fetchDigitalAsset(umi, myPublicKey);
+            const tokenData: any = {
+                name: asset?.metadata?.name,
+                symbol: asset?.metadata?.symbol,
+                decimals: asset?.mint?.decimals,
+            };
+            if (tokenData) {
+                return tokenData;
+            } else {
+                const tokenList = await new spltokenReg.TokenListProvider()
+                    .resolve()
+                    .then((tokens: any) => {
+                        return tokens.filterByClusterSlug("mainnet-beta").getList();
+                    });
+                const foundToken = await tokenList.find(
+                    (token: any) => token.address == token_address
+                );
+                return foundToken;
+            }
+        } catch (error) {
+            console.log("🔥 ~ ~ searchToken node.solana.helper.ts error", error);
         }
     };
     /** end of solana functions */

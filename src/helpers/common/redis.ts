@@ -39,6 +39,21 @@ class RedisServer {
     if (value) return value;
     return null;
   }
+  public async set_hash_table(key: string, field: any, value: any) {
+    try {
+      this.client_write.HSET(key, field.toUpperCase(), value, (err: any, reply: any) => {
+        if (err) {
+          console.error('redis set string data error...', err)
+        }
+      });
+      // if (expiryInSeconds) {
+      //    this.client_write.EXPIRE(key, expiryInSeconds);
+      // }
+    } catch (err: any) {
+      console.error('💥 ~ ~ set_hash_table error');
+      throw err;
+    }
+  }
 
 }
 
