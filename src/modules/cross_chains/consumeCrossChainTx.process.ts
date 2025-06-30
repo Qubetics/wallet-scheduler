@@ -469,7 +469,7 @@ class CosnumeCrossChainTxProcess {
                   user_id: 0,
                   to_user_id: to_user_id,
                   type: trnx_type,
-                  req_type: "APP",
+                  req_type: "EXNG",
                   from_adrs: from_address,
                   to_adrs: destinationAddr,
                   tx_id: transactionId,
