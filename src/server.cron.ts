@@ -52,7 +52,7 @@ class CronJobs {
 
     /* Announcement notification */
     this.announcementNotification();
-    this.updateCoinDecimals();
+    // this.updateCoinDecimals();
   }
 
   public updateEthGasPriceCron = async () => {
