@@ -44,8 +44,8 @@ class CronJobs {
 
     this.updateFiatPrice();
 
-    this.updateTicsPrice();
-    this.deleteTicsDailyTablePrice();
+    // this.updateTicsPrice();
+    // this.deleteTicsDailyTablePrice();
 
     /* for SwftCoin (SWFTC) */
     this.swftcCoinList();
