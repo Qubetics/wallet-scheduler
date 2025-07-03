@@ -45,7 +45,7 @@ class NonEvmHelpers {
     public getTransactionById = async (transactionId: string) => {
         try {
             this.config.url = `${this.BTC_RPC_URL}api/v2/tx/${transactionId}`
-            const response = await axios(this.config.url);
+            const response = await axios(this.config);
             return response.data;
         } catch (error) {
             console.error('🔥 ~ ~ getTransactionById error', error);
@@ -56,7 +56,7 @@ class NonEvmHelpers {
     public async get_user_btc_balance(address: string) {
         try {
             this.config.url = `${this.BTC_RPC_URL}api/v2/address/${address}`
-            const result = await axios(this.config.url);
+            const result = await axios(this.config);
             let balance: number | null = result.data.balance ? Number(result.data.balance) : 0
             if (balance > 0) {
                 balance = balance / 100000000;
