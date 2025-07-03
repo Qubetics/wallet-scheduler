@@ -333,7 +333,7 @@ class tradingViewController {
                 coin_limit_count = Number(findCoinCounter);
             } else {
                 coin_limit_count = 0;
-            } true
+            }
             const tradingviewTokens = await Coins.CoinsRead.findAll({
                 attributes: [
                     'coin_id',
@@ -347,8 +347,8 @@ class tradingViewController {
                 ],
                 where: {
                     is_token: 1,
-                    coin_family: { [Op.in]: [1, 3, 4, 6, 7, 8] },
-                    token_type: { [Op.in]: ['ERC20', 'BEP20', 'CRC20'] },
+                    coin_family: { [Op.in]: [1, 2, 4, 5] },
+                    token_type: { [Op.in]: ['ERC20', 'BEP20', 'SPL'] }
                 },
                 order: [['coin_id', 'ASC']],
                 offset: coin_limit_count,
