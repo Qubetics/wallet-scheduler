@@ -6,7 +6,8 @@ export enum COINS {
     POL = 'POL',
     POLYGON = 'POLYGON',
     SOL = 'SOL',
-    TICS = 'TICS'
+    // TICS = 'TICS'
+    TICS = 'Qubetics'
 }
 export enum ADDED_BY {
     admin = 'admin'
