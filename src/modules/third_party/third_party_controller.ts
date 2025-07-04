@@ -174,7 +174,8 @@ class ThirdPartyController {
           "BSC",
           "SOL",
           "POLYGON",
-          "TRX"
+          "TRX",
+          "Qubetics"
         ];
         let coinFamily: any = {
           1: "BSC",
@@ -183,6 +184,7 @@ class ThirdPartyController {
           4: "POLYGON",
           5: "SOL",
           6: "TRX",
+          7: "Qubetics"
         };
         let TBL_SWFTC_COINS_ALIAS = SWFTCCoinsDataModel;
         let TBL_COINS_ALIAS_READ = Coins.CoinsRead;
@@ -198,7 +200,7 @@ class ThirdPartyController {
             }
             let token_type = null;
             
-            if (coin.mainNetwork === "ETH" || coin.mainNetwork === "POLYGON") {
+            if (coin.mainNetwork === "ETH" || coin.mainNetwork === "POLYGON" || coin.mainNetwork === "Qubetics") {
               token_type = "ERC20";
             } else if (coin.mainNetwork === "BSC") {
               token_type = "BEP20";

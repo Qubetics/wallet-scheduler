@@ -56,6 +56,7 @@ export const NODE = {
   BNB_RPC_URL: zookeeperConfig.config.BNB_RPC_URL,
   POL_RPC_URL: zookeeperConfig.config.POL_RPC_URL,
   SOL_RPC_URL: zookeeperConfig.config.SOL_RPC_URL,
+  TICS_RPC_URL: zookeeperConfig.config.TICS_RPC_URL,
 };
 
 /** for cross-chain */
@@ -70,6 +71,7 @@ export const SOL_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zo
 export const TRON_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TRON_WALLET_ADDRESS}`;
 export const BTC_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BTC_WALLET_ADDRESS}`;
 export const BSC_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.BSC_WALLET_ADDRESS}`;
+export const TICS_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TICS_WALLET_ADDRESS}`;
 
 export const PENDING_CROSS_CHAIN_TX_GROUP_ID =
   zookeeperConfig.config.PENDING_CROSS_CHAIN_TX_GROUP_ID;
