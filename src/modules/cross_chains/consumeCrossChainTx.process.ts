@@ -31,14 +31,16 @@ const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 
 class CosnumeCrossChainTxProcess {
   
-  public Eth_Ether_Url: ethers.JsonRpcProvider;
-  public Bsc_Ether_Url: ethers.JsonRpcProvider;
-  public Pol_Ether_Url: ethers.JsonRpcProvider;
+  public ethEtherUrl: ethers.JsonRpcProvider;
+  public bscEtherUrl: ethers.JsonRpcProvider;
+  public polEtherUrl: ethers.JsonRpcProvider;
+  public ticsEtherUrl: ethers.JsonRpcProvider;
 
   constructor() {
-    this.Eth_Ether_Url = etherJs.etherEth;
-    this.Bsc_Ether_Url = etherJs.etherBsc;
-    this.Pol_Ether_Url = etherJs.etherPol;
+    this.ethEtherUrl = etherJs.etherEth;
+    this.bscEtherUrl = etherJs.etherBsc;
+    this.polEtherUrl = etherJs.etherPol;
+    this.ticsEtherUrl = etherJs.etherTics;
   }
 
   public async startTxStatusUpdateQueue() {
@@ -150,6 +152,9 @@ class CosnumeCrossChainTxProcess {
           } else if (swftc_coin.mainNetwork == COINS.BSC) {
             coin_family = COIN_FAMILY.BNB;
             token_type = TOKENS.BEP20;
+          } else if (swftc_coin.mainNetwork == COINS.TICS) {
+            coin_family = COIN_FAMILY.TICS;
+            token_type = TOKENS.ERC20;
           }
 
           console.log("cross chain >>>>>>>>>>>>>>>>>.", coin_family);
@@ -232,7 +237,9 @@ class CosnumeCrossChainTxProcess {
                     ? config.TOKENS.POL_TOKEN_TYPE
                     : coin_family == 5
                       ? config.TOKENS.SOL_TOKEN_TYPE
-                      : config.TOKENS.TRX_TOKEN_TYPE;
+                        : coin_family == 6
+                        ? config.TOKENS.TRX_TOKEN_TYPE
+                        : config.TOKENS.TICS_TOKEN_TYPE;
 
             redisClient.client_write.set(
               set_coins || "",
@@ -252,16 +259,16 @@ class CosnumeCrossChainTxProcess {
             );
           }
 
-          let ether_object: ethers.JsonRpcProvider = this.Eth_Ether_Url;
+          let ether_object: ethers.JsonRpcProvider = this.ethEtherUrl;
           let depositQuery: any = null;
           if (coin_family == COIN_FAMILY.ETH) {
-            ether_object = this.Eth_Ether_Url;
+            ether_object = this.ethEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.ETH_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
           } else if (coin_family == COIN_FAMILY.POL) {
-            ether_object = this.Pol_Ether_Url;
+            ether_object = this.polEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.POL_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
@@ -286,12 +293,18 @@ class CosnumeCrossChainTxProcess {
               "${config.BSC_WALLET_ADDRESS",
               config.BSC_WALLET_ADDRESS
             );
-            ether_object = this.Bsc_Ether_Url;
+            ether_object = this.bscEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.BSC_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
             console.log("depositQuery", depositQuery);
+          }else if (coin_family == COIN_FAMILY.TICS) {
+            ether_object = this.ticsEtherUrl;
+            depositQuery = await redisClient.getKeyValuePair(
+              `${config.TICS_WALLET_ADDRESS}`,
+              destinationAddr.toUpperCase()
+            );
           }
           console.log("cross chain  123>>>>>>>>>>>>>>>>>.");
 
@@ -316,7 +329,7 @@ class CosnumeCrossChainTxProcess {
             let to_user_id: any = wallet_data.user_id;
             if (tran_exist == null) {
               let from_address = "";
-              let gasReverted: BigNumber | undefined = new BigNumber(0);
+              let gasReverted:number = 0;
               let gas_price: number = 0;
               let blockId: number = 0;
               let transaction_fee: number = 0;
@@ -327,7 +340,8 @@ class CosnumeCrossChainTxProcess {
               if (
                 coin_family == COIN_FAMILY.ETH ||
                 coin_family == COIN_FAMILY.BNB ||
-                coin_family == COIN_FAMILY.POL
+                coin_family == COIN_FAMILY.POL ||
+                coin_family == COIN_FAMILY.TICS
               ) {
                 const transactionReceipt = await ether_object.getTransactionReceipt(
                   transactionId
@@ -349,12 +363,13 @@ class CosnumeCrossChainTxProcess {
 
                     if (gasTotal.isGreaterThan(0) && gasUsed.isGreaterThan(0)) {
                         const gasDiff = gasTotal.minus(gasUsed);
-                        gasReverted = gasPrice.multipliedBy(gasDiff);
+                        const reverted = gasPrice.multipliedBy(gasDiff);
+                        gasReverted = Number(ethers.formatEther(reverted.toString()));
+                      }
+                      gas_price = Number(ethers.formatUnits(gasPrice.toString(), 9));
+                      blockId = transaction.blockNumber
                     }
-                    gas_price = Number(ethers.formatUnits(gasPrice.toString(), 9));
-                    blockId = transaction.blockNumber
                   }
-                }
                 if (swftc_coin.contact !== null && swftc_coin.contact !== "") {
                   /** User ERC-20 token Balance */
                   let balance =

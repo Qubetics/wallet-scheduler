@@ -219,7 +219,8 @@ class CronJobs {
   }
 
   public swftcCoinList = async () => {
-    schedule.scheduleJob("0 0 */1 * * *", async function () {
+    schedule.scheduleJob("* */2 * * * *", async function () {
+    // schedule.scheduleJob("0 0 */1 * * *", async function () {
       await ThirdPartyController.addSwftcCoinList();
     });
   }
