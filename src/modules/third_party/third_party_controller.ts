@@ -200,7 +200,7 @@ class ThirdPartyController {
             }
             let token_type = null;
             
-            if (coin.mainNetwork === "ETH" || coin.mainNetwork === "POLYGON" || coin.mainNetwork === "Qubetics") {
+            if (coin.mainNetwork === "ETH" || coin.mainNetwork === "POLYGON") {
               token_type = "ERC20";
             } else if (coin.mainNetwork === "BSC") {
               token_type = "BEP20";
