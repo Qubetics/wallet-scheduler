@@ -779,9 +779,11 @@ class PricesController {
         // Process coins in parallel with error handling for each
         await Promise.all(data.rows.map(async (coin) => {
           try {
-            const query_data = coin.token_address
-              ? `?address=${coin.token_address}`
-              : `?symbol=${coin.coin_symbol}`;
+            // const query_data = coin.token_address
+            //   ? `?address=${coin.token_address}`
+            //   : `?symbol=${coin.coin_symbol}`;
+
+              const query_data = `?address=${coin.token_address}`;
 
             const result = await cmcHelper.cmcApi(`info${query_data}`);
 
