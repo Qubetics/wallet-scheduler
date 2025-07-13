@@ -28,6 +28,8 @@ class CronJobs {
     /** Graph data */
     // this.updateFiatCoinPriceCron();
     this.updateFiatCoinPriceCronV2();
+    this.updateFiatCoinPriceCronTics();
+
     this.getCoinGraphDataDaily();
     this.getCoinGraphDataWeekly();
     this.getCoinGraphDataMonthly();
@@ -88,6 +90,12 @@ class CronJobs {
   public updateFiatCoinPriceCronV2 = async () => {
     schedule.scheduleJob("0 */1 * * * *", async function () {
       await PricesController.fetchCmcPriceV2();
+    });
+  };
+
+  public updateFiatCoinPriceCronTics = async () => {
+    schedule.scheduleJob("0 */5 * * * *", async function () {
+      await PricesController.fetchCmcPriceTics();
     });
   };
 

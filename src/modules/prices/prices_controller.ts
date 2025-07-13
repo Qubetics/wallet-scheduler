@@ -1597,6 +1597,138 @@ class PricesController {
     }
   };
 
+  public fetchCmcPriceTics = async () => {
+    try {
+      console.log("********* fetchCmcPriceTics *************");
+  
+      const coinData = await Coins.CoinsRead.findOne({
+        attributes: ["cmc_id"],
+        where: { coin_id: 161 },
+        raw: true,
+      });
+  
+      if (!coinData?.cmc_id) {
+        console.warn("CMC ID not found for coin_id 161");
+        return;
+      }
+  
+      const cmcId = coinData.cmc_id;
+  
+      // Fetch market data from CMC (only USD)
+      const result = await axios.get(
+        `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest`,
+        {
+          params: { id: cmcId, convert: "USD" },
+          headers: { "X-CMC_PRO_API_KEY": "REDACTED" },
+        }
+      );
+  
+      const coinObj = result?.data?.data?.[cmcId];
+      const usdQuote = coinObj?.quote?.USD;
+  
+      if (!coinObj || !usdQuote) {
+        console.warn("CMC data not found for cmc_id:", cmcId);
+        return;
+      }
+      
+      // Build latest USD price
+      const latest_price_usd: any = {
+        price: usdQuote.price || 0,
+        timestamp: usdQuote.last_updated,
+        price_change_24h: usdQuote.percent_change_24h || 0,
+        volume_24h: usdQuote.volume_24h || 0,
+        percent_change_7d: usdQuote.percent_change_7d || 0,
+        percent_change_30d: usdQuote.percent_change_30d || 0,
+      };
+  
+      // Fetch fiat conversion rates from DB (excluding USD)
+      const fiatRatesRaw = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
+        attributes: ["currency_code", "price_in_usd"],
+        where: { currency_code: { [Op.ne]: "USD" } },
+        raw: true,
+        order: [["currency_id", "asc"]],
+      });
+  
+      // Build fiat map with USD = 1
+      const fiatRateMap: Record<string, number> = { USD: 1 };
+      for (const fiat of fiatRatesRaw.rows) {
+        const code = fiat.currency_code.toUpperCase();
+        const rate = fiat.price_in_usd;
+        if (rate && rate > 0) fiatRateMap[code] = rate;
+      }
+  
+      // Loop through each fiat and insert/update
+      for (const fiatCode in fiatRateMap) {
+        const fiatRate = fiatRateMap[fiatCode];
+        const fiatPrice = usdQuote.price * fiatRate;
+        const marketCap = usdQuote.market_cap * fiatRate;
+        const volume24h = usdQuote.volume_24h * fiatRate;
+  
+        const where = { cmc_id: coinObj.id, fiat_type: fiatCode };
+  
+        let existingPrice = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+          attributes: ["id", "coin_id"],
+          where,
+          raw: true,
+        });
+  
+        let coin_id: number = 0;
+  
+        if (!existingPrice) {
+          const coin = await Coins.CoinsRead.findOne({
+            attributes: ["coin_id", "coin_family", "cmc_id", "token_address"],
+            where: { cmc_id: coinObj.id },
+          });
+  
+          if (!coin) continue;
+  
+          coin_id = coin.coin_id;
+  
+          await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+            coin_id: coin.coin_id,
+            coin_name: coinObj.name,
+            coin_family: coin.coin_family,
+            max_supply: coinObj.max_supply || 0,
+            cmc_id: coinObj.id,
+            circulating: coinObj.circulating_supply || 0,
+            total_supply: coinObj.total_supply,
+            rank: coinObj.cmc_rank || 0,
+            market_cap: marketCap,
+            fiat_type: fiatCode,
+            coin_symbol: coinObj.symbol,
+            value: fiatPrice,
+            price_change_24h: usdQuote.percent_change_24h || 0,
+            price_change_percentage_24h: usdQuote.percent_change_24h || 0,
+            volume_24h: volume24h,
+            token_address: coin.token_address,
+            latest_price: latest_price_usd,
+            latest_price_source: "converted_from_usd",
+          });
+        } else {
+          coin_id = existingPrice.coin_id;
+  
+          await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+            {
+              value: fiatPrice,
+              price_change_24h: usdQuote.percent_change_24h,
+              price_change_percentage_24h: usdQuote.percent_change_24h,
+              volume_24h: volume24h,
+              total_supply: coinObj.total_supply,
+              latest_price: latest_price_usd,
+              latest_price_source: "converted_from_usd",
+            },
+            { where }
+          );
+        }
+  
+        if (coin_id > 0 && fiatCode === "USD") {
+          await this.update_history_last_price(latest_price_usd, coinObj.id, fiatCode, where);
+        }
+      }
+    } catch (error) {
+      console.error("fetchCmcPriceTics error", error);
+    }
+  };
 }
 
 const third_party_controller = new PricesController();
