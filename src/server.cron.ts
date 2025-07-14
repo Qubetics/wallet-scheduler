@@ -28,7 +28,7 @@ class CronJobs {
     /** Graph data */
     // this.updateFiatCoinPriceCron();
     this.updateFiatCoinPriceCronV2();
-    this.updateFiatCoinPriceCronTics();
+    // this.updateFiatCoinPriceCronTics();
 
     this.getCoinGraphDataDaily();
     this.getCoinGraphDataWeekly();
