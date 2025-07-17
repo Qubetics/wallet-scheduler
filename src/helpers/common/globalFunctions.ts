@@ -1,10 +1,10 @@
-import { NotificationInterface } from "../../interfaces/notifications.interfaces";
-import { config } from "../../config";
+import { NotificationInterface } from "../../interfaces/notifications";
+// import { config } from "../../config";
 import { DeviceToken } from "../../models/model";
-import { pushNotification } from "./push_notification";
+import { pushNotification } from "./pushNotification";
 import { Op } from "sequelize";
 
-let BigNumber = require("bignumber.js");
+const bigNumber = require("bignumber.js");
 
 export const bigNumberSafeMath = function (
   c: string,
@@ -12,10 +12,10 @@ export const bigNumberSafeMath = function (
   d: string | number,
   precision?: number
 ) {
-  BigNumber.config({ DECIMAL_PLACES: 18 });
-  var a = new BigNumber(c);
-  var b = new BigNumber(typeof d === "number" ? d.toString() : d);
-  var rtn;
+  bigNumber.config({ DECIMAL_PLACES: 18 });
+  const a = new bigNumber(c);
+  const b = new bigNumber(typeof d === "number" ? d.toString() : d);
+  let rtn;
   // Figure out which operation to perform.
   switch (operation.toLowerCase()) {
     case "-":
@@ -38,18 +38,18 @@ export const bigNumberSafeMath = function (
   return rtn;
 };
 
-export const toFixed_norounding = function (value: string, n: number): number {
-  const val: number = new BigNumber(value);
-  value = val.toFixed();
-  var x: string[] = (val.toString() + ".0").split(".");
-  return parseFloat(x[0] + "." + x[1].substr(0, n));
-};
+// export const toFixed_norounding = function (value: string, n: number): number {
+//   const val: number = new BigNumber(value);
+//   value = val.toFixed();
+//   var x: string[] = (val.toString() + ".0").split(".");
+//   return parseFloat(x[0] + "." + x[1].substr(0, n));
+// };
 
-export const bigNumberSafeConversion = function (val: number): number {
-  var amount = val.toString();
-  var value = new BigNumber(amount);
-  return value.toFixed();
-};
+// export const bigNumberSafeConversion = function (val: number): number {
+//   var amount = val.toString();
+//   var value = new BigNumber(amount);
+//   return value.toFixed();
+// };
 
 export const exponentialToDecimal = async function (exponential: number) {
   let decimal: string = exponential.toString().toLowerCase();
@@ -93,7 +93,7 @@ export const exponentialToDecimal = async function (exponential: number) {
   return decimal;
 };
 
-export const GetDeviceTokens = async function GetDeviceTokens(user_id: number, address: string, coin_family: number) {
+export const getDeviceTokens = async function getDeviceTokens(user_id: number, address: string, coin_family: number) {
   try {
     return await DeviceToken.DeviceTokenRead.findAll({
       attributes: ["device_token"],
@@ -119,14 +119,14 @@ export const GetDeviceTokens = async function GetDeviceTokens(user_id: number, a
 export const sendNotification = async function sendNotification(
   devices: NotificationInterface
 ) {
-  var chat_thread = devices.thread == undefined ? "" : devices.thread;
-  var fromUserId =
+  const chat_thread = devices.thread == undefined ? "" : devices.thread;
+  const fromUserId =
     devices.from_user_id == undefined ? "" : devices.from_user_id;
-  var userCoinId =
+  const userCoinId =
     devices.user_coin_id == undefined ? "" : devices.user_coin_id;
-  var userName = devices.userName == undefined ? "" : devices.userName;
-  var walletAddress = devices.wallet == undefined ? "" : devices.wallet;
-  var message = {};
+  const userName = devices.userName == undefined ? "" : devices.userName;
+  const walletAddress = devices.wallet == undefined ? "" : devices.wallet;
+  let message = {};
   if (Array.isArray(devices.token)) {
 
     message = {

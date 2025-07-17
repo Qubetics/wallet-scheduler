@@ -1,4 +1,4 @@
-import { DBInterface } from "../../interfaces/db.interface";
+import { DBInterface } from "../../interfaces/db";
 import { Sequelize } from "sequelize";
 import { config } from "../../config";
 

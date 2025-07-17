@@ -2,12 +2,12 @@
   "name": "qubetics_wallet_crons",
   "version": "1.0.0",
   "description": "Process for qubetics wallet crons",
-  "main": "index.cron.ts",
+  "main": "index.ts",
   "scripts": {
     "compile": "tsc",
-    "server": "nodemon build/index.cron.js",
+    "server": "nodemon build/index.js",
     "dev": "concurrently \"npm run compile\" \"npm run server\"",
-    "start": "rm -rf build && npm run compile && node build/index.cron.js "
+    "start": "rm -rf build && npm run compile && node build/index.js "
   },
   "keywords": [
     "processes"

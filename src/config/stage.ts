@@ -1,4 +1,4 @@
-import zookeeperConfig from "../helpers/common/zookeeper.helper";
+import zookeeperConfig from "../helpers/common/zookeeper";
 const name = "qubetics";
 export const APP_NAME = zookeeperConfig.config.APP_NAME;
 export const SERVER = zookeeperConfig.config.SERVER;
@@ -16,15 +16,15 @@ export const BACKEND_WALLET_BALANCE_ADDRESSES_GROUP_ID =
   zookeeperConfig.config.BACKEND_WALLET_BALANCE_ADDRESSES_GROUP_ID;
 export const BACKEND_WALLET_BALANCE_ADDRESSES_TOPIC =
   zookeeperConfig.config.BACKEND_WALLET_BALANCE_ADDRESSES_TOPIC;
-export const MAILGUN = {
-  MAILGUN_API_KEY: zookeeperConfig.config.MAILGUN_API_KEY,
-  MAILGUN_DOMAIN: zookeeperConfig.config.MAILGUN_DOMAIN,
-  MAILGUN_BASE_URL: zookeeperConfig.config.MAILGUN_BASE_URL,
-};
+// export const MAILGUN = {
+//   MAILGUN_API_KEY: zookeeperConfig.config.MAILGUN_API_KEY,
+//   MAILGUN_DOMAIN: zookeeperConfig.config.MAILGUN_DOMAIN,
+//   MAILGUN_BASE_URL: zookeeperConfig.config.MAILGUN_BASE_URL,
+// };
 
 export const REDIS_CONN = zookeeperConfig.config.REDIS_CONN;
 
-export const FCM_SERVER_KEY = zookeeperConfig.config.FCM_SERVER_KEY;
+// export const FCM_SERVER_KEY = zookeeperConfig.config.FCM_SERVER_KEY;
 
 export const ETH_GAS_FEE_URL = zookeeperConfig.config.ETH.GAS_FEE_URL;
 export const ETH_GAS_FEE_API_KEY = zookeeperConfig.config.ETH.GAS_FEE_API_KEY;
@@ -76,19 +76,19 @@ export const TICS_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${z
 export const PENDING_CROSS_CHAIN_TX_GROUP_ID =
   zookeeperConfig.config.PENDING_CROSS_CHAIN_TX_GROUP_ID;
 
-export const TRANSAK = {
-  TRANSAK_URL: zookeeperConfig.config.TRANSAK_URL,
-  TRANSAK_REFRESH_TOKEN_URL: zookeeperConfig.config.TRANSAK_REFRESH_TOKEN_URL,
-  TRANSAK_API_SECRET: zookeeperConfig.config.TRANSAK_APP_SECRET,
-  TRANSAK_API_KEY: zookeeperConfig.config.TRANSAK_API_KEY,
-  TRANSAK_UPDATE_WEBHOOK_URL: zookeeperConfig.config.TRANSAK_UPDATE_WEBHOOK_URL,
-  TRANSAK_FIAT_CURRENCIES_URL:
-    zookeeperConfig.config.TRANSAK_FIAT_CURRENCIES_URL,
-};
+// export const TRANSAK = {
+//   TRANSAK_URL: zookeeperConfig.config.TRANSAK_URL,
+//   TRANSAK_REFRESH_TOKEN_URL: zookeeperConfig.config.TRANSAK_REFRESH_TOKEN_URL,
+//   TRANSAK_API_SECRET: zookeeperConfig.config.TRANSAK_APP_SECRET,
+//   TRANSAK_API_KEY: zookeeperConfig.config.TRANSAK_API_KEY,
+//   TRANSAK_UPDATE_WEBHOOK_URL: zookeeperConfig.config.TRANSAK_UPDATE_WEBHOOK_URL,
+//   TRANSAK_FIAT_CURRENCIES_URL:
+//     zookeeperConfig.config.TRANSAK_FIAT_CURRENCIES_URL,
+// };
 
-export const APP = {
-  QUBETICS_URL: zookeeperConfig.config.QUBETICS_URL,
-};
+// export const APP = {
+//   QUBETICS_URL: zookeeperConfig.config.QUBETICS_URL,
+// };
 
 export const TOKENS = {
   ETH_TOKEN_TYPE: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_ETH}`,
