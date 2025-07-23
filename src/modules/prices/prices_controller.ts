@@ -33,271 +33,463 @@ const {
 const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 
 class PricesController {
-  public fetchCmcPrice = async () => {
+
+  public fetchCmcPriceV2 = async () => {
     try {
-      console.log("********* fetchCmcPrice *************");
-      /** coins pagination */
+      console.log("********* fetchCmcPriceV2 *************");
+
       let coin_limit_count: number = 0;
-      let limit: number = 50;
-      let findCoinCounter: any = await redisClient.getKeyValuePair(
+      const limit: number = 100;
+
+      // Get the current batch counter from Redis
+      const findCoinCounter = await redisClient.getKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
         `${CURRENT_PRICE_COIN_COUNTER}`
       );
+
+      // Parse counter if available
       if (findCoinCounter) {
         coin_limit_count = Number(findCoinCounter);
       }
 
-      console.log("coin_limit_countcoin_limit_count", coin_limit_count);
+      // Fetch list of coins with non-zero cmc_id from the database (paginated)
+      const coinData: any = await Coins.CoinsRead.findAndCountAll({
+        attributes: ['cmc_id'],
+        where: {
+          cmc_id: {
+            [Op.ne]: 0
+          },
+          [Op.and]: [
+            Sequelize.literal('cmc_id IS NOT NULL')
+          ]
+        },
+        group: ["cmc_id"],
+        order: [["coin_id", "asc"]],
+        limit,
+        offset: coin_limit_count,
+        logging: true
+      });
 
-      /** currencies pagination */
-      let currency_limit_count: number = 0;
-      let currency_limit: number = 10;
+      // Extract CMC IDs from result
+      const cmcIds: any[] = coinData.rows.map((row: any) => row.cmc_id);
+      const coin_data_count = coinData.count;
 
-      let findCurrencyCounter: any = await redisClient.getKeyValuePair(
-        config.REDISKEYS.COIN_LIMIT_COUNTS,
-        `${CURRENT_PRICE_CURRENCY_COUNTER}`
-      );
-      if (findCurrencyCounter) {
-        currency_limit_count = Number(findCurrencyCounter);
-      }
+      // Add each coin's cmc_id into the reset_graph_data table if not already present
+      if (cmcIds.length > 0) {
+        // for (let i: number = 0; i < cmcIds.length; i++) {
+        //   let id_exist: any = await reset_graph_data.ResetGraphRead.findOne({
+        //     attributes: ["id"],
+        //     where: { cmc_id: cmcIds[i] },
+        //     raw: true,
+        //   });
 
-      let currency_data: any =
-        await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
-          attributes: ["currency_code"],
+        //   if (id_exist == null) {
+        //     let currentUTCDate: string = new Date()
+        //       .toISOString()
+        //       .replace(/T/, " ")
+        //       .replace(/\..+/, "");
+
+        //     await reset_graph_data.ResetGraphWrite.create({
+        //       cmc_id: cmcIds[i],
+        //       graph_type: "1d",
+        //       created_at: currentUTCDate,
+        //       updated_at: null,
+        //     });
+        //   }
+        // }
+
+        // Fetch live market data for the coins from CMC API
+        const cmcIdsParam = cmcIds.join(",");
+        const result = await cmcHelper.cmcApi(`quotes/latest?id=${cmcIdsParam}&convert=USD`);
+        const cmcData = result?.data?.data;
+
+        // Fetch fiat currency conversion rates from database (excluding USD)
+        const fiatRatesRaw = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
+          attributes: ["currency_code", "price_in_usd"],
+          where: {
+            currency_code: { [Op.ne]: "USD" },
+          },
           raw: true,
-          offset: currency_limit_count,
-          limit: currency_limit,
           order: [["currency_id", "asc"]],
         });
-      let coin_data_count: number = 0;
-      if (currency_data.count > 0) {
-        const codes = currency_data.rows.map((el: any) => el.currency_code);
-        const cmcIds: number[] = [];
 
-        let data: any = await Coins.CoinsRead.findAndCountAll({
-          attributes: ["cmc_id"],
-          where: { cmc_id: { [Op.ne]: 0 } },
-
-          order: [["coin_id", "asc"]],
-          limit,
-          offset: coin_limit_count,
-        });
-        coin_data_count = data.count;
-        if (data.count > 0) {
-          for await (const iterator of data.rows) {
-            cmcIds.push(iterator?.cmc_id as number);
+        // Build a fiat rate map (including USD = 1)
+        const fiatRateMap: Record<string, number> = {
+          USD: 1,
+        };
+        for (const fiat of fiatRatesRaw.rows) {
+          const code = fiat.currency_code.toUpperCase();
+          const rate = fiat.price_in_usd;
+          if (rate && rate > 0) {
+            fiatRateMap[code] = rate;
           }
         }
-        // Inserting cmc_ids in reset graph data table
-        if (cmcIds.length > 0) {
-          for (let i: number = 0; i < cmcIds.length; i++) {
-            let id_exist: any = await reset_graph_data.ResetGraphRead.findOne({
-              attributes: ["id"],
-              where: { cmc_id: cmcIds[i] },
+
+        // Loop through each coin's market data from CMC
+        for (const cmcId in cmcData) {
+          const coinObj = cmcData[cmcId];
+          const usdQuote = coinObj.quote?.USD;
+          if (!usdQuote) continue;
+
+          // Construct latest price object
+          const latest_price_usd: any = {
+            price: usdQuote.price || 0,
+            timestamp: usdQuote.last_updated,
+            price_change_24h: usdQuote.percent_change_24h || 0,
+            volume_24h: usdQuote.volume_24h || 0,
+            percent_change_7d: usdQuote.percent_change_7d || 0,
+            percent_change_30d: usdQuote.percent_change_30d || 0,
+          };
+
+          // Update prices for each fiat currency
+          for (const fiatCode in fiatRateMap) {
+            const fiatRate = fiatRateMap[fiatCode];
+            const fiatPrice = usdQuote.price * fiatRate;
+
+            const where = { cmc_id: coinObj.id, fiat_type: fiatCode };
+
+            // Check if price record already exists
+            let existingPrice = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+              attributes: ["id", "coin_id"],
+              where,
               raw: true,
             });
-            if (id_exist == null) {
-              let currentUTCDate: string = new Date()
-                .toISOString()
-                .replace(/T/, " ")
-                .replace(/\..+/, "");
-              await reset_graph_data.ResetGraphWrite.create({
-                cmc_id: cmcIds[i],
-                graph_type: "1d",
-                created_at: currentUTCDate,
-                updated_at: null,
+
+            let coin_id: number = 0;
+
+            if (!existingPrice) {
+              // If not exists, fetch coin info and insert a new record
+              const coin = await Coins.CoinsRead.findOne({
+                attributes: ["coin_id", "coin_family", "cmc_id", "token_address"],
+                where: { cmc_id: coinObj.id },
               });
-            }
-          }
-        }
 
-        // Fetch Prices from cmc and update in db
-        if (cmcIds.length > 0) {
-          const tokenFormat = cmcIds.toString().replace(/[\[\]']+/g, "");
-          const currencyFormat = codes.toString().replace(/[\[\]']+/g, "");
-          let result: any = await cmcHelper.cmcApi(
-            `quotes/latest?id=${tokenFormat}&convert=${currencyFormat}`
-          );
+              if (!coin) continue;
+              coin_id = coin.coin_id;
 
-          const cmcData = result?.data?.data;
-          for (const property in cmcData) {
-            const obj = cmcData[property];
-            for await (let code of codes) {
-              let checkCMCValueExist: any = await CMCDataNotExistModel.findOne({
-                attributes: ["cmc_id"],
-                where: {
-                  cmc_id: obj.id,
-                  fiat_type: code,
+              await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+                coin_id: coin.coin_id,
+                coin_name: coinObj.name,
+                coin_family: coin.coin_family,
+                max_supply: coinObj.max_supply || 0,
+                cmc_id: coinObj.id,
+                circulating: coinObj.circulating_supply || 0,
+                total_supply: coinObj.total_supply,
+                rank: coinObj.cmc_rank || 0,
+                market_cap: usdQuote.market_cap * fiatRate,
+                fiat_type: fiatCode,
+                coin_symbol: coinObj.symbol,
+                value: fiatPrice,
+                price_change_24h: usdQuote.percent_change_24h || 0,
+                price_change_percentage_24h: usdQuote.percent_change_24h || 0,
+                volume_24h: usdQuote.volume_24h * fiatRate,
+                token_address: coin.token_address,
+                latest_price: latest_price_usd,
+                latest_price_source: "converted_from_usd",
+              });
+            } else {
+              // If exists, update the record
+              coin_id = existingPrice.coin_id;
+              await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+                {
+                  value: fiatPrice,
+                  price_change_24h: usdQuote.percent_change_24h,
+                  price_change_percentage_24h: usdQuote.percent_change_24h,
+                  volume_24h: usdQuote.volume_24h * fiatRate,
+                  total_supply: coinObj.total_supply,
+                  latest_price: latest_price_usd,
+                  latest_price_source: "converted_from_usd",
                 },
-                raw: true,
-              });
-              if (obj.quote[code] != null) {
-                if (checkCMCValueExist) {
-                  await CMCDataNotExistModel.destroy({
-                    where: {
-                      cmc_id: obj.id,
-                      fiat_type: code,
-                    },
-                  });
-                }
-                let latest_price: any = {
-                  price: obj.quote[code].price || 0,
-                  timestamp: obj.quote[code].last_updated,
-                  price_change_24h: obj.quote[code].percent_change_24h || 0,
-                  volume_24h: obj.quote[code].volume_24h || 0,
-                  percent_change_7d: obj.quote[code].percent_change_7d || 0,
-                  percent_change_30d: obj.quote[code].percent_change_30d || 0,
-                };
-                if (latest_price !== null && latest_price !== "null") {
-                  let where: any = { cmc_id: obj.id, fiat_type: code };
+                { where }
+              );
+            }
 
-                  let checkIfCoinExist: any =
-                    await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
-                      attributes: ["id", "coin_id"],
-                      where: {
-                        fiat_type: code,
-                        cmc_id: obj.id,
-                      },
-                      raw: true,
-                    });
-                  /** check by cmc id */
-
-                  if (!checkIfCoinExist) {
-                    /** if by cmc id not exist then check by coin id */
-                    let coin_data: CoinModel | null =
-                      await Coins.CoinsRead.findOne({
-                        attributes: ["coin_id"],
-                        where: {
-                          cmc_id: obj.id,
-                        },
-                      });
-                    if (coin_data) {
-                      checkIfCoinExist =
-                        await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
-                          attributes: ["id", "coin_id"],
-                          where: {
-                            fiat_type: code,
-                            coin_id: coin_data?.coin_id,
-                          },
-                          raw: true,
-                        });
-                    }
-                  }
-                  let coin_id: number = 0;
-                  if (checkIfCoinExist) {
-                    coin_id = checkIfCoinExist.coin_id;
-                    await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-                      {
-                        value: obj?.quote[code]?.price || 0,
-                        price_change_24h: obj.quote[code].percent_change_24h,
-                        price_change_percentage_24h:
-                          obj.quote[code].percent_change_24h,
-                        volume_24h: obj.quote[code].volume_24h,
-                        total_supply: obj.total_supply,
-                        latest_price: latest_price,
-                        latest_price_source: "current",
-                      },
-                      {
-                        where: where,
-                      }
-                    );
-                  } else {
-                    let coin: any = await Coins.CoinsRead.findOne({
-                      attributes: [
-                        "coin_id",
-                        "coin_family",
-                        "cmc_id",
-                        "token_address",
-                      ],
-                      where: {
-                        cmc_id: obj.id,
-                      },
-                    });
-                    if (coin) {
-                      coin_id = coin.coin_id;
-                      await CoinPriceInFiat.CoinPriceInFiatWrite.create({
-                        coin_id: coin.coin_id,
-                        coin_name: obj.name,
-                        coin_family: coin.coin_family,
-                        max_supply: obj.max_supply || 0,
-                        cmc_id: coin.cmc_id,
-                        circulating: obj.circulating_supply || 0,
-                        total_supply: obj.total_supply,
-                        rank: obj.cmc_rank || 0,
-                        market_cap: obj?.quote[code]?.market_cap || 0,
-                        fiat_type: code.toLowerCase(),
-                        coin_symbol: obj.symbol,
-                        value: obj?.quote[code].price || 0,
-                        price_change_24h:
-                          obj.quote[code].percent_change_24h || 0,
-                        price_change_percentage_24h:
-                          obj.quote[code].percent_change_24h || 0,
-                        volume_24h: obj.quote[code].volume_24h || 0,
-                        token_address: coin.token_address,
-                        latest_price: latest_price,
-                        latest_price_source: "current",
-                      });
-                    }
-                  }
-                  /** update latest record in history candle */
-                  if (coin_id > 0 && code?.toLowerCase() == "usd") {
-                    await this.update_history_last_price(
-                      latest_price,
-                      obj.id,
-                      code,
-                      where
-                    );
-                  }
-                }
-              } else {
-                if (checkCMCValueExist) {
-                  console.log(" CMC id Exist");
-                } else {
-                  const data = await Coins.CoinsRead.findOne({
-                    attributes: ["cmc_id", "token_address"],
-                    where: { cmc_id: obj.id },
-                    raw: true,
-                  });
-                  await CMCDataNotExistModel.create({
-                    cmc_id: obj.id,
-                    token_address: data?.token_address
-                      ? data?.token_address
-                      : null,
-                    fiat_type: code,
-                  });
-                }
-              }
+            // For USD, also update the price history table
+            if (coin_id > 0 && fiatCode === "USD") {
+              await this.updateHistoryLastPrice(latest_price_usd, coinObj.id, fiatCode, where);
             }
           }
         }
       }
-      currency_limit_count = currency_limit_count + currency_limit;
-      let currency_counter =
-        currency_limit_count >= currency_data.count ? 0 : currency_limit_count;
 
-      if (currency_counter == 0) {
-        /** update coins pagination */
-        coin_limit_count = coin_limit_count + limit;
-        let counter =
-          coin_limit_count >= coin_data_count ? 0 : coin_limit_count;
-        await redisClient.setKeyValuePair(
-          config.REDISKEYS.COIN_LIMIT_COUNTS,
-          `${CURRENT_PRICE_COIN_COUNTER}`,
-          counter.toString()
-        );
-      }
-      /** update currencies pagination */
+      // Update the Redis counter for next batch; reset if finished
+      coin_limit_count += limit;
+      const nextCoinCounter = coin_limit_count >= coin_data_count ? 0 : coin_limit_count;
+
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
-        `${CURRENT_PRICE_CURRENCY_COUNTER}`,
-        currency_counter.toString()
+        `${CURRENT_PRICE_COIN_COUNTER}`,
+        nextCoinCounter.toString()
       );
     } catch (error) {
-      console.error("fffffetch_coin_price errorjsj", error);
+      console.error("fetchCmcPrice error", error);
     }
   };
+  // public fetchCmcPrice = async () => {
+  //   try {
+  //     console.log("********* fetchCmcPrice *************");
+  //     /** coins pagination */
+  //     let coin_limit_count: number = 0;
+  //     let limit: number = 50;
+  //     let findCoinCounter: any = await redisClient.getKeyValuePair(
+  //       config.REDISKEYS.COIN_LIMIT_COUNTS,
+  //       `${CURRENT_PRICE_COIN_COUNTER}`
+  //     );
+  //     if (findCoinCounter) {
+  //       coin_limit_count = Number(findCoinCounter);
+  //     }
 
-  private update_history_last_price = async (
+  //     console.log("coin_limit_countcoin_limit_count", coin_limit_count);
+
+  //     /** currencies pagination */
+  //     let currency_limit_count: number = 0;
+  //     let currency_limit: number = 10;
+
+  //     let findCurrencyCounter: any = await redisClient.getKeyValuePair(
+  //       config.REDISKEYS.COIN_LIMIT_COUNTS,
+  //       `${CURRENT_PRICE_CURRENCY_COUNTER}`
+  //     );
+  //     if (findCurrencyCounter) {
+  //       currency_limit_count = Number(findCurrencyCounter);
+  //     }
+
+  //     let currency_data: any =
+  //       await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
+  //         attributes: ["currency_code"],
+  //         raw: true,
+  //         offset: currency_limit_count,
+  //         limit: currency_limit,
+  //         order: [["currency_id", "asc"]],
+  //       });
+  //     let coin_data_count: number = 0;
+  //     if (currency_data.count > 0) {
+  //       const codes = currency_data.rows.map((el: any) => el.currency_code);
+  //       const cmcIds: number[] = [];
+
+  //       let data: any = await Coins.CoinsRead.findAndCountAll({
+  //         attributes: ["cmc_id"],
+  //         where: { cmc_id: { [Op.ne]: 0 } },
+
+  //         order: [["coin_id", "asc"]],
+  //         limit,
+  //         offset: coin_limit_count,
+  //       });
+  //       coin_data_count = data.count;
+  //       if (data.count > 0) {
+  //         for await (const iterator of data.rows) {
+  //           cmcIds.push(iterator?.cmc_id as number);
+  //         }
+  //       }
+  //       // Inserting cmc_ids in reset graph data table
+  //       if (cmcIds.length > 0) {
+  //         for (let i: number = 0; i < cmcIds.length; i++) {
+  //           let id_exist: any = await reset_graph_data.ResetGraphRead.findOne({
+  //             attributes: ["id"],
+  //             where: { cmc_id: cmcIds[i] },
+  //             raw: true,
+  //           });
+  //           if (id_exist == null) {
+  //             let currentUTCDate: string = new Date()
+  //               .toISOString()
+  //               .replace(/T/, " ")
+  //               .replace(/\..+/, "");
+  //             await reset_graph_data.ResetGraphWrite.create({
+  //               cmc_id: cmcIds[i],
+  //               graph_type: "1d",
+  //               created_at: currentUTCDate,
+  //               updated_at: null,
+  //             });
+  //           }
+  //         }
+  //       }
+
+  //       // Fetch Prices from cmc and update in db
+  //       if (cmcIds.length > 0) {
+  //         const tokenFormat = cmcIds.toString().replace(/[\[\]']+/g, "");
+  //         const currencyFormat = codes.toString().replace(/[\[\]']+/g, "");
+  //         let result: any = await cmcHelper.cmcApi(
+  //           `quotes/latest?id=${tokenFormat}&convert=${currencyFormat}`
+  //         );
+
+  //         const cmcData = result?.data?.data;
+  //         for (const property in cmcData) {
+  //           const obj = cmcData[property];
+  //           for await (let code of codes) {
+  //             let checkCMCValueExist: any = await CMCDataNotExistModel.findOne({
+  //               attributes: ["cmc_id"],
+  //               where: {
+  //                 cmc_id: obj.id,
+  //                 fiat_type: code,
+  //               },
+  //               raw: true,
+  //             });
+  //             if (obj.quote[code] != null) {
+  //               if (checkCMCValueExist) {
+  //                 await CMCDataNotExistModel.destroy({
+  //                   where: {
+  //                     cmc_id: obj.id,
+  //                     fiat_type: code,
+  //                   },
+  //                 });
+  //               }
+  //               let latest_price: any = {
+  //                 price: obj.quote[code].price || 0,
+  //                 timestamp: obj.quote[code].last_updated,
+  //                 price_change_24h: obj.quote[code].percent_change_24h || 0,
+  //                 volume_24h: obj.quote[code].volume_24h || 0,
+  //                 percent_change_7d: obj.quote[code].percent_change_7d || 0,
+  //                 percent_change_30d: obj.quote[code].percent_change_30d || 0,
+  //               };
+  //               if (latest_price !== null && latest_price !== "null") {
+  //                 let where: any = { cmc_id: obj.id, fiat_type: code };
+
+  //                 let checkIfCoinExist: any =
+  //                   await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+  //                     attributes: ["id", "coin_id"],
+  //                     where: {
+  //                       fiat_type: code,
+  //                       cmc_id: obj.id,
+  //                     },
+  //                     raw: true,
+  //                   });
+  //                 /** check by cmc id */
+
+  //                 if (!checkIfCoinExist) {
+  //                   /** if by cmc id not exist then check by coin id */
+  //                   let coin_data: CoinModel | null =
+  //                     await Coins.CoinsRead.findOne({
+  //                       attributes: ["coin_id"],
+  //                       where: {
+  //                         cmc_id: obj.id,
+  //                       },
+  //                     });
+  //                   if (coin_data) {
+  //                     checkIfCoinExist =
+  //                       await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+  //                         attributes: ["id", "coin_id"],
+  //                         where: {
+  //                           fiat_type: code,
+  //                           coin_id: coin_data?.coin_id,
+  //                         },
+  //                         raw: true,
+  //                       });
+  //                   }
+  //                 }
+  //                 let coin_id: number = 0;
+  //                 if (checkIfCoinExist) {
+  //                   coin_id = checkIfCoinExist.coin_id;
+  //                   await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+  //                     {
+  //                       value: obj?.quote[code]?.price || 0,
+  //                       price_change_24h: obj.quote[code].percent_change_24h,
+  //                       price_change_percentage_24h:
+  //                         obj.quote[code].percent_change_24h,
+  //                       volume_24h: obj.quote[code].volume_24h,
+  //                       total_supply: obj.total_supply,
+  //                       latest_price: latest_price,
+  //                       latest_price_source: "current",
+  //                     },
+  //                     {
+  //                       where: where,
+  //                     }
+  //                   );
+  //                 } else {
+  //                   let coin: any = await Coins.CoinsRead.findOne({
+  //                     attributes: [
+  //                       "coin_id",
+  //                       "coin_family",
+  //                       "cmc_id",
+  //                       "token_address",
+  //                     ],
+  //                     where: {
+  //                       cmc_id: obj.id,
+  //                     },
+  //                   });
+  //                   if (coin) {
+  //                     coin_id = coin.coin_id;
+  //                     await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+  //                       coin_id: coin.coin_id,
+  //                       coin_name: obj.name,
+  //                       coin_family: coin.coin_family,
+  //                       max_supply: obj.max_supply || 0,
+  //                       cmc_id: coin.cmc_id,
+  //                       circulating: obj.circulating_supply || 0,
+  //                       total_supply: obj.total_supply,
+  //                       rank: obj.cmc_rank || 0,
+  //                       market_cap: obj?.quote[code]?.market_cap || 0,
+  //                       fiat_type: code.toLowerCase(),
+  //                       coin_symbol: obj.symbol,
+  //                       value: obj?.quote[code].price || 0,
+  //                       price_change_24h:
+  //                         obj.quote[code].percent_change_24h || 0,
+  //                       price_change_percentage_24h:
+  //                         obj.quote[code].percent_change_24h || 0,
+  //                       volume_24h: obj.quote[code].volume_24h || 0,
+  //                       token_address: coin.token_address,
+  //                       latest_price: latest_price,
+  //                       latest_price_source: "current",
+  //                     });
+  //                   }
+  //                 }
+  //                 /** update latest record in history candle */
+  //                 if (coin_id > 0 && code?.toLowerCase() == "usd") {
+  //                   await this.updateHistoryLastPrice(
+  //                     latest_price,
+  //                     obj.id,
+  //                     code,
+  //                     where
+  //                   );
+  //                 }
+  //               }
+  //             } else {
+  //               if (checkCMCValueExist) {
+  //                 console.log(" CMC id Exist");
+  //               } else {
+  //                 const data = await Coins.CoinsRead.findOne({
+  //                   attributes: ["cmc_id", "token_address"],
+  //                   where: { cmc_id: obj.id },
+  //                   raw: true,
+  //                 });
+  //                 await CMCDataNotExistModel.create({
+  //                   cmc_id: obj.id,
+  //                   token_address: data?.token_address
+  //                     ? data?.token_address
+  //                     : null,
+  //                   fiat_type: code,
+  //                 });
+  //               }
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //     currency_limit_count = currency_limit_count + currency_limit;
+  //     let currency_counter =
+  //       currency_limit_count >= currency_data.count ? 0 : currency_limit_count;
+
+  //     if (currency_counter == 0) {
+  //       /** update coins pagination */
+  //       coin_limit_count = coin_limit_count + limit;
+  //       let counter =
+  //         coin_limit_count >= coin_data_count ? 0 : coin_limit_count;
+  //       await redisClient.setKeyValuePair(
+  //         config.REDISKEYS.COIN_LIMIT_COUNTS,
+  //         `${CURRENT_PRICE_COIN_COUNTER}`,
+  //         counter.toString()
+  //       );
+  //     }
+  //     /** update currencies pagination */
+  //     await redisClient.setKeyValuePair(
+  //       config.REDISKEYS.COIN_LIMIT_COUNTS,
+  //       `${CURRENT_PRICE_CURRENCY_COUNTER}`,
+  //       currency_counter.toString()
+  //     );
+  //   } catch (error) {
+  //     console.error("fffffetch_coin_price errorjsj", error);
+  //   }
+  // };
+
+  private updateHistoryLastPrice = async (
     latest_price: any,
     id: number,
     code: string,
@@ -309,15 +501,15 @@ class PricesController {
         where: where,
       });
     if (historyExistData.count > 0) {
-      for (let history of historyExistData.rows) {
-        let history_sparkline: any =
+      for (const history of historyExistData.rows) {
+        const history_sparkline: any =
           history.sparkline !== null ? history.sparkline : [];
         if (history_sparkline.length > 0) {
           const cleanedData = history_sparkline.filter(
             (item: any) => item !== null
           );
-          let last_record = cleanedData[cleanedData?.length - 1];
-          const existingTimestamp = new Date(last_record?.timestamp).getTime();
+          const lastRecord = cleanedData[cleanedData?.length - 1];
+          const existingTimestamp = new Date(lastRecord?.timestamp).getTime();
           const latestTimestamp = new Date(latest_price?.timestamp).getTime();
           if (latestTimestamp > existingTimestamp) {
             cleanedData.push(latest_price);
@@ -356,9 +548,9 @@ class PricesController {
         }
       }
     } else {
-      let types = ["1d", "1w", "1m", "1y"];
+      const types = ["1d", "1w", "1m", "1y"];
       for (let i = 0; i < types.length; i++) {
-        let create_data: any = {
+        const create_data: any = {
           cmc_id: id,
           type: types[i],
           fiat_type: code,
@@ -410,7 +602,7 @@ class PricesController {
       //   subtractTime.setDate(subtractTime.getDate() - 3);
       // }
       // console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
-      let dbCoinrecords: any;
+      /*let dbCoinrecords: any;
 
       dbCoinrecords =
         await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
@@ -433,36 +625,44 @@ class PricesController {
       );
       let groupedCount = dbCoinrecords.count; // This is an array of grouped results
       let totalRecords = dbCoinrecords.rows.length; // Total number of unique groups (cmc_id)
-      if (dbCoinrecords.count == 0) {
-        dbCoinrecords = await Coins.CoinsRead.findAndCountAll({
-          attributes: ["cmc_id"],
-          where: {
-            // cmc_id: { [Op.ne]: 0, [Op.lt]: 50000 },
-            cmc_id: { [Op.ne]: 0 },
-            [Op.and]: [sequelize.literal(`(graph_data.updated_at IS NULL)`)],
+      if (dbCoinrecords.count == 0) {*/
+      const dbCoinrecords: any = await Coins.CoinsRead.findAndCountAll({
+        attributes: ["cmc_id"],
+        where: {
+          cmc_id: {
+            [Op.ne]: 0
           },
-          include: [
-            {
-              model: CoinPriceInFiatGraph.CoinPriceInFiatGraphRead,
-              attributes: ["type", "updated_at"], // Specify the columns to return from the graph_data table
-              as: "graph_data",
-              where: {
-                type: type,
-                fiat_type: "USD",
-              },
-              required: false, // Set to false for LEFT JOIN
-            },
-          ],
-          // raw: true,
-          group: ["cmc_id"],
-          order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
-          limit: limit,
-          offset: coin_limit_count,
-          logging: true,
-        });
-        groupedCount = dbCoinrecords.count; // This is an array of grouped results
-        totalRecords = groupedCount.length; // Total number of unique groups (cmc_id)
-      }
+          [Op.and]: [
+            Sequelize.literal('cmc_id IS NOT NULL')
+          ]
+        },
+        // where: {
+        //   cmc_id: { [Op.ne]: 0, [Op.not]: null },
+        //   // cmc_id: { [Op.ne]: 0, },
+        //   // [Op.and]: [sequelize.literal(`(graph_data.updated_at IS NULL)`)],
+        // },
+        // include: [
+        //   {
+        //     model: CoinPriceInFiatGraph.CoinPriceInFiatGraphRead,
+        //     attributes: ["type", "updated_at"], // Specify the columns to return from the graph_data table
+        //     as: "graph_data",
+        //     where: {
+        //       type: type,
+        //       fiat_type: "USD",
+        //     },
+        //     required: false, // Set to false for LEFT JOIN
+        //   },
+        // ],
+        // raw: true,
+        group: ["cmc_id"],
+        order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
+        limit: limit,
+        offset: coin_limit_count,
+        logging: true,
+      });
+      const groupedCount: number = dbCoinrecords.count; // This is an array of grouped results
+      const totalRecords: number = dbCoinrecords.rows.length; // Total number of unique groups (cmc_id)
+      // }
 
       if (!totalRecords) {
         let counter = 0;
@@ -495,7 +695,7 @@ class PricesController {
           startDate,
           endDate
         );
-        let data = await rp(requestOptionsForListing);
+        const data = await rp(requestOptionsForListing);
         if (data) {
           let created_at;
           let currentUTCDate: string = new Date()
@@ -561,19 +761,19 @@ class PricesController {
               });
             }
             if (sparkline.length > 0) {
-              let where: any = {
+              const where: any = {
                 cmc_id: id,
                 fiat_type: code,
                 type: type,
               };
-              let recordExist: any =
+              const recordExist: any =
                 await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findOne({
                   attributes: ["id", "sparkline"],
                   where: where,
                 });
 
               if (recordExist) {
-                let getGraphData: any = await globalHelper.setGraphData(
+                const getGraphData: any = await globalHelper.setGraphData(
                   sparkline
                 ); // slicing sparkline data
 
@@ -604,7 +804,7 @@ class PricesController {
                 });
               }
             } else {
-              let whereCond: any = {
+              const whereCond: any = {
                 cmc_id: id,
                 fiat_type: code,
                 type: type,
@@ -888,326 +1088,6 @@ class PricesController {
     }
   };
 
-  public delete_graph_old_data = async (
-    coin_family: string,
-    compare_date: string,
-    graph_type: string
-  ) => {
-    try {
-      let family_data = Object.keys(COIN_FAMILY).find(
-        (key) => COIN_FAMILY[key] === coin_family
-      );
-
-      console.log("********* DeleteGraph data *************", family_data);
-      /** coins pagination */
-      let coin_limit_count = 0;
-      let limit = 1;
-      let findCoinCounter = await redisClient.getKeyValuePair(
-        config.REDISKEYS.COIN_LIMIT_COUNTS,
-        `${family_data}_${graph_type}_${DELETE_GRAPH_COIN_COUNTER}`
-      );
-      if (findCoinCounter) {
-        coin_limit_count = Number(findCoinCounter);
-      }
-
-      const currency_data =
-        await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
-          attributes: ["currency_code"],
-          raw: true,
-        });
-      let currencies: string[] = [];
-      if (currency_data.count > 0) {
-        currencies = currency_data.rows.map((el) => el.currency_code);
-      }
-
-      const coin_data: any = await Coins.CoinsRead.findAndCountAll({
-        attributes: ["cmc_id"],
-        where: { cmc_id: { [Op.ne]: 0 }, coin_family: coin_family },
-        raw: true,
-        limit,
-        offset: coin_limit_count,
-      });
-      let cmcIds: number[] = [];
-      if (coin_data.count > 0) {
-        for await (const iterator of coin_data.rows) {
-          cmcIds.push(iterator?.cmc_id as number);
-        }
-      }
-
-      if (coin_data.count > 0) {
-        let historyExistData =
-          await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
-            attributes: [`id`, `sparkline`, `type`],
-            where: {
-              cmc_id: { [Op.in]: cmcIds },
-              fiat_type: { [Op.in]: currencies },
-              type: graph_type,
-            },
-            limit: 1,
-          });
-        if (historyExistData.count > 0) {
-          for (let history of historyExistData.rows) {
-            let history_sparkline: any =
-              history.sparkline !== null ? history.sparkline : [];
-            let latest_sparkline: any = [];
-            let last_time_stamp: any = "";
-            let minutes: number = 0;
-            if (history_sparkline.length > 0) {
-              for (let sparkline of history_sparkline) {
-                if (last_time_stamp !== "") {
-                  let diff: any = Math.abs(
-                    new Date(last_time_stamp).getTime() -
-                    new Date(sparkline?.timestamp).getTime()
-                  );
-                  minutes = Math.floor(diff / 1000 / 60);
-                  if (minutes >= 5) {
-                    last_time_stamp = sparkline?.timestamp;
-                  }
-                } else {
-                  last_time_stamp = sparkline?.timestamp;
-                }
-
-                if (
-                  new Date(sparkline?.timestamp).getTime() >=
-                  new Date(compare_date).getTime() &&
-                  minutes >= 5
-                ) {
-                  latest_sparkline.push(sparkline);
-                }
-              }
-            }
-          }
-        }
-      }
-
-      /** update coins pagination */
-      coin_limit_count = coin_limit_count + limit;
-      let counter =
-        coin_limit_count >= coin_data.count ? 0 : coin_limit_count + limit;
-
-      await redisClient.setKeyValuePair(
-        config.REDISKEYS.COIN_LIMIT_COUNTS,
-        `${family_data}_${graph_type}_${DELETE_GRAPH_COIN_COUNTER}`,
-        counter.toString()
-      );
-    } catch (error) {
-      console.error("fetchhhhhh_coin_price errorjsj", error);
-    }
-  };
-
-  // Utility function to format exchange names
-  public formatExchangeName = (exchangeName: string): string => {
-    return exchangeName
-      .split(" ") // Split the string by spaces
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word
-      .join("") // Join without spaces
-      .replace(/v(\d+)/gi, "V$1"); // Handle 'v3' to 'V3'
-  };
-
-  public async moralisTradingviewChartWidget(
-    chain: string,
-    coinFamily: number,
-    tokenType: string
-  ) {
-    try {
-      const tradingviewTokens = await Coins.CoinsRead.findAll({
-        attributes: [
-          "coin_id",
-          "coin_symbol",
-          "coin_family",
-          "is_token",
-          "token_address",
-          "graph_source",
-          "graph_pair",
-          "pair_address",
-        ],
-        where: {
-          // is_token: { [Op.ne]: null },     //      old check
-          is_token: 1,
-          coin_family: coinFamily,
-          token_type: tokenType,
-          pair_address: { [Op.eq]: null },
-        },
-      });
-
-      const BATCH_SIZE = 20;
-      const delay = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
-
-      for (let i = 0; i < tradingviewTokens.length; i += BATCH_SIZE) {
-        const batch = tradingviewTokens.slice(i, i + BATCH_SIZE);
-
-        // Process each batch
-        const batchPromises = batch.map(async (token) => {
-          const { coin_id, token_address, coin_symbol } = token;
-
-          if (!token_address) {
-            console.warn(
-              `Skipping token with ID: ${coin_id}, as it has no token_address`
-            );
-            return;
-          }
-
-          const url = `https://deep-index.moralis.io/api/v2.2/erc20/${token_address}/pairs?chain=${chain}`;
-
-          try {
-            // Delay 1 second before each request
-            await delay(1000);
-
-            // Fetch data from Moralis API
-            const response = await axios.get(url, {
-              headers: { "x-api-key": config.MORALIS_KEY },
-            });
-
-            const pairs = response?.data?.pairs;
-            if (pairs?.length > 0) {
-              const activePair = await pairs.find(
-                (pair: any) =>
-                  pair?.inactive_pair === false || pair?.inactivePair === false
-              );
-              if (activePair) {
-                const pairAddress = activePair?.pair_address || null;
-                const rawExchangeName = activePair?.exchange_name || null;
-                const graphSource = rawExchangeName
-                  ? this.formatExchangeName(rawExchangeName)
-                  : null;
-
-                if (pairAddress) {
-                  // Update the database with graph source and pair
-                  await Coins.CoinsWrite.update(
-                    {
-                      graph_source: graphSource,
-                      graph_pair: activePair.pair_label,
-                      pair_address: pairAddress,
-                    },
-                    { where: { coin_id } }
-                  );
-                }
-              }
-            } else {
-              console.warn(
-                `No pairs found for coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`
-              );
-            }
-          } catch (err: any) {
-            console.error(
-              `Error processing coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`,
-              err?.message || err
-            );
-          }
-        });
-
-        // Wait for the current batch to complete before moving to the next
-        await Promise.allSettled(batchPromises);
-      }
-    } catch (error) {
-      console.log(
-        "::Error log:: 🔥 ~ moralisTradingviewChartWidget error",
-        error
-      );
-      return false;
-    }
-  }
-
-  public async moralisTradingviewChartWidgetSOL() {
-    try {
-      const tradingviewTokens = await Coins.CoinsRead.findAll({
-        attributes: [
-          "coin_id",
-          "coin_symbol",
-          "coin_family",
-          "is_token",
-          "token_address",
-          "graph_source",
-          "graph_pair",
-          "pair_address",
-        ],
-        where: {
-          is_token: 1,
-          coin_family: COIN_FAMILY.SOL,
-          pair_address: { [Op.eq]: null },
-        },
-      });
-
-      const BATCH_SIZE = 20;
-      const delay = (ms: number) =>
-        new Promise((resolve) => setTimeout(resolve, ms));
-
-      for (let i = 0; i < tradingviewTokens.length; i += BATCH_SIZE) {
-        const batch = tradingviewTokens.slice(i, i + BATCH_SIZE);
-
-        // Process each batch
-        const batchPromises = batch.map(async (token) => {
-          const { coin_id, token_address, coin_symbol } = token;
-
-          if (!token_address) {
-            console.warn(
-              `Skipping token with ID: ${coin_id}, as it has no token_address`
-            );
-            return;
-          }
-
-          const url = `https://solana-gateway.moralis.io/token/mainnet/${token_address}/pairs`;
-
-          try {
-            // Delay 1 second before each request
-            await delay(1000);
-
-            // Fetch data from Moralis API
-            const response = await axios.get(url, {
-              headers: { "x-api-key": config.MORALIS_KEY },
-            });
-
-            const pairs = response?.data?.pairs;
-            if (pairs?.length > 0) {
-              const activePair = await pairs.find(
-                (pair: any) =>
-                  pair?.inactive_pair === false || pair?.inactivePair === false
-              );
-              if (activePair) {
-                const pairAddress = activePair?.pairAddress || null;
-                const rawExchangeName = activePair?.exchangeName || null;
-                const graphSource = rawExchangeName
-                  ? this.formatExchangeName(rawExchangeName)
-                  : null;
-
-                if (pairAddress) {
-                  // Update the database with graph source and pair
-                  await Coins.CoinsWrite.update(
-                    {
-                      graph_source: graphSource,
-                      graph_pair: activePair.pairLabel,
-                      pair_address: pairAddress,
-                    },
-                    { where: { coin_id } }
-                  );
-                }
-              }
-            } else {
-              console.warn(
-                `No pairs found for coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`
-              );
-            }
-          } catch (err: any) {
-            console.error(
-              `Error processing coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`,
-              err?.message || err
-            );
-          }
-        });
-
-        // Wait for the current batch to complete before moving to the next
-        await Promise.allSettled(batchPromises);
-      }
-    } catch (error) {
-      console.log(
-        "::Error log:: 🔥 ~ moralisTradingviewChartWidgetSOL error",
-        error
-      );
-      return false;
-    }
-  }
-
   public async updateFiatPrice() {
     try {
       let findFiat = await CurrencyFiat.CurrencyFiatWrite.findAll();
@@ -1244,492 +1124,633 @@ class PricesController {
     }
   }
 
-  public async updateTicsPrice() {
-    try {
-      const currency_data = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
-        attributes: ["currency_code", "price_in_usd"],
-        where: {
-          currency_code: { [Op.ne]: "USD" },
-        },
-        raw: true,
-        order: [["currency_id", "asc"]],
-      });
+  // public delete_graph_old_data = async (
+  //   coin_family: string,
+  //   compare_date: string,
+  //   graph_type: string
+  // ) => {
+  //   try {
+  //     let family_data = Object.keys(COIN_FAMILY).find(
+  //       (key) => COIN_FAMILY[key] === coin_family
+  //     );
 
-      if (currency_data.count === 0) return;
+  //     console.log("********* DeleteGraph data *************", family_data);
+  //     /** coins pagination */
+  //     let coin_limit_count = 0;
+  //     let limit = 1;
+  //     let findCoinCounter = await redisClient.getKeyValuePair(
+  //       config.REDISKEYS.COIN_LIMIT_COUNTS,
+  //       `${family_data}_${graph_type}_${DELETE_GRAPH_COIN_COUNTER}`
+  //     );
+  //     if (findCoinCounter) {
+  //       coin_limit_count = Number(findCoinCounter);
+  //     }
 
-      const result = await axios.get('https://evm-api.qubetics.com/qubetics/explorer/current-token-price');
-      const ticsUsdPrice = result?.data?.data || 0;
-      const coin_family = COIN_FAMILY?.TICS ? COIN_FAMILY?.TICS : 7
+  //     const currency_data =
+  //       await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
+  //         attributes: ["currency_code"],
+  //         raw: true,
+  //       });
+  //     let currencies: string[] = [];
+  //     if (currency_data.count > 0) {
+  //       currencies = currency_data.rows.map((el) => el.currency_code);
+  //     }
 
-      const coin_data = await Coins.CoinsRead.findOne({
-        attributes: ["coin_id", "cmc_id"],
-        where: {
-          coin_name: { [Op.like]: 'Qubetics' },
-          coin_symbol: { [Op.like]: 'tics' },
-          coin_family: coin_family,
-        },
-      });
+  //     const coin_data: any = await Coins.CoinsRead.findAndCountAll({
+  //       attributes: ["cmc_id"],
+  //       where: { cmc_id: { [Op.ne]: 0 }, coin_family: coin_family },
+  //       raw: true,
+  //       limit,
+  //       offset: coin_limit_count,
+  //     });
+  //     let cmcIds: number[] = [];
+  //     if (coin_data.count > 0) {
+  //       for await (const iterator of coin_data.rows) {
+  //         cmcIds.push(iterator?.cmc_id as number);
+  //       }
+  //     }
 
-      if (!coin_data || coin_data === null) {
-        console.log("TICS coin not found");
-        return;
-      }
+  //     if (coin_data.count > 0) {
+  //       let historyExistData =
+  //         await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
+  //           attributes: [`id`, `sparkline`, `type`],
+  //           where: {
+  //             cmc_id: { [Op.in]: cmcIds },
+  //             fiat_type: { [Op.in]: currencies },
+  //             type: graph_type,
+  //           },
+  //           limit: 1,
+  //         });
+  //       if (historyExistData.count > 0) {
+  //         for (let history of historyExistData.rows) {
+  //           let history_sparkline: any =
+  //             history.sparkline !== null ? history.sparkline : [];
+  //           let latest_sparkline: any = [];
+  //           let last_time_stamp: any = "";
+  //           let minutes: number = 0;
+  //           if (history_sparkline.length > 0) {
+  //             for (let sparkline of history_sparkline) {
+  //               if (last_time_stamp !== "") {
+  //                 let diff: any = Math.abs(
+  //                   new Date(last_time_stamp).getTime() -
+  //                   new Date(sparkline?.timestamp).getTime()
+  //                 );
+  //                 minutes = Math.floor(diff / 1000 / 60);
+  //                 if (minutes >= 5) {
+  //                   last_time_stamp = sparkline?.timestamp;
+  //                 }
+  //               } else {
+  //                 last_time_stamp = sparkline?.timestamp;
+  //               }
 
-      const coin_id = coin_data.coin_id;
-      let price_change_percentage_24h = 0;
+  //               if (
+  //                 new Date(sparkline?.timestamp).getTime() >=
+  //                 new Date(compare_date).getTime() &&
+  //                 minutes >= 5
+  //               ) {
+  //                 latest_sparkline.push(sparkline);
+  //               }
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
 
-      const usdRecord = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
-        where: { fiat_type: 'usd', coin_id },
-      });
-      if (usdRecord) {
-        let compare_price: number | string = await exponentialToDecimal(usdRecord?.value);
-        let dayPrice = await this.coinCompareDayPrice(coin_id);
-        if (dayPrice > 0) {
-          compare_price = dayPrice;
-        }
-        price_change_percentage_24h = await this.percentageCalulator(ticsUsdPrice, compare_price);
+  //     /** update coins pagination */
+  //     coin_limit_count = coin_limit_count + limit;
+  //     let counter =
+  //       coin_limit_count >= coin_data.count ? 0 : coin_limit_count + limit;
 
-        await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-          { value: ticsUsdPrice, price_change_24h: price_change_percentage_24h, price_change_percentage_24h: price_change_percentage_24h },
-          { where: { fiat_type: 'usd', coin_id } }
-        );
+  //     await redisClient.setKeyValuePair(
+  //       config.REDISKEYS.COIN_LIMIT_COUNTS,
+  //       `${family_data}_${graph_type}_${DELETE_GRAPH_COIN_COUNTER}`,
+  //       counter.toString()
+  //     );
+  //   } catch (error) {
+  //     console.error("fetchhhhhh_coin_price errorjsj", error);
+  //   }
+  // };
 
-        const timestamp: string = new Date().toISOString();
-        await this.saveDayCoinPrice(coin_id, ticsUsdPrice, coin_family);
-        await this.saveTicsGraphPrice(ticsUsdPrice, timestamp, coin_id);
-      } else {
-        await CoinPriceInFiat.CoinPriceInFiatWrite.create({
-          coin_id,
-          fiat_type: 'usd',
-          coin_symbol: 'TICS',
-          coin_name: 'Qubetics',
-          coin_family: coin_family,
-          cmc_id: coin_data?.cmc_id,
-          value: ticsUsdPrice,
-          price_change_24h: 0,
-          price_change_percentage_24h: 0,
-          market_cap: 0,
-          circulating: 0,
-          total_supply: 0,
-          rank: 0,
-          volume_24h: 0,
-          max_supply: 0,
-          latest_price: null,
-          latest_price_source: null,
-        });
-      }
+  // Utility function to format exchange names
+  // public formatExchangeName = (exchangeName: string): string => {
+  //   return exchangeName
+  //     .split(" ") // Split the string by spaces
+  //     .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize each word
+  //     .join("") // Join without spaces
+  //     .replace(/v(\d+)/gi, "V$1"); // Handle 'v3' to 'V3'
+  // };
 
-      for (const currency of currency_data.rows) {
-        const { currency_code, price_in_usd }: any = currency;
-        const fiat_type = currency_code.toLowerCase();
-        const convertedValue = ticsUsdPrice * parseFloat(price_in_usd);
+  // public async moralisTradingviewChartWidget(
+  //   chain: string,
+  //   coinFamily: number,
+  //   tokenType: string
+  // ) {
+  //   try {
+  //     const tradingviewTokens = await Coins.CoinsRead.findAll({
+  //       attributes: [
+  //         "coin_id",
+  //         "coin_symbol",
+  //         "coin_family",
+  //         "is_token",
+  //         "token_address",
+  //         "graph_source",
+  //         "graph_pair",
+  //         "pair_address",
+  //       ],
+  //       where: {
+  //         // is_token: { [Op.ne]: null },     //      old check
+  //         is_token: 1,
+  //         coin_family: coinFamily,
+  //         token_type: tokenType,
+  //         pair_address: { [Op.eq]: null },
+  //       },
+  //     });
 
-        const existingRecord = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
-          where: { fiat_type, coin_id },
-        });
+  //     const BATCH_SIZE = 20;
+  //     const delay = (ms: number) =>
+  //       new Promise((resolve) => setTimeout(resolve, ms));
 
-        if (existingRecord) {
-          await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-            { value: convertedValue, price_change_24h: price_change_percentage_24h, price_change_percentage_24h: price_change_percentage_24h },
-            { where: { fiat_type, coin_id } }
-          );
-        } else {
-          await CoinPriceInFiat.CoinPriceInFiatWrite.create({
-            coin_id,
-            fiat_type,
-            coin_symbol: 'TICS',
-            coin_name: 'Qubetics',
-            coin_family: coin_family,
-            cmc_id: coin_data?.cmc_id,
-            value: convertedValue,
-            price_change_24h: 0,
-            price_change_percentage_24h: 0,
-            market_cap: 0,
-            circulating: 0,
-            total_supply: 0,
-            rank: 0,
-            volume_24h: 0,
-            max_supply: 0,
-            latest_price: null,
-            latest_price_source: null,
-          });
-        }
-      }
+  //     for (let i = 0; i < tradingviewTokens.length; i += BATCH_SIZE) {
+  //       const batch = tradingviewTokens.slice(i, i + BATCH_SIZE);
 
-    } catch (error) {
-      console.log("::Error log:: updateTicsPrice :>> ", error);
-      return false;
-    }
-  }
+  //       // Process each batch
+  //       const batchPromises = batch.map(async (token) => {
+  //         const { coin_id, token_address, coin_symbol } = token;
 
-  private saveDayCoinPrice = async (coin_id: number, price: number, coin_family: number) => {
-    let dataToSave: any = {
-      coin_id: coin_id,
-      coin_family: coin_family,
-      price: price,
-    }
-    await DayCoinPrice.DayCoinPriceWrite.create(dataToSave);
-  }
+  //         if (!token_address) {
+  //           console.warn(
+  //             `Skipping token with ID: ${coin_id}, as it has no token_address`
+  //           );
+  //           return;
+  //         }
 
-  public deleteTicsDailyTablePrice = async () => {
-    await DayCoinPrice.DayCoinPriceWrite.destroy({
-      where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 25 HOUR) AND coin_family = ${config.STATIC_COIN_FAMILY.TICS}`),
-    });
-    return true;
-  }
+  //         const url = `https://deep-index.moralis.io/api/v2.2/erc20/${token_address}/pairs?chain=${chain}`;
 
-  private saveTicsGraphPrice = async (price: number, timestamp: string, coin_id: number) => {
-    let dataToSave: any = {
-      coin_id: coin_id,
-      price: price,
-      timestamp: timestamp
-    }
-    await TicsPriceInFiatGraph.TicsPriceInFiatGraphWrite.create(dataToSave);
-  }
+  //         try {
+  //           // Delay 1 second before each request
+  //           await delay(1000);
 
-  private coinCompareDayPrice = async (coin_id: number) => {
-    let result = await DayCoinPrice.DayCoinPriceRead.findOne({
-      attributes: ['price'],
-      where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) AND coin_id = :coin_id`),
-      order: [['id', 'desc']],
-      replacements: { coin_id },
-      raw: true
-    });
-    let price = result?.price ? result.price : 0;
-    if (price <= 0) {
-      result = await DayCoinPrice.DayCoinPriceRead.findOne({
-        attributes: ['price'],
-        where: { coin_id },
-        order: [['id', 'desc']],
-        raw: true
-      });
-      price = result?.price ?? 0;
-    }
-    return price;
-  }
+  //           // Fetch data from Moralis API
+  //           const response = await axios.get(url, {
+  //             headers: { "x-api-key": config.MORALIS_KEY },
+  //           });
 
-  private percentageCalulator = async (new_price: any, original_price: any) => {
-    let price_change_percentage_24h = await bigNumberSafeMath(new_price, '-', original_price);
-    price_change_percentage_24h = await bigNumberSafeMath(price_change_percentage_24h, '/', original_price);
-    price_change_percentage_24h = await bigNumberSafeMath(price_change_percentage_24h, '*', 100);
-    return price_change_percentage_24h.toString();
-  }
+  //           const pairs = response?.data?.pairs;
+  //           if (pairs?.length > 0) {
+  //             const activePair = await pairs.find(
+  //               (pair: any) =>
+  //                 pair?.inactive_pair === false || pair?.inactivePair === false
+  //             );
+  //             if (activePair) {
+  //               const pairAddress = activePair?.pair_address || null;
+  //               const rawExchangeName = activePair?.exchange_name || null;
+  //               const graphSource = rawExchangeName
+  //                 ? this.formatExchangeName(rawExchangeName)
+  //                 : null;
 
-  public fetchCmcPriceV2 = async () => {
-    try {
-      console.log("********* fetchCmcPriceV2 *************");
+  //               if (pairAddress) {
+  //                 // Update the database with graph source and pair
+  //                 await Coins.CoinsWrite.update(
+  //                   {
+  //                     graph_source: graphSource,
+  //                     graph_pair: activePair.pair_label,
+  //                     pair_address: pairAddress,
+  //                   },
+  //                   { where: { coin_id } }
+  //                 );
+  //               }
+  //             }
+  //           } else {
+  //             console.warn(
+  //               `No pairs found for coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`
+  //             );
+  //           }
+  //         } catch (err: any) {
+  //           console.error(
+  //             `Error processing coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`,
+  //             err?.message || err
+  //           );
+  //         }
+  //       });
 
-      let coin_limit_count: number = 0;
-      const limit: number = 100;
+  //       // Wait for the current batch to complete before moving to the next
+  //       await Promise.allSettled(batchPromises);
+  //     }
+  //   } catch (error) {
+  //     console.log(
+  //       "::Error log:: 🔥 ~ moralisTradingviewChartWidget error",
+  //       error
+  //     );
+  //     return false;
+  //   }
+  // }
 
-      // Get the current batch counter from Redis
-      const findCoinCounter = await redisClient.getKeyValuePair(
-        config.REDISKEYS.COIN_LIMIT_COUNTS,
-        `${CURRENT_PRICE_COIN_COUNTER}`
-      );
+  // public async moralisTradingviewChartWidgetSOL() {
+  //   try {
+  //     const tradingviewTokens = await Coins.CoinsRead.findAll({
+  //       attributes: [
+  //         "coin_id",
+  //         "coin_symbol",
+  //         "coin_family",
+  //         "is_token",
+  //         "token_address",
+  //         "graph_source",
+  //         "graph_pair",
+  //         "pair_address",
+  //       ],
+  //       where: {
+  //         is_token: 1,
+  //         coin_family: COIN_FAMILY.SOL,
+  //         pair_address: { [Op.eq]: null },
+  //       },
+  //     });
 
-      // Parse counter if available
-      if (findCoinCounter) {
-        coin_limit_count = Number(findCoinCounter);
-      }
+  //     const BATCH_SIZE = 20;
+  //     const delay = (ms: number) =>
+  //       new Promise((resolve) => setTimeout(resolve, ms));
 
-      // Fetch list of coins with non-zero cmc_id from the database (paginated)
-      const coinData = await Coins.CoinsRead.findAndCountAll({
-        attributes: ["cmc_id"],
-        where: { cmc_id: { [Op.ne]: 0 } },
-        order: [["coin_id", "asc"]],
-        limit,
-        offset: coin_limit_count,
-      });
+  //     for (let i = 0; i < tradingviewTokens.length; i += BATCH_SIZE) {
+  //       const batch = tradingviewTokens.slice(i, i + BATCH_SIZE);
 
-      // Extract CMC IDs from result
-      const cmcIds: any[] = coinData.rows.map((row) => row.cmc_id);
-      const coin_data_count = coinData.count;
+  //       // Process each batch
+  //       const batchPromises = batch.map(async (token) => {
+  //         const { coin_id, token_address, coin_symbol } = token;
 
-      // Add each coin's cmc_id into the reset_graph_data table if not already present
-      if (cmcIds.length > 0) {
-        // for (let i: number = 0; i < cmcIds.length; i++) {
-        //   let id_exist: any = await reset_graph_data.ResetGraphRead.findOne({
-        //     attributes: ["id"],
-        //     where: { cmc_id: cmcIds[i] },
-        //     raw: true,
-        //   });
+  //         if (!token_address) {
+  //           console.warn(
+  //             `Skipping token with ID: ${coin_id}, as it has no token_address`
+  //           );
+  //           return;
+  //         }
 
-        //   if (id_exist == null) {
-        //     let currentUTCDate: string = new Date()
-        //       .toISOString()
-        //       .replace(/T/, " ")
-        //       .replace(/\..+/, "");
+  //         const url = `https://solana-gateway.moralis.io/token/mainnet/${token_address}/pairs`;
 
-        //     await reset_graph_data.ResetGraphWrite.create({
-        //       cmc_id: cmcIds[i],
-        //       graph_type: "1d",
-        //       created_at: currentUTCDate,
-        //       updated_at: null,
-        //     });
-        //   }
-        // }
+  //         try {
+  //           // Delay 1 second before each request
+  //           await delay(1000);
 
-        // Fetch live market data for the coins from CMC API
-        const cmcIdsParam = cmcIds.join(",");
-        const result = await cmcHelper.cmcApi(`quotes/latest?id=${cmcIdsParam}&convert=USD`);
-        const cmcData = result?.data?.data;
+  //           // Fetch data from Moralis API
+  //           const response = await axios.get(url, {
+  //             headers: { "x-api-key": config.MORALIS_KEY },
+  //           });
 
-        // Fetch fiat currency conversion rates from database (excluding USD)
-        const fiatRatesRaw = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
-          attributes: ["currency_code", "price_in_usd"],
-          where: {
-            currency_code: { [Op.ne]: "USD" },
-          },
-          raw: true,
-          order: [["currency_id", "asc"]],
-        });
+  //           const pairs = response?.data?.pairs;
+  //           if (pairs?.length > 0) {
+  //             const activePair = await pairs.find(
+  //               (pair: any) =>
+  //                 pair?.inactive_pair === false || pair?.inactivePair === false
+  //             );
+  //             if (activePair) {
+  //               const pairAddress = activePair?.pairAddress || null;
+  //               const rawExchangeName = activePair?.exchangeName || null;
+  //               const graphSource = rawExchangeName
+  //                 ? this.formatExchangeName(rawExchangeName)
+  //                 : null;
 
-        // Build a fiat rate map (including USD = 1)
-        const fiatRateMap: Record<string, number> = {
-          USD: 1,
-        };
-        for (const fiat of fiatRatesRaw.rows) {
-          const code = fiat.currency_code.toUpperCase();
-          const rate = fiat.price_in_usd;
-          if (rate && rate > 0) {
-            fiatRateMap[code] = rate;
-          }
-        }
+  //               if (pairAddress) {
+  //                 // Update the database with graph source and pair
+  //                 await Coins.CoinsWrite.update(
+  //                   {
+  //                     graph_source: graphSource,
+  //                     graph_pair: activePair.pairLabel,
+  //                     pair_address: pairAddress,
+  //                   },
+  //                   { where: { coin_id } }
+  //                 );
+  //               }
+  //             }
+  //           } else {
+  //             console.warn(
+  //               `No pairs found for coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`
+  //             );
+  //           }
+  //         } catch (err: any) {
+  //           console.error(
+  //             `Error processing coin ID: ${coin_id}, Symbol: ${coin_symbol} Token address: ${token_address}`,
+  //             err?.message || err
+  //           );
+  //         }
+  //       });
 
-        // Loop through each coin's market data from CMC
-        for (const cmcId in cmcData) {
-          const coinObj = cmcData[cmcId];
-          const usdQuote = coinObj.quote?.USD;
-          if (!usdQuote) continue;
+  //       // Wait for the current batch to complete before moving to the next
+  //       await Promise.allSettled(batchPromises);
+  //     }
+  //   } catch (error) {
+  //     console.log(
+  //       "::Error log:: 🔥 ~ moralisTradingviewChartWidgetSOL error",
+  //       error
+  //     );
+  //     return false;
+  //   }
+  // }
 
-          // Construct latest price object
-          const latest_price_usd: any = {
-            price: usdQuote.price || 0,
-            timestamp: usdQuote.last_updated,
-            price_change_24h: usdQuote.percent_change_24h || 0,
-            volume_24h: usdQuote.volume_24h || 0,
-            percent_change_7d: usdQuote.percent_change_7d || 0,
-            percent_change_30d: usdQuote.percent_change_30d || 0,
-          };
 
-          // Update prices for each fiat currency
-          for (const fiatCode in fiatRateMap) {
-            const fiatRate = fiatRateMap[fiatCode];
-            const fiatPrice = usdQuote.price * fiatRate;
 
-            const where = { cmc_id: coinObj.id, fiat_type: fiatCode };
+  // public async updateTicsPrice() {
+  //   try {
+  //     const currency_data = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
+  //       attributes: ["currency_code", "price_in_usd"],
+  //       where: {
+  //         currency_code: { [Op.ne]: "USD" },
+  //       },
+  //       raw: true,
+  //       order: [["currency_id", "asc"]],
+  //     });
 
-            // Check if price record already exists
-            let existingPrice = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
-              attributes: ["id", "coin_id"],
-              where,
-              raw: true,
-            });
+  //     if (currency_data.count === 0) return;
 
-            let coin_id: number = 0;
+  //     const result = await axios.get('https://evm-api.qubetics.com/qubetics/explorer/current-token-price');
+  //     const ticsUsdPrice = result?.data?.data || 0;
+  //     const coin_family = COIN_FAMILY?.TICS ? COIN_FAMILY?.TICS : 7
 
-            if (!existingPrice) {
-              // If not exists, fetch coin info and insert a new record
-              const coin = await Coins.CoinsRead.findOne({
-                attributes: ["coin_id", "coin_family", "cmc_id", "token_address"],
-                where: { cmc_id: coinObj.id },
-              });
+  //     const coin_data = await Coins.CoinsRead.findOne({
+  //       attributes: ["coin_id", "cmc_id"],
+  //       where: {
+  //         coin_name: { [Op.like]: 'Qubetics' },
+  //         coin_symbol: { [Op.like]: 'tics' },
+  //         coin_family: coin_family,
+  //       },
+  //     });
 
-              if (!coin) continue;
-              coin_id = coin.coin_id;
+  //     if (!coin_data || coin_data === null) {
+  //       console.log("TICS coin not found");
+  //       return;
+  //     }
 
-              await CoinPriceInFiat.CoinPriceInFiatWrite.create({
-                coin_id: coin.coin_id,
-                coin_name: coinObj.name,
-                coin_family: coin.coin_family,
-                max_supply: coinObj.max_supply || 0,
-                cmc_id: coinObj.id,
-                circulating: coinObj.circulating_supply || 0,
-                total_supply: coinObj.total_supply,
-                rank: coinObj.cmc_rank || 0,
-                market_cap: usdQuote.market_cap * fiatRate,
-                fiat_type: fiatCode,
-                coin_symbol: coinObj.symbol,
-                value: fiatPrice,
-                price_change_24h: usdQuote.percent_change_24h || 0,
-                price_change_percentage_24h: usdQuote.percent_change_24h || 0,
-                volume_24h: usdQuote.volume_24h * fiatRate,
-                token_address: coin.token_address,
-                latest_price: latest_price_usd,
-                latest_price_source: "converted_from_usd",
-              });
-            } else {
-              // If exists, update the record
-              coin_id = existingPrice.coin_id;
-              await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-                {
-                  value: fiatPrice,
-                  price_change_24h: usdQuote.percent_change_24h,
-                  price_change_percentage_24h: usdQuote.percent_change_24h,
-                  volume_24h: usdQuote.volume_24h * fiatRate,
-                  total_supply: coinObj.total_supply,
-                  latest_price: latest_price_usd,
-                  latest_price_source: "converted_from_usd",
-                },
-                { where }
-              );
-            }
+  //     const coin_id = coin_data.coin_id;
+  //     let price_change_percentage_24h = 0;
 
-            // For USD, also update the price history table
-            if (coin_id > 0 && fiatCode === "USD") {
-              await this.update_history_last_price(latest_price_usd, coinObj.id, fiatCode, where);
-            }
-          }
-        }
-      }
+  //     const usdRecord = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+  //       where: { fiat_type: 'usd', coin_id },
+  //     });
+  //     if (usdRecord) {
+  //       let compare_price: number | string = await exponentialToDecimal(usdRecord?.value);
+  //       let dayPrice = await this.coinCompareDayPrice(coin_id);
+  //       if (dayPrice > 0) {
+  //         compare_price = dayPrice;
+  //       }
+  //       price_change_percentage_24h = await this.percentageCalulator(ticsUsdPrice, compare_price);
 
-      // Update the Redis counter for next batch; reset if finished
-      coin_limit_count += limit;
-      const nextCoinCounter = coin_limit_count >= coin_data_count ? 0 : coin_limit_count;
+  //       await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+  //         { value: ticsUsdPrice, price_change_24h: price_change_percentage_24h, price_change_percentage_24h: price_change_percentage_24h },
+  //         { where: { fiat_type: 'usd', coin_id } }
+  //       );
 
-      await redisClient.setKeyValuePair(
-        config.REDISKEYS.COIN_LIMIT_COUNTS,
-        `${CURRENT_PRICE_COIN_COUNTER}`,
-        nextCoinCounter.toString()
-      );
-    } catch (error) {
-      console.error("fetchCmcPrice error", error);
-    }
-  };
+  //       const timestamp: string = new Date().toISOString();
+  //       await this.saveDayCoinPrice(coin_id, ticsUsdPrice, coin_family);
+  //       await this.saveTicsGraphPrice(ticsUsdPrice, timestamp, coin_id);
+  //     } else {
+  //       await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+  //         coin_id,
+  //         fiat_type: 'usd',
+  //         coin_symbol: 'TICS',
+  //         coin_name: 'Qubetics',
+  //         coin_family: coin_family,
+  //         cmc_id: coin_data?.cmc_id,
+  //         value: ticsUsdPrice,
+  //         price_change_24h: 0,
+  //         price_change_percentage_24h: 0,
+  //         market_cap: 0,
+  //         circulating: 0,
+  //         total_supply: 0,
+  //         rank: 0,
+  //         volume_24h: 0,
+  //         max_supply: 0,
+  //         latest_price: null,
+  //         latest_price_source: null,
+  //       });
+  //     }
 
-  public fetchCmcPriceTics = async () => {
-    try {
-      console.log("********* fetchCmcPriceTics *************");
+  //     for (const currency of currency_data.rows) {
+  //       const { currency_code, price_in_usd }: any = currency;
+  //       const fiat_type = currency_code.toLowerCase();
+  //       const convertedValue = ticsUsdPrice * parseFloat(price_in_usd);
 
-      const coinData = await Coins.CoinsRead.findOne({
-        attributes: ["cmc_id"],
-        where: { coin_id: 161 },
-        raw: true,
-      });
+  //       const existingRecord = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+  //         where: { fiat_type, coin_id },
+  //       });
 
-      if (!coinData?.cmc_id) {
-        console.warn("CMC ID not found for coin_id 161");
-        return;
-      }
+  //       if (existingRecord) {
+  //         await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+  //           { value: convertedValue, price_change_24h: price_change_percentage_24h, price_change_percentage_24h: price_change_percentage_24h },
+  //           { where: { fiat_type, coin_id } }
+  //         );
+  //       } else {
+  //         await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+  //           coin_id,
+  //           fiat_type,
+  //           coin_symbol: 'TICS',
+  //           coin_name: 'Qubetics',
+  //           coin_family: coin_family,
+  //           cmc_id: coin_data?.cmc_id,
+  //           value: convertedValue,
+  //           price_change_24h: 0,
+  //           price_change_percentage_24h: 0,
+  //           market_cap: 0,
+  //           circulating: 0,
+  //           total_supply: 0,
+  //           rank: 0,
+  //           volume_24h: 0,
+  //           max_supply: 0,
+  //           latest_price: null,
+  //           latest_price_source: null,
+  //         });
+  //       }
+  //     }
 
-      const cmcId = coinData.cmc_id;
+  //   } catch (error) {
+  //     console.log("::Error log:: updateTicsPrice :>> ", error);
+  //     return false;
+  //   }
+  // }
 
-      // Fetch market data from CMC (only USD)
-      const result = await axios.get(
-        `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest`,
-        {
-          params: { id: cmcId, convert: "USD" },
-          headers: { "X-CMC_PRO_API_KEY": "REDACTED" },
-        }
-      );
+  // private saveDayCoinPrice = async (coin_id: number, price: number, coin_family: number) => {
+  //   let dataToSave: any = {
+  //     coin_id: coin_id,
+  //     coin_family: coin_family,
+  //     price: price,
+  //   }
+  //   await DayCoinPrice.DayCoinPriceWrite.create(dataToSave);
+  // }
 
-      const coinObj = result?.data?.data?.[cmcId];
-      const usdQuote = coinObj?.quote?.USD;
+  // public deleteTicsDailyTablePrice = async () => {
+  //   await DayCoinPrice.DayCoinPriceWrite.destroy({
+  //     where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 25 HOUR) AND coin_family = ${config.STATIC_COIN_FAMILY.TICS}`),
+  //   });
+  //   return true;
+  // }
 
-      if (!coinObj || !usdQuote) {
-        console.warn("CMC data not found for cmc_id:", cmcId);
-        return;
-      }
+  // private saveTicsGraphPrice = async (price: number, timestamp: string, coin_id: number) => {
+  //   let dataToSave: any = {
+  //     coin_id: coin_id,
+  //     price: price,
+  //     timestamp: timestamp
+  //   }
+  //   await TicsPriceInFiatGraph.TicsPriceInFiatGraphWrite.create(dataToSave);
+  // }
 
-      // Build latest USD price
-      const latest_price_usd: any = {
-        price: usdQuote.price || 0,
-        timestamp: usdQuote.last_updated,
-        price_change_24h: usdQuote.percent_change_24h || 0,
-        volume_24h: usdQuote.volume_24h || 0,
-        percent_change_7d: usdQuote.percent_change_7d || 0,
-        percent_change_30d: usdQuote.percent_change_30d || 0,
-      };
+  // private coinCompareDayPrice = async (coin_id: number) => {
+  //   let result = await DayCoinPrice.DayCoinPriceRead.findOne({
+  //     attributes: ['price'],
+  //     where: Sequelize.literal(`created_at < DATE_SUB(NOW(), INTERVAL 24 HOUR) AND coin_id = :coin_id`),
+  //     order: [['id', 'desc']],
+  //     replacements: { coin_id },
+  //     raw: true
+  //   });
+  //   let price = result?.price ? result.price : 0;
+  //   if (price <= 0) {
+  //     result = await DayCoinPrice.DayCoinPriceRead.findOne({
+  //       attributes: ['price'],
+  //       where: { coin_id },
+  //       order: [['id', 'desc']],
+  //       raw: true
+  //     });
+  //     price = result?.price ?? 0;
+  //   }
+  //   return price;
+  // }
 
-      // Fetch fiat conversion rates from DB (excluding USD)
-      const fiatRatesRaw = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
-        attributes: ["currency_code", "price_in_usd"],
-        where: { currency_code: { [Op.ne]: "USD" } },
-        raw: true,
-        order: [["currency_id", "asc"]],
-      });
+  // private percentageCalulator = async (new_price: any, original_price: any) => {
+  //   let price_change_percentage_24h = await bigNumberSafeMath(new_price, '-', original_price);
+  //   price_change_percentage_24h = await bigNumberSafeMath(price_change_percentage_24h, '/', original_price);
+  //   price_change_percentage_24h = await bigNumberSafeMath(price_change_percentage_24h, '*', 100);
+  //   return price_change_percentage_24h.toString();
+  // }
 
-      // Build fiat map with USD = 1
-      const fiatRateMap: Record<string, number> = { USD: 1 };
-      for (const fiat of fiatRatesRaw.rows) {
-        const code = fiat.currency_code.toUpperCase();
-        const rate = fiat.price_in_usd;
-        if (rate && rate > 0) fiatRateMap[code] = rate;
-      }
 
-      // Loop through each fiat and insert/update
-      for (const fiatCode in fiatRateMap) {
-        const fiatRate = fiatRateMap[fiatCode];
-        const fiatPrice = usdQuote.price * fiatRate;
-        const marketCap = usdQuote.market_cap * fiatRate;
-        const volume24h = usdQuote.volume_24h * fiatRate;
 
-        const where = { cmc_id: coinObj.id, fiat_type: fiatCode };
+  // public fetchCmcPriceTics = async () => {
+  //   try {
+  //     console.log("********* fetchCmcPriceTics *************");
 
-        let existingPrice = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
-          attributes: ["id", "coin_id"],
-          where,
-          raw: true,
-        });
+  //     const coinData = await Coins.CoinsRead.findOne({
+  //       attributes: ["cmc_id"],
+  //       where: { coin_id: 161 },
+  //       raw: true,
+  //     });
 
-        let coin_id: number = 0;
+  //     if (!coinData?.cmc_id) {
+  //       console.warn("CMC ID not found for coin_id 161");
+  //       return;
+  //     }
 
-        if (!existingPrice) {
-          const coin = await Coins.CoinsRead.findOne({
-            attributes: ["coin_id", "coin_family", "cmc_id", "token_address"],
-            where: { cmc_id: coinObj.id },
-          });
+  //     const cmcId = coinData.cmc_id;
 
-          if (!coin) continue;
+  //     // Fetch market data from CMC (only USD)
+  //     const result = await axios.get(
+  //       `https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest`,
+  //       {
+  //         params: { id: cmcId, convert: "USD" },
+  //         headers: { "X-CMC_PRO_API_KEY": "REDACTED" },
+  //       }
+  //     );
 
-          coin_id = coin.coin_id;
+  //     const coinObj = result?.data?.data?.[cmcId];
+  //     const usdQuote = coinObj?.quote?.USD;
 
-          await CoinPriceInFiat.CoinPriceInFiatWrite.create({
-            coin_id: coin.coin_id,
-            coin_name: coinObj.name,
-            coin_family: coin.coin_family,
-            max_supply: coinObj.max_supply || 0,
-            cmc_id: coinObj.id,
-            circulating: coinObj.circulating_supply || 0,
-            total_supply: coinObj.total_supply,
-            rank: coinObj.cmc_rank || 0,
-            market_cap: marketCap,
-            fiat_type: fiatCode,
-            coin_symbol: coinObj.symbol,
-            value: fiatPrice,
-            price_change_24h: usdQuote.percent_change_24h || 0,
-            price_change_percentage_24h: usdQuote.percent_change_24h || 0,
-            volume_24h: volume24h,
-            token_address: coin.token_address,
-            latest_price: latest_price_usd,
-            latest_price_source: "converted_from_usd",
-          });
-        } else {
-          coin_id = existingPrice.coin_id;
+  //     if (!coinObj || !usdQuote) {
+  //       console.warn("CMC data not found for cmc_id:", cmcId);
+  //       return;
+  //     }
 
-          await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-            {
-              value: fiatPrice,
-              price_change_24h: usdQuote.percent_change_24h,
-              price_change_percentage_24h: usdQuote.percent_change_24h,
-              volume_24h: volume24h,
-              total_supply: coinObj.total_supply,
-              latest_price: latest_price_usd,
-              latest_price_source: "converted_from_usd",
-            },
-            { where }
-          );
-        }
+  //     // Build latest USD price
+  //     const latest_price_usd: any = {
+  //       price: usdQuote.price || 0,
+  //       timestamp: usdQuote.last_updated,
+  //       price_change_24h: usdQuote.percent_change_24h || 0,
+  //       volume_24h: usdQuote.volume_24h || 0,
+  //       percent_change_7d: usdQuote.percent_change_7d || 0,
+  //       percent_change_30d: usdQuote.percent_change_30d || 0,
+  //     };
 
-        if (coin_id > 0 && fiatCode === "USD") {
-          await this.update_history_last_price(latest_price_usd, coinObj.id, fiatCode, where);
-        }
-      }
-    } catch (error) {
-      console.error("fetchCmcPriceTics error", error);
-    }
-  };
+  //     // Fetch fiat conversion rates from DB (excluding USD)
+  //     const fiatRatesRaw = await CurrencyFiat.CurrencyFiatWrite.findAndCountAll({
+  //       attributes: ["currency_code", "price_in_usd"],
+  //       where: { currency_code: { [Op.ne]: "USD" } },
+  //       raw: true,
+  //       order: [["currency_id", "asc"]],
+  //     });
+
+  //     // Build fiat map with USD = 1
+  //     const fiatRateMap: Record<string, number> = { USD: 1 };
+  //     for (const fiat of fiatRatesRaw.rows) {
+  //       const code = fiat.currency_code.toUpperCase();
+  //       const rate = fiat.price_in_usd;
+  //       if (rate && rate > 0) fiatRateMap[code] = rate;
+  //     }
+
+  //     // Loop through each fiat and insert/update
+  //     for (const fiatCode in fiatRateMap) {
+  //       const fiatRate = fiatRateMap[fiatCode];
+  //       const fiatPrice = usdQuote.price * fiatRate;
+  //       const marketCap = usdQuote.market_cap * fiatRate;
+  //       const volume24h = usdQuote.volume_24h * fiatRate;
+
+  //       const where = { cmc_id: coinObj.id, fiat_type: fiatCode };
+
+  //       let existingPrice = await CoinPriceInFiat.CoinPriceInFiatWrite.findOne({
+  //         attributes: ["id", "coin_id"],
+  //         where,
+  //         raw: true,
+  //       });
+
+  //       let coin_id: number = 0;
+
+  //       if (!existingPrice) {
+  //         const coin = await Coins.CoinsRead.findOne({
+  //           attributes: ["coin_id", "coin_family", "cmc_id", "token_address"],
+  //           where: { cmc_id: coinObj.id },
+  //         });
+
+  //         if (!coin) continue;
+
+  //         coin_id = coin.coin_id;
+
+  //         await CoinPriceInFiat.CoinPriceInFiatWrite.create({
+  //           coin_id: coin.coin_id,
+  //           coin_name: coinObj.name,
+  //           coin_family: coin.coin_family,
+  //           max_supply: coinObj.max_supply || 0,
+  //           cmc_id: coinObj.id,
+  //           circulating: coinObj.circulating_supply || 0,
+  //           total_supply: coinObj.total_supply,
+  //           rank: coinObj.cmc_rank || 0,
+  //           market_cap: marketCap,
+  //           fiat_type: fiatCode,
+  //           coin_symbol: coinObj.symbol,
+  //           value: fiatPrice,
+  //           price_change_24h: usdQuote.percent_change_24h || 0,
+  //           price_change_percentage_24h: usdQuote.percent_change_24h || 0,
+  //           volume_24h: volume24h,
+  //           token_address: coin.token_address,
+  //           latest_price: latest_price_usd,
+  //           latest_price_source: "converted_from_usd",
+  //         });
+  //       } else {
+  //         coin_id = existingPrice.coin_id;
+
+  //         await CoinPriceInFiat.CoinPriceInFiatWrite.update(
+  //           {
+  //             value: fiatPrice,
+  //             price_change_24h: usdQuote.percent_change_24h,
+  //             price_change_percentage_24h: usdQuote.percent_change_24h,
+  //             volume_24h: volume24h,
+  //             total_supply: coinObj.total_supply,
+  //             latest_price: latest_price_usd,
+  //             latest_price_source: "converted_from_usd",
+  //           },
+  //           { where }
+  //         );
+  //       }
+
+  //       if (coin_id > 0 && fiatCode === "USD") {
+  //         await this.updateHistoryLastPrice(latest_price_usd, coinObj.id, fiatCode, where);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("fetchCmcPriceTics error", error);
+  //   }
+  // };
 }
 
 const third_party_controller = new PricesController();
