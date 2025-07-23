@@ -214,6 +214,8 @@ class PricesController {
 
       // Update the Redis counter for next batch; reset if finished
       coin_limit_count += limit;
+      console.log('coin_limit_count >>>>', CURRENT_PRICE_COIN_COUNTER, 'dddddddddddddddddddddddddddddddddddddddd', coin_limit_count);
+      console.log('coin_data_count >>>>', 'dddddddddddddddddddddddddddddddddddddddd', coin_data_count);
       const nextCoinCounter = coin_limit_count >= coin_data_count ? 0 : coin_limit_count;
 
       await redisClient.setKeyValuePair(
@@ -698,7 +700,7 @@ class PricesController {
         const data = await rp(requestOptionsForListing);
         if (data) {
           let created_at;
-          let currentUTCDate: string = new Date()
+          const currentUTCDate: string = new Date()
             .toISOString()
             .replace(/T/, " ")
             .replace(/\..+/, "");
