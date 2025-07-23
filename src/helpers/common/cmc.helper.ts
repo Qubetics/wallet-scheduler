@@ -194,7 +194,7 @@ class CMCHelper {
     }
 }
 
-  public STATIC_COIN_FAMILY_SYMBOL = {
+  private STATIC_COIN_FAMILY_SYMBOL = {
     1: "BNB",
     2: "ETH",
     3: "BTC",
@@ -204,7 +204,7 @@ class CMCHelper {
     7: "TICS"
   }
 
-  public STATIC_COIN_FAMILY_NAME = {
+  private STATIC_COIN_FAMILY_NAME = {
     1: ["BNB"],
     2: ["Ethereum"],
     3: ["BTC"],

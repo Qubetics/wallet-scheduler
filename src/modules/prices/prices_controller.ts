@@ -1145,11 +1145,11 @@ class PricesController {
               coinFamily: coin.coin_family,
               tokenAddress: coin.token_address,
             }
-            const cmc_data: any = await cmcHelper.getCmcDataBySymbol(cmcPayload);
+            const cmcResData: any = await cmcHelper.getCmcDataBySymbol(cmcPayload);
     
-            console.log("this is the cmc_data in crom by symbol >>>", cmc_data);
-            cmcId = cmc_data ? cmc_data?.id : 0;
-            image = cmc_data ? cmc_data?.image : null;
+            console.log("this is the cmc_data in crom by symbol >>>", cmcResData);
+            cmcId = cmcResData ? cmcResData?.id : 0;
+            image = cmcResData ? cmcResData?.image : null;
             
             //if cmcId is not 0 and image is not null then update
             if(cmcId !== 0 && image !== null){
