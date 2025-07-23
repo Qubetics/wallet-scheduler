@@ -172,6 +172,106 @@ class CMCHelper {
       throw err;
     }
   }
+  
+
+
+  public async updateCmcImgUrl(image_url: string) {
+    try {
+        console.log('image_url >>>', image_url);
+        if (image_url?.includes("img/coins/16x16/")) {
+            image_url = image_url.replace('16x16', '200x200');
+        } else if (image_url?.includes("img/coins/32x32/")) {
+            image_url = image_url.replace('32x32', '200x200');
+        } else if (image_url?.includes("img/coins/64x64/")) {
+            image_url = image_url.replace('64x64', '200x200');
+        } else if (image_url?.includes("img/coins/128x128/")) {
+            image_url = image_url.replace('128x128', '200x200');
+        }
+        return image_url;
+    } catch (err: any) {
+        console.error(`UpdateCmcImgUrl error>>> `, err)
+        return null;
+    }
+}
+
+  private STATIC_COIN_FAMILY_SYMBOL = {
+    1: "BNB",
+    2: "ETH",
+    3: "BTC",
+    4: "POL",
+    5: "SOL",
+    6: "TRX",
+    7: "TICS"
+  }
+
+  private STATIC_COIN_FAMILY_NAME = {
+    1: ["BNB"],
+    2: ["Ethereum"],
+    3: ["BTC"],
+    4: ["POL (prev. MATIC)", "Polygon", "MATIC"], 
+    5: ["Solana"],
+    6: ["TRON", "Tron"],
+    7: ["TICS"]
+  }
+
+
+  public async getCmcDataBySymbol(data: any) {
+    try {
+      const tokenAddress = data.tokenAddress;
+      const coinFamily = data.coinFamily as keyof typeof this.STATIC_COIN_FAMILY_SYMBOL;
+      const PlatformName = this.STATIC_COIN_FAMILY_NAME[coinFamily];
+
+      if (PlatformName == null) {
+        return { image: null, id: null };
+      }
+
+      let params: any = `info?symbol=${data.symbol}`;
+
+      let result: any = await cmcHelper.cmcApi(params);
+      let id: any = null;
+      let imageUrl: any = null;
+
+      if (result.data && result.data.data) {
+        let image: any;
+        const symbolKey = Object.keys(result.data.data)[0];
+
+        if (symbolKey) {
+          // Get all tokens with this symbol
+          const tokens = result.data.data[symbolKey];
+
+          // Find the token that matches both symbol and token address
+          for (const token of tokens) {
+
+            if (token.contract_address) {
+              // Check each contract address entry
+              for (const contract of token.contract_address) {
+
+                if (contract?.platform &&
+                  contract?.platform?.coin &&
+                  PlatformName.includes(contract?.platform?.coin?.name) &&
+                  contract?.contract_address?.toLowerCase() == tokenAddress.toLowerCase()) {
+                  id = token.id;
+                  image = token.logo;
+                  break;
+                }
+              }
+              if (id) break; // Break outer loop if match found
+            }
+          }
+
+          if (image) {
+            imageUrl = await this.updateCmcImgUrl(image);
+          }
+        }
+      }
+
+      return { image: imageUrl, id: id };
+    } catch (err: any) {
+      console.error("Error in getTokenImageFromCmcBySymbol", err);
+      return null;
+    }
+  }
+
 }
 
 const cmcHelper = new CMCHelper();
