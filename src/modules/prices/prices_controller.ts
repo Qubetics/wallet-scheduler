@@ -1088,6 +1088,131 @@ class PricesController {
     }
   };
 
+  public fetchCmcIdsBySymbol = async () => {
+    try {
+      const BATCH_SIZE = 10;
+      let coin_limit_count = 0;
+
+      // Get current counter from Redis
+      const findCoinCounter = await redisClient.getKeyValuePair(
+        config.REDISKEYS.COIN_LIMIT_COUNTS,
+        FETCH_CMC_IDS_COIN_COUNTER
+      );
+
+      if (findCoinCounter) {
+        coin_limit_count = Number(findCoinCounter);
+      }
+
+      // Fetch coins that need CMC IDs
+      const data: any = await Coins.CoinsWrite.findAndCountAll({
+        attributes: [
+          "coin_id",
+          "token_address",
+          "coin_symbol",
+          "coin_image",
+          "coin_family"
+        ],
+        where: {
+          coin_status: 1,
+          is_on_cmc: 1,
+          [Op.or]: [
+            {
+              cmc_id: {
+                [Op.eq]: 0,
+              },
+            },
+            {
+              coin_image: null,
+            },
+          ],
+        },
+        raw: true,
+        limit: BATCH_SIZE,
+        offset: coin_limit_count,
+      });
+      
+
+      if (data?.count > 0) {
+        // Process coins in parallel with error handling for each
+        await Promise.all(data.rows.map(async (coin: any) => {
+          try {
+            
+            let cmcId: number = 0;
+            let image: string | null = null;
+
+            const cmcPayload: any = {
+              symbol: coin.coin_symbol,
+              coinFamily: coin.coin_family,
+              tokenAddress: coin.token_address,
+            }
+            const cmc_data: any = await cmcHelper.getCmcDataBySymbol(cmcPayload);
+    
+            console.log("this is the cmc_data in crom by symbol >>>", cmc_data);
+            cmcId = cmc_data ? cmc_data?.id : 0;
+            image = cmc_data ? cmc_data?.image : null;
+            
+            //if cmcId is not 0 and image is not null then update
+            if(cmcId !== 0 && image !== null){
+              const updateData: any = {
+                cmc_id: cmcId,
+                is_on_cmc: 1,
+                coin_image: image,
+              };
+  
+              await Coins.CoinsWrite.update(
+                updateData,
+                {
+                  where: {
+                    coin_id: coin.coin_id,
+                  },
+                }
+              );
+            }else{
+              //means coin is not on cmc 
+              await Coins.CoinsWrite.update(
+                { is_on_cmc: 0 },
+                {
+                  where: {
+                    coin_id: coin.coin_id,
+                  },
+                }
+              );
+            }
+
+
+          } catch (error: any) {
+            console.error(`Error processing coin ${coin.coin_symbol}:`, error.message);
+
+            // Mark coin as not on CMC if we failed to fetch data
+            await Coins.CoinsWrite.update(
+              { is_on_cmc: 0 },
+              {
+                where: {
+                  coin_id: coin.coin_id,
+                },
+              }
+            );
+          }
+        }));
+      }
+
+      // Update pagination counter
+      const nextCounter = coin_limit_count + BATCH_SIZE >= data?.count
+        ? 0
+        : coin_limit_count + BATCH_SIZE;
+
+      await redisClient.setKeyValuePair(
+        config.REDISKEYS.COIN_LIMIT_COUNTS,
+        FETCH_CMC_IDS_COIN_COUNTER,
+        nextCounter.toString()
+      );
+
+    } catch (error: any) {
+      console.error("Error in fetchCmcIds:", error.message);
+      throw error; // Re-throw to allow caller to handle
+    }
+  };
+
   public async updateFiatPrice() {
     try {
       let findFiat = await CurrencyFiat.CurrencyFiatWrite.findAll();

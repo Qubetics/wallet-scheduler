@@ -77,7 +77,8 @@ class CronJobs {
 
   public updateCmcIds = async () => {
     schedule.scheduleJob("*/25 * * * * *", async function () {
-      await PricesController.fetchCmcIds();
+      // await PricesController.fetchCmcIds();
+      await PricesController.fetchCmcIdsBySymbol();
     });
   };
 
