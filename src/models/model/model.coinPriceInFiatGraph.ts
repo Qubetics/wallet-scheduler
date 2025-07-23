@@ -9,14 +9,13 @@ interface CoinPriceInFiatInstance
   extends Model<CoinPriceInFiatGraphModel, CoinPriceInFiatCreationModel>,
   CoinPriceInFiatGraphModel { }
 
-let dataObj = {
+const dataObj = {
   id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     primaryKey: true,
     autoIncrement: true,
   },
-
   cmc_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -37,21 +36,39 @@ let dataObj = {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  created_at: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  updated_at: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
+  // created_at: {
+  //   type: DataTypes.DATE,
+  //   allowNull: true,
+  // },
+  // updated_at: {
+  //   type: DataTypes.DATE,
+  //   allowNull: true,
+  // },
 };
-let dataObjIndex = {
+const dataObjIndex = {
+  created_at: "created_at",
+  updated_at: "updated_at",
   indexes: [
+    {
+      unique: false,
+      fields: ["cmc_id"],
+    },
+    {
+      unique: false,
+      fields: ["type"],
+    },
     {
       unique: false,
       fields: ["fiat_type"],
     },
+    {
+      unique: false,
+      fields: ["created_at"],
+    },
+    {
+      unique: false,
+      fields: ["updated_at"],
+    }
   ],
 };
 

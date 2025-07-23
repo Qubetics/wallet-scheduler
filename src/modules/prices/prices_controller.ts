@@ -38,7 +38,7 @@ class PricesController {
     try {
       console.log("********* fetchCmcPriceV2 *************");
 
-      let coin_limit_count: number = 0;
+      let coinLimitCount: number = 0;
       const limit: number = 100;
 
       // Get the current batch counter from Redis
@@ -49,11 +49,25 @@ class PricesController {
 
       // Parse counter if available
       if (findCoinCounter) {
-        coin_limit_count = Number(findCoinCounter);
+        coinLimitCount = Number(findCoinCounter);
       }
 
       // Fetch list of coins with non-zero cmc_id from the database (paginated)
-      const coinData: any = await Coins.CoinsRead.findAndCountAll({
+      const totalCmcIds: number = await Coins.CoinsRead.count({
+        distinct: true,
+        col: 'cmc_id',
+        where: {
+          cmc_id: {
+            [Op.ne]: 0
+          },
+          [Op.and]: [
+            Sequelize.literal('cmc_id IS NOT NULL')
+          ]
+        },
+        // logging: true
+      })
+
+      const coinData: any = await Coins.CoinsRead.findAll({
         attributes: ['cmc_id'],
         where: {
           cmc_id: {
@@ -66,13 +80,13 @@ class PricesController {
         group: ["cmc_id"],
         order: [["coin_id", "asc"]],
         limit,
-        offset: coin_limit_count,
+        offset: coinLimitCount,
         logging: true
       });
 
       // Extract CMC IDs from result
-      const cmcIds: any[] = coinData.rows.map((row: any) => row.cmc_id);
-      const coin_data_count = coinData.count;
+      const cmcIds: any[] = coinData ? coinData.map((row: any) => row.cmc_id) : [];
+      // const coin_data_count = coinData.count;
 
       // Add each coin's cmc_id into the reset_graph_data table if not already present
       if (cmcIds.length > 0) {
@@ -213,10 +227,10 @@ class PricesController {
       }
 
       // Update the Redis counter for next batch; reset if finished
-      coin_limit_count += limit;
-      console.log('coin_limit_count >>>>', CURRENT_PRICE_COIN_COUNTER, 'dddddddddddddddddddddddddddddddddddddddd', coin_limit_count);
-      console.log('coin_data_count >>>>', 'dddddddddddddddddddddddddddddddddddddddd', coin_data_count);
-      const nextCoinCounter = coin_limit_count >= coin_data_count ? 0 : coin_limit_count;
+      coinLimitCount += limit;
+      console.log('coinLimitCount >>>>', CURRENT_PRICE_COIN_COUNTER, 'dddddddddddddddddddddddddddddddddddddddd', coinLimitCount);
+      console.log('totalCmcIds >>>>', 'dddddddddddddddddddddddddddddddddddddddd', totalCmcIds);
+      const nextCoinCounter = coinLimitCount >= totalCmcIds ? 0 : coinLimitCount;
 
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
@@ -576,12 +590,11 @@ class PricesController {
     type: "1d" | "1w" | "1m" | "1y",
     coin_limit: number
   ) => {
-    let ids: any[] = [];
-
+    const cmcIds: any[] = [];
     try {
       console.log("********* fetchgraphdata *************");
       /** coins pagination */
-      let coin_limit_count = 0;
+      let coinLimitCount = 0;
       let limit = coin_limit;
       let findCoinCounter = await redisClient.getKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
@@ -589,7 +602,7 @@ class PricesController {
       );
 
       if (findCoinCounter) {
-        coin_limit_count = Number(findCoinCounter);
+        coinLimitCount = Number(findCoinCounter);
       }
       // let now = new Date();
       // let subtractTime = new Date(now);
@@ -628,7 +641,20 @@ class PricesController {
       let groupedCount = dbCoinrecords.count; // This is an array of grouped results
       let totalRecords = dbCoinrecords.rows.length; // Total number of unique groups (cmc_id)
       if (dbCoinrecords.count == 0) {*/
-      const dbCoinrecords: any = await Coins.CoinsRead.findAndCountAll({
+      const totalCmcIds: number = await Coins.CoinsRead.count({
+        distinct: true,
+        col: 'cmc_id',
+        where: {
+          cmc_id: {
+            [Op.ne]: 0
+          },
+          [Op.and]: [
+            Sequelize.literal('cmc_id IS NOT NULL')
+          ]
+        },
+        // logging: true
+      })
+      const coinRecords: any = await Coins.CoinsRead.findAll({
         attributes: ["cmc_id"],
         where: {
           cmc_id: {
@@ -659,53 +685,52 @@ class PricesController {
         group: ["cmc_id"],
         order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
         limit: limit,
-        offset: coin_limit_count,
+        offset: coinLimitCount,
         logging: true,
       });
-      const groupedCount: number = dbCoinrecords.count; // This is an array of grouped results
-      const totalRecords: number = dbCoinrecords.rows.length; // Total number of unique groups (cmc_id)
+      // const groupedCount: number = dbCoinrecords.count; // This is an array of grouped results
+      const totalRecords: number = coinRecords ? coinRecords.length : 0; // Total number of unique groups (cmc_id)
       // }
 
-      if (!totalRecords) {
-        let counter = 0;
-        await redisClient.setKeyValuePair(
-          config.REDISKEYS.COIN_LIMIT_COUNTS,
-          `${type}_${GRAPH_DATA_COIN_COUNTER}`,
-          counter.toString()
-        );
-        return;
-      }
+      // if (!totalRecords) {
+      //   let counter = 0;
+      //   await redisClient.setKeyValuePair(
+      //     config.REDISKEYS.COIN_LIMIT_COUNTS,
+      //     `${type}_${GRAPH_DATA_COIN_COUNTER}`,
+      //     counter.toString()
+      //   );
+      //   return;
+      // }
       // Access grouped rows (the data)
-      const groupedRows = dbCoinrecords.rows;
+      // const groupedRows = dbCoinrecords;
 
       // Example: Iterate over groups
+
       if (totalRecords > 0) {
-        await groupedRows.forEach((group: any) => {
-          // if (group.cmc_id < 50000) {
-          ids.push(group.cmc_id);
-          // }
+        await coinRecords.forEach((coin: any) => {
+          cmcIds.push(coin.cmc_id);
         });
       }
 
-      console.log("ids,  :>> ", ids, "type :", type);
 
-      if (totalRecords > 0 && ids.length > 0) {
+
+      if (totalRecords > 0) {
         const code = "USD";
         const requestOptionsForListing = await cmcHelper.cmcHistoricalData(
-          ids,
+          cmcIds,
           interval,
           startDate,
           endDate
         );
         const data = await rp(requestOptionsForListing);
         if (data) {
-          let created_at;
-          const currentUTCDate: string = new Date()
-            .toISOString()
-            .replace(/T/, " ")
-            .replace(/\..+/, "");
-          for await (let id of ids as any) {
-            let fiat_type = code;
+          // let created_at;
+          // const currentUTCDate: string = new Date()
+          //   .toISOString()
+          //   .replace(/T/, " ")
+          //   .replace(/\..+/, "");
+          for await (const id of cmcIds) {
+            const fiat_type = code;
             let sparkline: any = [];
 
             if (data?.data[id]?.quotes && data?.data[id]?.quotes.length > 0) {
@@ -715,12 +740,12 @@ class PricesController {
                     data?.quote[code?.toUpperCase()] !== undefined &&
                     data?.quote[code?.toUpperCase()] !== null
                   ) {
-                    created_at = new Date(
-                      data?.quote[code?.toUpperCase()]?.timestamp
-                    )
-                      ?.toISOString()
-                      ?.replace(/T/, " ")
-                      ?.replace(/\..+/, "");
+                    // created_at = new Date(
+                    //   data?.quote[code?.toUpperCase()]?.timestamp
+                    // )
+                    //   ?.toISOString()
+                    //   ?.replace(/T/, " ")
+                    //   ?.replace(/\..+/, "");
                     return {
                       price: data.quote[code.toUpperCase()].price || 0,
                       timestamp: data.quote[code.toUpperCase()].timestamp || 0,
@@ -742,12 +767,12 @@ class PricesController {
                   data?.quote[code?.toUpperCase()] !== undefined &&
                   data?.quote[code?.toUpperCase()] !== null
                 ) {
-                  created_at = new Date(
-                    data.quote[code?.toUpperCase()]?.timestamp
-                  )
-                    .toISOString()
-                    .replace(/T/, " ")
-                    .replace(/\..+/, "");
+                  // created_at = new Date(
+                  //   data.quote[code?.toUpperCase()]?.timestamp
+                  // )
+                  //   .toISOString()
+                  //   .replace(/T/, " ")
+                  //   .replace(/\..+/, "");
                   return {
                     price: data.quote[code?.toUpperCase()].price || 0,
                     timestamp: data.quote[code?.toUpperCase()].timestamp || 0,
@@ -784,7 +809,7 @@ class PricesController {
                     sparkline: getGraphData.graphData,
                     cmc_id: id,
                     latest_price_source: type,
-                    updated_at: currentUTCDate,
+                    // updated_at: currentUTCDate,
                   };
 
                   await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
@@ -801,37 +826,41 @@ class PricesController {
                   latest_price_source: type,
                   fiat_type: fiat_type?.toUpperCase(),
                   type: type,
-                  created_at,
-                  updated_at: currentUTCDate,
+                  // created_at,
+                  // updated_at: currentUTCDate,
                 });
               }
             } else {
-              const whereCond: any = {
-                cmc_id: id,
-                fiat_type: code,
-                type: type,
-              };
-              await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
-                {
-                  updated_at: currentUTCDate,
-                },
-                {
-                  where: whereCond,
-                }
-              );
+              console.log('empty sparkline >>>', sparkline);
+              // const whereCond: any = {
+              //   cmc_id: id,
+              //   fiat_type: code,
+              //   type: type,
+              // };
+              // await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
+              //   {
+              //     updated_at: currentUTCDate,
+              //   },
+              //   {
+              //     where: whereCond,
+              //   }
+              // );
             }
           }
         }
       }
 
       /** update coins pagination */
-      coin_limit_count = coin_limit_count + limit;
 
-      let counter = coin_limit_count >= groupedCount ? 0 : coin_limit_count;
+      coinLimitCount = coinLimitCount + limit;
+      console.log('coinLimitCount >>>>', `${type}_${GRAPH_DATA_COIN_COUNTER}`, 'dddddddddddddddddddddddddddddddddddddddd', coinLimitCount);
+      console.log('totalCmcIds >>>>', 'dddddddddddddddddddddddddddddddddddddddd', totalCmcIds);
+
+      const nextCoinCounter = coinLimitCount >= totalCmcIds ? 0 : coinLimitCount;
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
         `${type}_${GRAPH_DATA_COIN_COUNTER}`,
-        counter.toString()
+        nextCoinCounter.toString()
       );
 
       return;
@@ -839,34 +868,34 @@ class PricesController {
       console.error(
         `err`,
         "historical data type",
-        ids,
+        cmcIds,
         type,
         "error =>",
         error?.message
       );
       if (error?.response?.data?.status?.error_message) {
-        let message = error.response.data.status.error_message;
-        let position = message.includes('No data found for "id"');
-        let position1 = message.includes("No items found");
+        const message = error.response.data.status.error_message;
+        const position = message.includes('No data found for "id"');
+        const position1 = message.includes("No items found");
 
         if (position || position1) {
-          let updateGraphNotFound =
+          const updateGraphNotFound =
             await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.destroy({
               where: {
                 cmc_id: {
-                  [Op.in]: ids,
+                  [Op.in]: cmcIds,
                 },
               },
             });
 
           console.log("updateGraphNotFound :>> ", updateGraphNotFound);
 
-          let updateCoinNotFound = await Coins.CoinsWrite.update(
+          const updateCoinNotFound = await Coins.CoinsWrite.update(
             { cmc_id: 0 },
             {
               where: {
                 cmc_id: {
-                  [Op.in]: ids,
+                  [Op.in]: cmcIds,
                 },
               },
             }

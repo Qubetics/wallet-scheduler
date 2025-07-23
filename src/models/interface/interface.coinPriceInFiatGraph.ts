@@ -5,6 +5,6 @@ export interface CoinPriceInFiatGraphModel {
   sparkline?: string;
   type?: string;
   latest_price_source?: string | null;
-  created_at?: string;
-  updated_at?: string;
+  // created_at?: string;
+  // updated_at?: string;
 }
