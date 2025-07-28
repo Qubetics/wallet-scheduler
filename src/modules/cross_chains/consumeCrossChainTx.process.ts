@@ -30,7 +30,7 @@ import { ethers } from "ethers";
 const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 
 class CosnumeCrossChainTxProcess {
-  
+
   public ethEtherUrl: ethers.JsonRpcProvider;
   public bscEtherUrl: ethers.JsonRpcProvider;
   public polEtherUrl: ethers.JsonRpcProvider;
@@ -75,6 +75,7 @@ class CosnumeCrossChainTxProcess {
         console.log("🔥 ~ startBlockTxQueue consumer error", err);
       });
   }
+
   public async getTx(data: {
     id: number;
     from_adrs: string | null;
@@ -87,12 +88,12 @@ class CosnumeCrossChainTxProcess {
         orderId: data.order_id,
         sourceType: SWFTC.IOS,
       };
-      let success: number = Boolean.false;
-      let response: any = await axios.post(
+
+      const response: any = await axios.post(
         "https://www.swftc.info/api/v2/queryOrderState",
         params
       );
-      success = Boolean.true;
+
       await cosnumeCrossChainTxProcess.getOrderDetail(
         response?.data.data,
         data
@@ -101,18 +102,19 @@ class CosnumeCrossChainTxProcess {
       console.error("💥 ~ ~ getTx error", err);
     }
   }
-  public async getOrderDetail(res_data: any, data: any) {
+
+  public async getOrderDetail(resData: any, data: any) {
     try {
       if (
-        res_data !== null &&
-        res_data.detailState == SWFTC_RESPONSE.RECEIVE &&
-        res_data.tradeState == SWFTC_RESPONSE.COMPLETE
+        resData !== null &&
+        resData.detailState == SWFTC_RESPONSE.RECEIVE &&
+        resData.tradeState == SWFTC_RESPONSE.COMPLETE
       ) {
-        let old_coin_symbol = res_data.receiveCoinCode;
-        let coin_symbol: string = old_coin_symbol.split(/[\(\)]/);
-        coin_symbol = coin_symbol[Boolean.false];
-        let destinationAddr = res_data.destinationAddr;
-        let swftc_coin: any = await SWFTCCoinsDataModel.findOne({
+        const oldCoinSymbol = resData.receiveCoinCode;
+        let coinSymbol: string = oldCoinSymbol.split(/[\(\)]/);
+        coinSymbol = coinSymbol[Boolean.false];
+        const destinationAddr = resData.destinationAddr;
+        const swftcCoin: any = await SWFTCCoinsDataModel.findOne({
           attributes: [
             "id",
             "coinId",
@@ -126,40 +128,40 @@ class CosnumeCrossChainTxProcess {
             "coinCodeShow",
             "status",
           ],
-          where: { coinCode: { [Op.like]: old_coin_symbol } },
+          where: { coinCode: { [Op.like]: oldCoinSymbol } },
           raw: true,
         });
-        if (swftc_coin) {
-          let coin_family: number = Boolean.false;
-          let token_type: string = TOKENS.ERC20;
-          if (swftc_coin.mainNetwork == COINS.ETH) {
-            coin_family = COIN_FAMILY.ETH;
-            token_type = TOKENS.ERC20;
-          } else if (swftc_coin.mainNetwork == COINS.BTC) {
-            coin_family = COIN_FAMILY.BTC;
+        if (swftcCoin) {
+          let coinFamily: number = Boolean.false;
+          let tokenType: string = TOKENS.ERC20;
+          if (swftcCoin.mainNetwork == COINS.ETH) {
+            coinFamily = COIN_FAMILY.ETH;
+            tokenType = TOKENS.ERC20;
+          } else if (swftcCoin.mainNetwork == COINS.BTC) {
+            coinFamily = COIN_FAMILY.BTC;
           } else if (
-            swftc_coin.mainNetwork == COINS.POL ||
-            swftc_coin.mainNetwork == COINS.POLYGON
+            swftcCoin.mainNetwork == COINS.POL ||
+            swftcCoin.mainNetwork == COINS.POLYGON
           ) {
-            coin_family = COIN_FAMILY.POL;
-            token_type = TOKENS.ERC20;
-          } else if (swftc_coin.mainNetwork == COINS.SOL) {
-            coin_family = COIN_FAMILY.SOL;
-            token_type = TOKENS.SPL;
-          } else if (swftc_coin.mainNetwork == COINS.TRX) {
-            coin_family = COIN_FAMILY.TRX;
-            token_type = TOKENS.TRC20;
-          } else if (swftc_coin.mainNetwork == COINS.BSC) {
-            coin_family = COIN_FAMILY.BNB;
-            token_type = TOKENS.BEP20;
-          } else if (swftc_coin.mainNetwork == COINS.TICS) {
-            coin_family = COIN_FAMILY.TICS;
-            token_type = TOKENS.ERC20;
+            coinFamily = COIN_FAMILY.POL;
+            tokenType = TOKENS.ERC20;
+          } else if (swftcCoin.mainNetwork == COINS.SOL) {
+            coinFamily = COIN_FAMILY.SOL;
+            tokenType = TOKENS.SPL;
+          } else if (swftcCoin.mainNetwork == COINS.TRX) {
+            coinFamily = COIN_FAMILY.TRX;
+            tokenType = TOKENS.TRC20;
+          } else if (swftcCoin.mainNetwork == COINS.BSC) {
+            coinFamily = COIN_FAMILY.BNB;
+            tokenType = TOKENS.BEP20;
+          } else if (swftcCoin.mainNetwork == COINS.TICS) {
+            coinFamily = COIN_FAMILY.TICS;
+            tokenType = TOKENS.ERC20;
           }
 
-          console.log("cross chain >>>>>>>>>>>>>>>>>.", coin_family);
+          console.log("cross chain >>>>>>>>>>>>>>>>>.", coinFamily);
 
-          let coins_data: any = await Coins.CoinsRead.findOne({
+          let coinsData: any = await Coins.CoinsRead.findOne({
             attributes: [
               "coin_id",
               "coin_symbol",
@@ -168,35 +170,35 @@ class CosnumeCrossChainTxProcess {
               "token_address",
               "added_by",
             ],
-            where: { coin_id: swftc_coin.coinId, coin_family: coin_family },
+            where: { coin_id: swftcCoin.coinId, coin_family: coinFamily },
             raw: true,
           });
-          if (!coins_data) {
-            coins_data = await Coins.CoinsWrite.create({
-              coin_name: swftc_coin.coinName,
-              coin_symbol: coin_symbol,
-              coin_image: swftc_coin.coinImageUrl,
-              coin_family: coin_family,
+          if (!coinsData) {
+            coinsData = await Coins.CoinsWrite.create({
+              coin_name: swftcCoin.coinName,
+              coin_symbol: coinSymbol,
+              coin_image: swftcCoin.coinImageUrl,
+              coin_family: coinFamily,
               coin_status: Boolean.true,
               is_token: Boolean.true,
-              token_type: token_type,
-              decimals: Math.pow(10, parseInt(swftc_coin.coinDecimal)),
+              token_type: tokenType,
+              decimals: Math.pow(10, parseInt(swftcCoin.coinDecimal)),
               cmc_id: Boolean.false,
               is_on_cmc: Boolean.true,
-              token_address: swftc_coin.contact,
+              token_address: swftcCoin.contact,
               for_swap: Boolean.true,
               added_by: ADDED_BY.admin,
             });
             console.log("Update in redis");
 
-            let tokenType: any =
-              coin_family == 1
+            const nftTokenType: any =
+              coinFamily == 1
                 ? TOKENS.BEP721
-                : coin_family == 2 || coin_family == 4
+                : coinFamily == 2 || coinFamily == 4
                   ? TOKENS.ERC721
                   : TOKENS.ERC721;
 
-            let tokens: any = await Coins.CoinsRead.findAll({
+            const tokens: any = await Coins.CoinsRead.findAll({
               attributes: [
                 "coin_id",
                 "coin_name",
@@ -219,30 +221,30 @@ class CosnumeCrossChainTxProcess {
               ],
               where: {
                 coin_status: 1,
-                coin_family: coin_family,
+                coin_family: coinFamily,
                 [Op.or]: [
-                  { token_type: { [Op.ne]: tokenType } },
+                  { token_type: { [Op.ne]: nftTokenType } },
                   { token_type: null },
                 ],
               },
               raw: true,
             });
             console.log("Finded all coins successfully.");
-            let set_coins: any =
-              coin_family == 1
+            const setCoins: any =
+              coinFamily == 1
                 ? config.TOKENS.BSC_TOKEN_TYPE
-                : coin_family == 2
+                : coinFamily == 2
                   ? config.TOKENS.ETH_TOKEN_TYPE
-                  : coin_family == 4
+                  : coinFamily == 4
                     ? config.TOKENS.POL_TOKEN_TYPE
-                    : coin_family == 5
+                    : coinFamily == 5
                       ? config.TOKENS.SOL_TOKEN_TYPE
-                        : coin_family == 6
+                      : coinFamily == 6
                         ? config.TOKENS.TRX_TOKEN_TYPE
                         : config.TOKENS.TICS_TOKEN_TYPE;
 
             redisClient.client_write.set(
-              set_coins || "",
+              setCoins || "",
               JSON.stringify(tokens)
             );
             console.log("Updated successfully.");
@@ -253,54 +255,54 @@ class CosnumeCrossChainTxProcess {
               },
               {
                 where: {
-                  coin_id: coins_data.coin_id,
+                  coin_id: coinsData.coin_id,
                 },
               }
             );
           }
 
-          let ether_object: ethers.JsonRpcProvider = this.ethEtherUrl;
+          let etherObject: ethers.JsonRpcProvider = this.ethEtherUrl;
           let depositQuery: any = null;
-          if (coin_family == COIN_FAMILY.ETH) {
-            ether_object = this.ethEtherUrl;
+          if (coinFamily == COIN_FAMILY.ETH) {
+            etherObject = this.ethEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.ETH_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
-          } else if (coin_family == COIN_FAMILY.POL) {
-            ether_object = this.polEtherUrl;
+          } else if (coinFamily == COIN_FAMILY.POL) {
+            etherObject = this.polEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.POL_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
-          } else if (coin_family == COIN_FAMILY.TRX) {
+          } else if (coinFamily == COIN_FAMILY.TRX) {
             depositQuery = await redisClient.getKeyValuePair(
               `${config.TRON_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
-          } else if (coin_family == COIN_FAMILY.SOL) {
+          } else if (coinFamily == COIN_FAMILY.SOL) {
             depositQuery = await redisClient.getKeyValuePair(
               `${config.SOL_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
-          } else if (coin_family == COIN_FAMILY.BTC) {
+          } else if (coinFamily == COIN_FAMILY.BTC) {
             depositQuery = await redisClient.getKeyValuePair(
               `${config.BTC_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
-          } else if (coin_family == COIN_FAMILY.BNB) {
-            console.log(
-              "${config.BSC_WALLET_ADDRESS",
-              config.BSC_WALLET_ADDRESS
-            );
-            ether_object = this.bscEtherUrl;
+          } else if (coinFamily == COIN_FAMILY.BNB) {
+            // console.log(
+            //   "${config.BSC_WALLET_ADDRESS",
+            //   config.BSC_WALLET_ADDRESS
+            // );
+            etherObject = this.bscEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.BSC_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
-            console.log("depositQuery", depositQuery);
-          }else if (coin_family == COIN_FAMILY.TICS) {
-            ether_object = this.ticsEtherUrl;
+            // console.log("depositQuery", depositQuery);
+          } else if (coinFamily == COIN_FAMILY.TICS) {
+            etherObject = this.ticsEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.TICS_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
@@ -309,41 +311,41 @@ class CosnumeCrossChainTxProcess {
           console.log("cross chain  123>>>>>>>>>>>>>>>>>.");
 
           if (depositQuery) {
-            console.log("cross chain  456>>>>>>>>>>>>>>>>>.");
-            let amount = res_data.receiveCoinAmt;
-            let transactionId = res_data.transactionId;
-            let tran_exist: any = await TrnxHistoryModel.findOne({
+            console.log("cross chain  456>>>>>>>>>>>>>>>>>.", depositQuery);
+            const amount = resData.receiveCoinAmt;
+            const transactionId = resData.transactionId;
+            const tranExist: any = await TrnxHistoryModel.findOne({
               attributes: ["id", "to_adrs"],
               where: {
                 tx_id: transactionId,
               },
               raw: true,
             });
-            let wallet_data: any = await Wallets.WalletRead.findOne({
+            const walletData: any = await Wallets.WalletRead.findOne({
               attributes: ["user_id"],
               where: {
                 wallet_address: destinationAddr,
               },
               raw: true,
             });
-            let to_user_id: any = wallet_data.user_id;
-            if (tran_exist == null) {
-              let from_address = "";
-              let gasReverted:number = 0;
-              let gas_price: number = 0;
+            const toUserId: any = walletData.user_id;
+            if (tranExist == null) {
+              let fromAddress = "";
+              let gasReverted: number = 0;
+              let gasPrice: number = 0;
               let blockId: number = 0;
-              let transaction_fee: number = 0;
+              let transactionFee: number = 0;
               let userBalance: number | null = 0;
-              let trans_status: any = false;
+              let transStatus: any = false;
               /** for ETH/BSC/POL */
-              console.log("coin_family >>>", coin_family);
+              console.log("coin_family >>>", coinFamily);
               if (
-                coin_family == COIN_FAMILY.ETH ||
-                coin_family == COIN_FAMILY.BNB ||
-                coin_family == COIN_FAMILY.POL ||
-                coin_family == COIN_FAMILY.TICS
+                coinFamily == COIN_FAMILY.ETH ||
+                coinFamily == COIN_FAMILY.BNB ||
+                coinFamily == COIN_FAMILY.POL ||
+                coinFamily == COIN_FAMILY.TICS
               ) {
-                const transactionReceipt = await ether_object.getTransactionReceipt(
+                const transactionReceipt = await etherObject.getTransactionReceipt(
                   transactionId
                 );
                 if (
@@ -351,48 +353,48 @@ class CosnumeCrossChainTxProcess {
                   transactionReceipt?.status &&
                   transactionReceipt?.blockHash != null
                 ) {
-                  trans_status = true;
-                  const transaction: any = await ether_object.getTransaction(transactionId);
+                  transStatus = true;
+                  const transaction: any = await etherObject.getTransaction(transactionId);
 
                   if (transaction) {
-                    from_address = transactionReceipt.from || '';
+                    fromAddress = transactionReceipt.from || '';
 
                     const gasUsed: BigNumber = new BigNumber(transactionReceipt?.gasUsed?.toString() || "0");
-                    const gasPrice: BigNumber = new BigNumber(transaction.gasPrice?.toString() || "0");
+                    const tranGasPrice: BigNumber = new BigNumber(transaction.gasPrice?.toString() || "0");
                     const gasTotal: BigNumber = new BigNumber(transaction?.gasLimit?.toString() || "0");
 
                     if (gasTotal.isGreaterThan(0) && gasUsed.isGreaterThan(0)) {
-                        const gasDiff = gasTotal.minus(gasUsed);
-                        const reverted = gasPrice.multipliedBy(gasDiff);
-                        gasReverted = Number(ethers.formatEther(reverted.toString()));
-                      }
-                      gas_price = Number(ethers.formatUnits(gasPrice.toString(), 9));
-                      blockId = transaction.blockNumber
+                      const gasDiff = gasTotal.minus(gasUsed);
+                      const reverted = tranGasPrice.multipliedBy(gasDiff);
+                      gasReverted = Number(ethers.formatEther(reverted.toString()));
                     }
+                    gasPrice = Number(ethers.formatUnits(tranGasPrice.toString(), 9));
+                    blockId = transaction.blockNumber
                   }
-                if (swftc_coin.contact !== null && swftc_coin.contact !== "") {
+                }
+                if (swftcCoin.contact !== null && swftcCoin.contact !== "") {
                   /** User ERC-20 token Balance */
-                  let balance =
+                  const balance =
                     await blockchain_helper.getUserERC20TokenBalance(
-                      swftc_coin.contact,
+                      swftcCoin.contact,
                       config.CONTRACT_ABI,
                       destinationAddr,
-                      ether_object
+                      etherObject
                     );
 
                   userBalance = balance !== null ? Number(balance) : null;
                 } else {
                   /** User Native Coin Balance */
-                  let balance = await blockchain_helper.get_balance(
+                  const balance = await blockchain_helper.get_balance(
                     destinationAddr,
-                    ether_object,
+                    etherObject,
                     true
                   );
                   userBalance = balance !== null ? Number(balance) : null;
                 }
                 /** for BTC */
-              } else if (coin_family == COIN_FAMILY.BTC) {
-                let transaction = await non_evm_helper.getTransactionById(
+              } else if (coinFamily == COIN_FAMILY.BTC) {
+                const transaction = await non_evm_helper.getTransactionById(
                   transactionId
                 );
 
@@ -400,15 +402,15 @@ class CosnumeCrossChainTxProcess {
                   transaction.confirmations != undefined &&
                   transaction.confirmations !== 2
                 ) {
-                  trans_status = true;
+                  transStatus = true;
                 }
 
-                let userBtcBaldata: number | null =
+                const userBtcBaldata: number | null =
                   await non_evm_helper.get_user_btc_balance(destinationAddr);
 
                 userBalance = userBtcBaldata ? Number(userBtcBaldata) : null;
                 /** for Tron */
-              } else if (coin_family == COIN_FAMILY.SOL) {
+              } else if (coinFamily == COIN_FAMILY.SOL) {
                 console.log("solana transaction");
                 const transaction = await NonEvmHelper.getTransaction(
                   transactionId
@@ -416,11 +418,11 @@ class CosnumeCrossChainTxProcess {
                 console.log("transaction >>>.", transaction);
                 if (transaction) {
                   if (transaction.meta.err == null) {
-                    trans_status = true;
-                    from_address =
+                    transStatus = true;
+                    fromAddress =
                       transaction.transaction.message.accountKeys[0];
                     blockId = transaction?.slot;
-                    transaction_fee = Number(
+                    transactionFee = Number(
                       await exponentialToDecimal(
                         await bigNumberSafeMath(
                           transaction.meta.fee,
@@ -431,10 +433,10 @@ class CosnumeCrossChainTxProcess {
                     );
                   }
                 }
-                if (swftc_coin.contact !== null && swftc_coin.contact !== "") {
+                if (swftcCoin.contact !== null && swftcCoin.contact !== "") {
                   /** User Solana token Balance */
                   userBalance = await NonEvmHelper.getUserCRC20TokenBalance(
-                    swftc_coin.contact,
+                    swftcCoin.contact,
                     destinationAddr
                   );
                 } else {
@@ -446,65 +448,65 @@ class CosnumeCrossChainTxProcess {
                     )
                   );
                 }
-              } else if (coin_family == COIN_FAMILY.TRX) {
-                let transactionData: {
+              } else if (coinFamily == COIN_FAMILY.TRX) {
+                const transactionData: {
                   status: boolean;
                   fromAddress: string;
                   blockId: number;
                 } = await non_evm_helper.getTransactionInfo(transactionId);
                 if (transactionData.status) {
-                  from_address = transactionData.fromAddress;
+                  fromAddress = transactionData.fromAddress;
                   blockId = transactionData.blockId;
                   if (
-                    swftc_coin.contact !== null &&
-                    swftc_coin.contact !== ""
+                    swftcCoin.contact !== null &&
+                    swftcCoin.contact !== ""
                   ) {
-                    console.log("swftc_coin.contact >>>>>", swftc_coin.contact);
-                    let tron_bal = await non_evm_helper.Fetch_Balance(
+                    console.log("swftc_coin.contact >>>>>", swftcCoin.contact);
+                    const tronBal = await non_evm_helper.Fetch_Balance(
                       destinationAddr,
                       Boolean.true,
-                      swftc_coin.contact
+                      swftcCoin.contact
                     );
-                    userBalance = tron_bal !== null ? Number(tron_bal) : null;
+                    userBalance = tronBal !== null ? Number(tronBal) : null;
                   } else {
-                    let tron_bal = await non_evm_helper.Fetch_Balance(
+                    const tronBal = await non_evm_helper.Fetch_Balance(
                       destinationAddr,
                       Boolean.false,
-                      swftc_coin.contact
+                      swftcCoin.contact
                     );
-                    userBalance = tron_bal !== null ? Number(tron_bal) : null;
+                    userBalance = tronBal !== null ? Number(tronBal) : null;
                   }
-                  trans_status = true;
+                  transStatus = true;
                 }
               }
-              console.log("trans_status >>>", trans_status);
-              if (trans_status) {
-                const trnx_type: string = "deposit";
-                let history_data: any = {
+              console.log("trans_status >>>", transStatus);
+              if (transStatus) {
+                const trnxType: string = "deposit";
+                const historyData: any = {
                   user_id: 0,
-                  to_user_id: to_user_id,
-                  type: trnx_type,
+                  to_user_id: toUserId,
+                  type: trnxType,
                   req_type: "EXNG",
-                  from_adrs: from_address,
+                  from_adrs: fromAddress,
                   to_adrs: destinationAddr,
                   tx_id: transactionId,
                   status: "completed",
                   blockchain_status: "confirmed",
-                  coin_id: coins_data.coin_id,
-                  coin_family: coin_family,
+                  coin_id: coinsData.coin_id,
+                  coin_family: coinFamily,
                   amount: amount,
                   fiat_price: null,
                   fiat_type: "USD",
                   gas_limit: null,
-                  gas_price: gas_price,
+                  gas_price: gasPrice,
                   gas_reverted: gasReverted,
                   block_id: blockId,
-                  tx_fee: transaction_fee !== 0 ? transaction_fee : null,
+                  tx_fee: transactionFee !== 0 ? transactionFee : null,
                 };
-                let history_crated_data = await TrnxHistoryModel.create(
-                  history_data
+                const historyCreatedData = await TrnxHistoryModel.create(
+                  historyData
                 );
-                let row_id = history_crated_data.id;
+                const rowId = historyCreatedData.id;
                 await TrnxHistoryModel.update(
                   {
                     order_status: SWFTC_STATUS.COMPLETED,
@@ -515,21 +517,21 @@ class CosnumeCrossChainTxProcess {
                 console.log("in create order id >>>", data.order_id);
 
                 await cross_chain_helper.insert_profit_in_admin_table(
-                  res_data,
+                  resData,
                   data.order_id,
-                  to_user_id
+                  toUserId
                 );
-                let wallet_data_exist: any = await Wallets.WalletRead.findOne({
+                const walletDataExist: any = await Wallets.WalletRead.findOne({
                   attributes: ["wallet_id"],
                   where: {
-                    coin_id: coins_data.coin_id,
+                    coin_id: coinsData.coin_id,
                     wallet_address: destinationAddr,
                   },
                   raw: true,
                 });
-                console.log("wallet_data_exist>>>>", wallet_data_exist);
-                if (!wallet_data_exist) {
-                  let walletData: any = await Wallets.WalletRead.findOne({
+                console.log("walletDataExist>>>>", walletDataExist);
+                if (!walletDataExist) {
+                  const walletData: any = await Wallets.WalletRead.findOne({
                     where: {
                       wallet_address: destinationAddr,
                     },
@@ -540,8 +542,8 @@ class CosnumeCrossChainTxProcess {
                     user_id: walletData.user_id,
                     wallet_name: walletData.wallet_name,
                     wallet_address: walletData.wallet_address,
-                    coin_id: coins_data.coin_id,
-                    coin_family: coin_family,
+                    coin_id: coinsData.coin_id,
+                    coin_family: coinFamily,
                     balance: userBalance || 0,
                     default_wallet: walletData.default_wallet,
                     status: 1,
@@ -549,30 +551,30 @@ class CosnumeCrossChainTxProcess {
                     is_private_wallet: walletData.is_private_wallet,
                   });
 
-                  if (coins_data.added_by) {
-                    console.log("coin.added_by exist", coins_data.added_by);
-                    if (coins_data.added_by == "user") {
+                  if (coinsData.added_by) {
+                    console.log("coin.added_by exist", coinsData.added_by);
+                    if (coinsData.added_by == "user") {
                       console.log("added by user");
-                      let user_exist: any =
+                      const userExist: any =
                         await CustomToken.CustomTokenRead.findOne({
                           attributes: ["id"],
                           where: {
-                            user_id: wallet_data.user_id,
-                            coin_id: coins_data.coin_id,
+                            user_id: walletData.user_id,
+                            coin_id: coinsData.coin_id,
                           },
                           raw: true,
                         });
-                      if (user_exist) {
+                      if (userExist) {
                         console.log("custom token already exist");
                       } else {
                         console.log("custom token not exist");
-                        let currentUTCDate: string = new Date()
+                        const currentUTCDate: string = new Date()
                           .toISOString()
                           .replace(/T/, " ")
                           .replace(/\..+/, "");
                         await CustomToken.CustomTokenWrite.create({
-                          coin_id: coins_data.coin_id,
-                          user_id: wallet_data.user_id,
+                          coin_id: coinsData.coin_id,
+                          user_id: walletData.user_id,
                           created_at: currentUTCDate,
                           updated_at: currentUTCDate,
                         });
@@ -589,7 +591,7 @@ class CosnumeCrossChainTxProcess {
                       },
                       {
                         where: {
-                          coin_id: coins_data.coin_id,
+                          coin_id: coinsData.coin_id,
                           wallet_address: destinationAddr,
                         },
                       }
@@ -597,31 +599,31 @@ class CosnumeCrossChainTxProcess {
                   }
                 }
                 /** save notification */
-                let deposit_notification_exist: any =
+                const depositNotificationExist: any =
                   await NotificationModel.findOne({
                     attributes: ["notification_id", "tx_type"],
                     where: {
                       wallet_address: { [Op.like]: destinationAddr },
-                      tx_id: row_id,
+                      tx_id: rowId,
                       tx_type: "deposit",
                     },
                   });
-                if (!deposit_notification_exist) {
-                  let am = amount.toString();
+                if (!depositNotificationExist) {
+                  const am = amount.toString();
                   let value: any = new BigNumber(am);
                   value = value.toFixed();
-                  let notiMsg = `Deposit of ${value} ${coin_symbol} has been confirmed.`;
-                  let notificationData: any = {
+                  const notiMsg = `Deposit of ${value} ${coinSymbol} has been confirmed.`;
+                  const notificationData: any = {
                     message: notiMsg,
                     amount: Number(amount),
                     from_user_id: 0,
-                    to_user_id: to_user_id,
+                    to_user_id: toUserId,
                     notification_type: "Deposit",
-                    tx_id: row_id,
+                    tx_id: rowId,
                     tx_type: "deposit",
-                    coin_symbol: coin_symbol,
-                    coin_family: coin_family,
-                    coin_id: coins_data.coin_id,
+                    coin_symbol: coinSymbol,
+                    coin_family: coinFamily,
+                    coin_id: coinsData.coin_id,
                     view_status: null,
                     state: "sent",
                     wallet_address: destinationAddr,
@@ -630,18 +632,18 @@ class CosnumeCrossChainTxProcess {
                   };
                   await NotificationModel.create(notificationData);
                   /** send push notification */
-                  let device_token_data: any = await GetDeviceTokens(
-                    to_user_id,
+                  const deviceTokenData: any = await GetDeviceTokens(
+                    toUserId,
                     destinationAddr,
-                    coin_family
+                    coinFamily
                   );
-                  if (device_token_data?.length > 0) {
+                  if (deviceTokenData?.length > 0) {
                     let dataNoti: any = {
-                      token: device_token_data,
+                      token: deviceTokenData,
                       title: "DEPOSIT",
                       message: notiMsg,
                       notification_type: "deposit",
-                      tx_id: row_id,
+                      tx_id: rowId,
                       tx_type: "DEPOSIT",
                     };
                     await sendNotification(dataNoti);
@@ -660,9 +662,9 @@ class CosnumeCrossChainTxProcess {
               );
               console.log("in update order id >>>", data.order_id);
               await cross_chain_helper.insert_profit_in_admin_table(
-                res_data,
+                resData,
                 data.order_id,
-                to_user_id
+                toUserId
               );
             }
           } else {
@@ -672,32 +674,32 @@ class CosnumeCrossChainTxProcess {
         }
       } else {
         if (
-          res_data?.detailState == SWFTC_RESPONSE.WAIT_DEPOSIT ||
-          res_data?.detailState == SWFTC_RESPONSE.WAIT_PUSH ||
-          res_data?.detailState == SWFTC_RESPONSE.WAIT_RETURN ||
-          res_data?.detailState == SWFTC_RESPONSE.WAIT_REC_SEND ||
-          res_data?.detailState == SWFTC_RESPONSE.WAIT_REC_CONFIRM ||
-          res_data?.detailState == SWFTC_RESPONSE.WAIT_SEND ||
-          res_data?.detailState == SWFTC_RESPONSE.WAIT_CONFIRM ||
-          res_data?.detailState == SWFTC_RESPONSE.ERROR
+          resData?.detailState == SWFTC_RESPONSE.WAIT_DEPOSIT ||
+          resData?.detailState == SWFTC_RESPONSE.WAIT_PUSH ||
+          resData?.detailState == SWFTC_RESPONSE.WAIT_RETURN ||
+          resData?.detailState == SWFTC_RESPONSE.WAIT_REC_SEND ||
+          resData?.detailState == SWFTC_RESPONSE.WAIT_REC_CONFIRM ||
+          resData?.detailState == SWFTC_RESPONSE.WAIT_SEND ||
+          resData?.detailState == SWFTC_RESPONSE.WAIT_CONFIRM ||
+          resData?.detailState == SWFTC_RESPONSE.ERROR
         ) {
           await TrnxHistoryModel.update(
             {
               order_status: SWFTC_STATUS.PENDING,
-              order_failed_reason: res_data?.detailState,
+              order_failed_reason: resData?.detailState,
             },
             { where: { id: data.id } }
           );
         } else if (
-          res_data?.detailState == SWFTC_RESPONSE.REFRESH_COMPLETE ||
-          res_data?.detailState == SWFTC_RESPONSE.WAIT_KYC ||
-          res_data?.detailState == SWFTC_RESPONSE.TIMEOUT ||
-          res_data?.detailState == SWFTC_RESPONSE.REFUND_COMPLETE
+          resData?.detailState == SWFTC_RESPONSE.REFRESH_COMPLETE ||
+          resData?.detailState == SWFTC_RESPONSE.WAIT_KYC ||
+          resData?.detailState == SWFTC_RESPONSE.TIMEOUT ||
+          resData?.detailState == SWFTC_RESPONSE.REFUND_COMPLETE
         ) {
           await TrnxHistoryModel.update(
             {
               order_status: SWFTC_STATUS.FAILED,
-              order_failed_reason: res_data?.detailState,
+              order_failed_reason: resData?.detailState,
             },
             { where: { id: data.id } }
           );

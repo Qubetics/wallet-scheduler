@@ -4,12 +4,12 @@ import { CurrencyFiatModel } from "../interface/interface.currencyFiat";
 import db from "../../helpers/common/db";
 
 interface CurrencyFiatCreationModel
-  extends Optional<CurrencyFiatModel, "currency_id"> {}
+  extends Optional<CurrencyFiatModel, "currency_id"> { }
 interface CurrencyFiatInstance
   extends Model<CurrencyFiatModel, CurrencyFiatCreationModel>,
-    CurrencyFiatModel {}
+  CurrencyFiatModel { }
 
-let dataObj = {
+const dataObj = {
   currency_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -38,7 +38,7 @@ let dataObj = {
   },
 };
 
-let dataObjIndex = {
+const dataObjIndex = {
   indexes: [
     {
       unique: true,

@@ -20,7 +20,6 @@ const dataObj = {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-
   fiat_type: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -45,6 +44,7 @@ const dataObj = {
   //   allowNull: true,
   // },
 };
+
 const dataObjIndex = {
   created_at: "created_at",
   updated_at: "updated_at",
@@ -60,6 +60,10 @@ const dataObjIndex = {
     {
       unique: false,
       fields: ["fiat_type"],
+    },
+    {
+      unique: false,
+      fields: ["value"],
     },
     {
       unique: false,

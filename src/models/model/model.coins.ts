@@ -3,13 +3,13 @@ import { DataTypes, Model, Optional } from "sequelize";
 import { CoinModel } from "../interface/interface.coins";
 import db from "../../helpers/common/db";
 import { CoinPriceInFiat } from "./model.coinPriceInFiat";
-import reset_graph_data from "./reset_graph_data";
+// import reset_graph_data from "./reset_graph_data";
 import { CoinPriceInFiatGraph } from "./model.coinPriceInFiatGraph";
 
-interface CoinCreationModel extends Optional<CoinModel, "coin_id"> {}
-interface CoinInstance extends Model<CoinModel, CoinCreationModel>, CoinModel {}
+interface CoinCreationModel extends Optional<CoinModel, "coin_id"> { }
+interface CoinInstance extends Model<CoinModel, CoinCreationModel>, CoinModel { }
 
-let dataObj = {
+const dataObj = {
   coin_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -88,18 +88,15 @@ let dataObj = {
   is_on_trading_view: {
     type: DataTypes.TINYINT,
     allowNull: true,
-  },    
+  },
   is_on_moralis_inactive: {
     type: DataTypes.TINYINT,
     allowNull: true,
-},
+  },
 };
-let dataObjIndex = {
+
+const dataObjIndex = {
   indexes: [
-    {
-      unique: true,
-      fields: ["coin_id"],
-    },
     {
       unique: false,
       fields: ["coin_symbol"],
@@ -118,12 +115,28 @@ let dataObjIndex = {
     },
     {
       unique: false,
+      fields: ["cmc_id"],
+    },
+    {
+      unique: false,
+      fields: ["is_on_cmc"],
+    },
+    {
+      unique: false,
       fields: ["token_type"],
     },
     {
       unique: false,
       fields: ["token_address"],
     },
+    {
+      unique: false,
+      fields: ["added_by"],
+    },
+    {
+      unique: false,
+      fields: ["is_on_trading_view"],
+    }
   ],
 };
 
@@ -138,16 +151,17 @@ const CoinsRead = db.db_read.define<CoinInstance>(
   dataObj,
   dataObjIndex
 );
+
 CoinsRead.hasOne(CoinPriceInFiat.CoinPriceInFiatRead, {
   foreignKey: "coin_id",
   sourceKey: "coin_id",
   as: "coin_price_data",
 });
-CoinsRead.hasOne(reset_graph_data.ResetGraphRead, {
-  foreignKey: "cmc_id",
-  sourceKey: "cmc_id",
-  as: "reset_graph_data",
-});
+// CoinsRead.hasOne(reset_graph_data.ResetGraphRead, {
+//   foreignKey: "cmc_id",
+//   sourceKey: "cmc_id",
+//   as: "reset_graph_data",
+// });
 
 CoinsRead.hasOne(CoinPriceInFiatGraph.CoinPriceInFiatGraphRead, {
   foreignKey: "cmc_id",

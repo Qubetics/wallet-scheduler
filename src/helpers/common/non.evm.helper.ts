@@ -135,13 +135,15 @@ class NonEvmHelpers {
         let blockId: number = 0
         try {
             const transaction: any = await this.tronWeb.trx.getTransaction(transactionId);
-            let tx: any = transaction;
+            const tx: any = transaction;
+            // console.log('tx >>>', tx);
             if (tx.ret.length > 0 && tx.ret[0].contractRet == 'SUCCESS') {
+                // console.log("TransferContract 111>>>>", tx?.raw_data.contract)
                 if (
                     tx?.raw_data &&
                     tx?.raw_data.contract[0].type == 'TransferContract'
                 ) {
-                    console.log("TransferContract>>>>")
+                    // console.log("TransferContract>>>>", tx?.raw_data.contract[0])
                     if (tx) {
                         fromAddress = await this.tronWeb.address.fromHex(
                             tx.raw_data.contract[0].parameter.value.owner_address
@@ -153,21 +155,29 @@ class NonEvmHelpers {
                     tx?.raw_data &&
                     tx?.raw_data.contract[0].type == 'TriggerSmartContract'
                 ) {
-                    console.log("TriggerSmartContract>>>>")
+                    console.log("TriggerSmartContract>>>>", tx?.raw_data.contract[0])
+
+                    const fromAddressHex = tx?.raw_data.contract[0]?.parameter?.value?.owner_address;
+                    fromAddress = await this.tronWeb.address.fromHex(fromAddressHex);
+
+
                     const transactionInfo = await this.tronWeb.trx.getTransactionInfo(
                         tx.txID
                     );
-                    console.log("transactionInfo>>>>>>>.", transactionInfo)
-                    console.log("transactionInfo.logs>>>>>>>.", transactionInfo.log[0])
-                    if (transactionInfo.log[0].topics[1]) {
-                        console.log("topics 1 exist")
-                        const fromAddressHex = transactionInfo.log[0].topics[1].substring(24, transactionInfo.log[0].topics[1].length);
-                        console.log("fromAddressHex>>>>>>>>>>>>", fromAddressHex)
-                        fromAddress = await this.tronWeb.address.fromHex('41' + fromAddressHex);
-                    } else {
-                        console.log("topics 1 not exist")
-                        fromAddress = 'INTERNAL'
-                    }
+                    // console.log("transactionInfo>>>>>>>.", transactionInfo)
+                    // console.log("transactionInfo.logs>>>>>>>.", transactionInfo.log[0])
+                    // if (transactionInfo.log[0].topics[1]) {
+                    //     console.log("topics 1 exist")
+                    //     const fromAddressHex = transactionInfo.log[0].topics[1].substring(24, transactionInfo.log[0].topics[1].length);
+                    //     console.log("fromAddressHex>>>>>>>>>>>>", fromAddressHex)
+                    //     fromAddress = await this.tronWeb.address.fromHex('41' + fromAddressHex);
+                    // } else if (transactionInfo?.internal_transactions.length > 0) {
+                    //     const fromAddressHex = transactionInfo?.internal_transactions[0] ? transactionInfo?.internal_transactions[0]['caller_address'] : "INTERNAL";
+                    //     fromAddress = fromAddressHex !== 'INTERNAL' ? await this.tronWeb.address.fromHex(fromAddressHex) : fromAddressHex;
+                    // } else {
+                    //     console.log("topics 1 not exist")
+                    //     fromAddress = 'INTERNAL'
+                    // }
                     console.log("fromAddress>>>>>>>>>>>>", fromAddress)
 
                     blockId = transactionInfo.blockNumber;
@@ -175,7 +185,7 @@ class NonEvmHelpers {
                 } else if (
                     tx.raw_data.contract[0].type == 'TransferAssetContract'
                 ) {
-                    console.log("TransferAssetContract>>>>")
+                    console.log("TransferAssetContract>>>>", tx.raw_data.contract[0])
 
                     if (tx) {
                         fromAddress = await this.tronWeb.address.fromHex(

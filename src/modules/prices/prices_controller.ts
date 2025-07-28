@@ -4,33 +4,33 @@ import {
   CurrencyFiat,
   Coins,
   CoinPriceInFiatGraph,
-  CMCDataNotExistModel,
-  DayCoinPrice,
-  TicsPriceInFiatGraph
+  // CMCDataNotExistModel,
+  // DayCoinPrice,
+  // TicsPriceInFiatGraph
 } from "../../models/model/index";
 import redisClient from "../../helpers/common/redis";
 import { Op, Sequelize } from "sequelize";
 import rp from "request-promise";
 // import price_alerts_controller from "../price_alerts/price_alerts.controller";
-import sequelize from "sequelize";
-import reset_graph_data from "../../models/model/reset_graph_data";
-import { CoinModel } from "../../models/interface/interface.coins";
+// import sequelize from "sequelize";
+// import reset_graph_data from "../../models/model/reset_graph_data";
+// import { CoinModel } from "../../models/interface/interface.coins";
 // import dbHelper from "../../helpers/dbHelper";
 import cmcHelper from "../../helpers/common/cmc.helper";
 import globalHelper from "../../helpers/common/global.helper";
-import axios from "axios";
+// import axios from "axios";
 // import { TimePeriods } from "../../constants";
-import { bigNumberSafeMath, exponentialToDecimal } from "../../helpers/common/globalFunctions";
+// import { bigNumberSafeMath, exponentialToDecimal } from "../../helpers/common/globalFunctions";
 
 const {
   current_price_coin_counter: CURRENT_PRICE_COIN_COUNTER,
-  current_price_currency_counter: CURRENT_PRICE_CURRENCY_COUNTER,
+  // current_price_currency_counter: CURRENT_PRICE_CURRENCY_COUNTER,
   graph_data_coin_counter: GRAPH_DATA_COIN_COUNTER,
-  graph_data_currency_counter: GRAPH_DATA_CURRENCY_COUNTER,
+  // graph_data_currency_counter: GRAPH_DATA_CURRENCY_COUNTER,
   fetch_cmc_ids_counter: FETCH_CMC_IDS_COIN_COUNTER,
-  delete_graph_coin_counter: DELETE_GRAPH_COIN_COUNTER,
+  // delete_graph_coin_counter: DELETE_GRAPH_COIN_COUNTER,
 } = config.REDISKEYS.COIN_LIMIT_COUNT_FIELD;
-const COIN_FAMILY = config.STATIC_COIN_FAMILY;
+// const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 
 class PricesController {
 
