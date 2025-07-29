@@ -194,6 +194,31 @@ class CMCHelper {
     }
 }
 
+  public async getCmcTokenDataByAddress(data: any) {
+    try {
+       console.log('getCmcTokenDataByAddress data >>>', data);
+        let params: any = `info?address=${data.token_address}`;
+        let result: any = await cmcHelper.cmcApi(params);
+        let id: any = null;
+        let imageUrl: any = null;
+        if (result.data) {
+            let image: any;
+                const firstKey =  Object.keys(result.data.data)[0];
+                if (firstKey) {
+                    id = result.data.data[firstKey].id;
+                    image = result.data.data[firstKey].logo;  
+                }
+                if (image) {
+                    imageUrl = await this.updateCmcImgUrl(image);
+                }
+        }
+        return { image: imageUrl, id: id };
+    } catch (err: any) {
+        console.error("Error in get_token_image_from_cmc", err);
+        return null;
+    }
+  }
+
   private STATIC_COIN_FAMILY_SYMBOL = {
     1: "BNB",
     2: "ETH",

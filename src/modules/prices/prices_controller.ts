@@ -1146,11 +1146,24 @@ class PricesController {
               tokenAddress: coin.token_address,
             }
             const cmcResData: any = await cmcHelper.getCmcDataBySymbol(cmcPayload);
-    
-            console.log("this is the cmc_data in crom by symbol >>>", cmcResData);
-            cmcId = cmcResData ? cmcResData?.id : 0;
-            image = cmcResData ? cmcResData?.image : null;
             
+            //if cmcResData is null then fallback to getCmcTokenDataByAddress
+            if(cmcResData?.id == null || cmcResData?.image == null){
+               
+              const fallbackPayload: any = {
+                token_address: coin.token_address,
+              }
+              const fallbackData: any = await cmcHelper.getCmcTokenDataByAddress(fallbackPayload);
+              if(fallbackData?.id || fallbackData?.image){
+                cmcId = fallbackData?.id;
+                image = fallbackData?.image;
+              }
+            }else{
+              cmcId = cmcResData?.id;
+              image = cmcResData?.image;
+            }
+    
+        
             //if cmcId is not 0 and image is not null then update
             if(cmcId !== 0 && image !== null){
               const updateData: any = {
