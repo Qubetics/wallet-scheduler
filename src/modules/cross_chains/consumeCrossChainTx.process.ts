@@ -191,44 +191,55 @@ class CosnumeCrossChainTxProcess {
             });
             console.log("Update in redis");
 
-            const nftTokenType: any =
-              coinFamily == 1
-                ? TOKENS.BEP721
-                : coinFamily == 2 || coinFamily == 4
-                  ? TOKENS.ERC721
-                  : TOKENS.ERC721;
+            // const nftTokenType: any =
+            //   coinFamily == 1
+            //     ? TOKENS.BEP721
+            //     : coinFamily == 2 || coinFamily == 4
+            //       ? TOKENS.ERC721
+            //       : TOKENS.ERC721;
 
-            const tokens: any = await Coins.CoinsRead.findAll({
-              attributes: [
-                "coin_id",
-                "coin_name",
-                "coin_symbol",
-                "coin_image",
-                "coin_family",
-                "coin_status",
-                "is_token",
-                "token_type",
-                "decimals",
-                "cmc_id",
-                "is_on_cmc",
-                "usd_price",
-                "token_abi",
-                "token_address",
-                "for_swap",
-                "added_by",
-                "created_at",
-                "updated_at",
-              ],
-              where: {
-                coin_status: 1,
-                coin_family: coinFamily,
-                [Op.or]: [
-                  { token_type: { [Op.ne]: nftTokenType } },
-                  { token_type: null },
-                ],
-              },
-              raw: true,
-            });
+            // const tokens: any = await Coins.CoinsRead.findAll({
+            //   attributes: [
+            //     "coin_id",
+            //     "coin_name",
+            //     "coin_symbol",
+            //     "coin_image",
+            //     "coin_family",
+            //     "coin_status",
+            //     "is_token",
+            //     "token_type",
+            //     "decimals",
+            //     "cmc_id",
+            //     "is_on_cmc",
+            //     "usd_price",
+            //     "token_abi",
+            //     "token_address",
+            //     "for_swap",
+            //     "added_by",
+            //     "created_at",
+            //     "updated_at",
+            //   ],
+            //   where: {
+            //     coin_status: 1,
+            //     coin_family: coinFamily,
+            //     [Op.or]: [
+            //       { token_type: { [Op.ne]: nftTokenType } },
+            //       { token_type: null },
+            //     ],
+            //   },
+            //   raw: true,
+            // });
+            const redisCoinData = {
+              coin_id: coinsData?.coin_id,
+              is_token: coinsData?.is_token,
+              token_address: coinsData?.token_address,
+              coin_family: coinsData?.coin_family,
+              decimals: coinsData?.decimals,
+              token_type: coinsData?.token_type,
+              coin_symbol: coinsData?.coin_symbol,
+              added_by: coinsData?.added_by,
+              for_swap: coinsData?.for_swap
+            }
             console.log("Finded all coins successfully.");
             const setCoins: any =
               coinFamily == 1
@@ -243,9 +254,10 @@ class CosnumeCrossChainTxProcess {
                         ? config.TOKENS.TRX_TOKEN_TYPE
                         : config.TOKENS.TICS_TOKEN_TYPE;
 
-            redisClient.client_write.set(
+            await redisClient.setKeyValuePair(
               setCoins || "",
-              JSON.stringify(tokens)
+              coinsData?.token_address,
+              JSON.stringify(redisCoinData)
             );
             console.log("Updated successfully.");
           } else {
