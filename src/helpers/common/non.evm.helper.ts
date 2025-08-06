@@ -144,13 +144,11 @@ class NonEvmHelpers {
                     tx?.raw_data.contract[0].type == 'TransferContract'
                 ) {
                     // console.log("TransferContract>>>>", tx?.raw_data.contract[0])
-                    if (tx) {
-                        fromAddress = await this.tronWeb.address.fromHex(
-                            tx.raw_data.contract[0].parameter.value.owner_address
-                        );
-                        blockId = 0
+                    fromAddress = await this.tronWeb.address.fromHex(
+                        tx.raw_data.contract[0].parameter.value.owner_address
+                    );
+                    blockId = 0
 
-                    }
                 } else if (
                     tx?.raw_data &&
                     tx?.raw_data.contract[0].type == 'TriggerSmartContract'
@@ -186,14 +184,10 @@ class NonEvmHelpers {
                     tx.raw_data.contract[0].type == 'TransferAssetContract'
                 ) {
                     console.log("TransferAssetContract>>>>", tx.raw_data.contract[0])
-
-                    if (tx) {
-                        fromAddress = await this.tronWeb.address.fromHex(
-                            tx.raw_data.contract[0].parameter.value.owner_address
-                        );
-                    }
-                    blockId = 0
-
+                    fromAddress = await this.tronWeb.address.fromHex(
+                        tx.raw_data.contract[0].parameter.value.owner_address
+                    );
+                    blockId = 0;
                 }
                 return { status: true, fromAddress: fromAddress, blockId: blockId };
             } else {
@@ -211,27 +205,20 @@ class NonEvmHelpers {
             await this.tronWeb.setAddress(trc20ContractAddress);
 
             // let contract = await this.tronWeb.contract().at(trc20ContractAddress);
-            let contract: any = await this.tronWeb.contract(config.TRON_ABI, trc20ContractAddress);
+            const contract: any = await this.tronWeb.contract(config.TRON_ABI, trc20ContractAddress);
 
-            const coin_name = await contract.name().call();
-            const coin_symbol = await contract.symbol().call();
+            const coinName = await contract.name().call();
+            const coinSymbol = await contract.symbol().call();
             const decimals = await contract.decimals().call();
 
             const data: any = {
-                name: coin_name,
-                symbol: coin_symbol,
+                name: coinName,
+                symbol: coinSymbol,
                 decimals: decimals.toString(),
             };
             if (decimals._hex != undefined) {
                 data.decimals = await this.tronWeb.toDecimal(decimals._hex);
-                data.decimals = data.decimals.toStringfy()
-                console.log("data.decimals>>>>>", data.decimals)
-
-            }
-            console.log("data.decimals>>>>>", data.decimals)
-
-            if (!data) {
-                return null;
+                data.decimals = data.decimals.toStringfy();
             }
             return data;
         } catch (error: any) {
@@ -243,8 +230,8 @@ class NonEvmHelpers {
         try {
 
             if (coin_family == 6) {
-                let token_data: any = await this.searchToken(address)
-                return Math.pow(10, parseInt(token_data?.decimals))
+                const tokenData: any = await this.searchToken(address)
+                return Math.pow(10, parseInt(tokenData?.decimals))
             } else {
                 return 0;
             }
@@ -258,7 +245,7 @@ class NonEvmHelpers {
     /** start solana functions */
     public async getUserSolanaBalance(wallet: string, inSolana: boolean): Promise<string | number> {
         try {
-            let balanceInWei = await this.connection.getBalance(new PublicKey(wallet));
+            const balanceInWei = await this.connection.getBalance(new PublicKey(wallet));
             if (inSolana == true) {
                 return Number(balanceInWei / 1000000000);
             }

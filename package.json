@@ -56,9 +56,7 @@
     "sequelize": "^6.17.0",
     "tronweb": "^5.2.0",
     "tronweb-typings": "^1.0.1",
-    "ts-node": "^10.1.0",
-    "web3": "^1.4.0",
-    "web3-utils": "^1.4.0"
+    "ts-node": "^10.1.0"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",

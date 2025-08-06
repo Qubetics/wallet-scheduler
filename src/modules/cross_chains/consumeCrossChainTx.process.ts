@@ -552,7 +552,7 @@ class CosnumeCrossChainTxProcess {
                   });
 
                   if (coinsData.added_by) {
-                    console.log("coin.added_by exist", coinsData.added_by);
+                    //console.log("coin.added_by exist", coinsData.added_by);
                     if (coinsData.added_by == "user") {
                       console.log("added by user");
                       const userExist: any =
