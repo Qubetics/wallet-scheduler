@@ -237,8 +237,8 @@ class PricesController {
         `${CURRENT_PRICE_COIN_COUNTER}`,
         nextCoinCounter.toString()
       );
-    } catch (error) {
-      console.error("fetchCmcPrice error", error);
+    } catch (error :any) {
+      console.error("fetchCmcPrice error", error?.message);
     }
   };
   // public fetchCmcPrice = async () => {
@@ -604,43 +604,7 @@ class PricesController {
       if (findCoinCounter) {
         coinLimitCount = Number(findCoinCounter);
       }
-      // let now = new Date();
-      // let subtractTime = new Date(now);
-      // // Calculate different time ranges
-      // if (type == "1d") {
-      //   subtractTime.setHours(subtractTime.getHours() - 4);
-      // } else if (type == "1w") {
-      //   subtractTime.setHours(subtractTime.getHours() - 6);
-      // } else if (type == "1m") {
-      //   subtractTime.setDate(subtractTime.getDate() - 1);
-      // } else {
-      //   subtractTime.setDate(subtractTime.getDate() - 3);
-      // }
-      // console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
-      /*let dbCoinrecords: any;
 
-      dbCoinrecords =
-        await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
-          where: {
-            // updated_at: { [Op.lt]: subtractTime },
-            type: type,
-            fiat_type: "USD",
-          },
-          order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
-          limit: limit,
-          offset: coin_limit_count,
-          logging: true,
-        });
-
-      console.log(
-        "dbCoinrecords.count :>> ",
-        dbCoinrecords.count,
-        "type :",
-        type
-      );
-      let groupedCount = dbCoinrecords.count; // This is an array of grouped results
-      let totalRecords = dbCoinrecords.rows.length; // Total number of unique groups (cmc_id)
-      if (dbCoinrecords.count == 0) {*/
       const totalCmcIds: number = await Coins.CoinsRead.count({
         distinct: true,
         col: 'cmc_id',
@@ -664,47 +628,13 @@ class PricesController {
             Sequelize.literal('cmc_id IS NOT NULL')
           ]
         },
-        // where: {
-        //   cmc_id: { [Op.ne]: 0, [Op.not]: null },
-        //   // cmc_id: { [Op.ne]: 0, },
-        //   // [Op.and]: [sequelize.literal(`(graph_data.updated_at IS NULL)`)],
-        // },
-        // include: [
-        //   {
-        //     model: CoinPriceInFiatGraph.CoinPriceInFiatGraphRead,
-        //     attributes: ["type", "updated_at"], // Specify the columns to return from the graph_data table
-        //     as: "graph_data",
-        //     where: {
-        //       type: type,
-        //       fiat_type: "USD",
-        //     },
-        //     required: false, // Set to false for LEFT JOIN
-        //   },
-        // ],
-        // raw: true,
         group: ["cmc_id"],
         order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
         limit: limit,
         offset: coinLimitCount,
-        logging: true,
+        logging: false,
       });
-      // const groupedCount: number = dbCoinrecords.count; // This is an array of grouped results
       const totalRecords: number = coinRecords ? coinRecords.length : 0; // Total number of unique groups (cmc_id)
-      // }
-
-      // if (!totalRecords) {
-      //   let counter = 0;
-      //   await redisClient.setKeyValuePair(
-      //     config.REDISKEYS.COIN_LIMIT_COUNTS,
-      //     `${type}_${GRAPH_DATA_COIN_COUNTER}`,
-      //     counter.toString()
-      //   );
-      //   return;
-      // }
-      // Access grouped rows (the data)
-      // const groupedRows = dbCoinrecords;
-
-      // Example: Iterate over groups
 
       if (totalRecords > 0) {
         await coinRecords.forEach((coin: any) => {
@@ -724,11 +654,6 @@ class PricesController {
         );
         const data = await rp(requestOptionsForListing);
         if (data) {
-          // let created_at;
-          // const currentUTCDate: string = new Date()
-          //   .toISOString()
-          //   .replace(/T/, " ")
-          //   .replace(/\..+/, "");
           for await (const id of cmcIds) {
             const fiat_type = code;
             let sparkline: any = [];
@@ -767,12 +692,6 @@ class PricesController {
                   data?.quote[code?.toUpperCase()] !== undefined &&
                   data?.quote[code?.toUpperCase()] !== null
                 ) {
-                  // created_at = new Date(
-                  //   data.quote[code?.toUpperCase()]?.timestamp
-                  // )
-                  //   .toISOString()
-                  //   .replace(/T/, " ")
-                  //   .replace(/\..+/, "");
                   return {
                     price: data.quote[code?.toUpperCase()].price || 0,
                     timestamp: data.quote[code?.toUpperCase()].timestamp || 0,
@@ -826,25 +745,10 @@ class PricesController {
                   latest_price_source: type,
                   fiat_type: fiat_type?.toUpperCase(),
                   type: type,
-                  // created_at,
-                  // updated_at: currentUTCDate,
                 });
               }
             } else {
               console.log('empty sparkline >>>', sparkline);
-              // const whereCond: any = {
-              //   cmc_id: id,
-              //   fiat_type: code,
-              //   type: type,
-              // };
-              // await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update(
-              //   {
-              //     updated_at: currentUTCDate,
-              //   },
-              //   {
-              //     where: whereCond,
-              //   }
-              // );
             }
           }
         }
@@ -853,9 +757,6 @@ class PricesController {
       /** update coins pagination */
 
       coinLimitCount = coinLimitCount + limit;
-      console.log('coinLimitCount >>>>', `${type}_${GRAPH_DATA_COIN_COUNTER}`, 'dddddddddddddddddddddddddddddddddddddddd', coinLimitCount);
-      console.log('totalCmcIds >>>>', 'dddddddddddddddddddddddddddddddddddddddd', totalCmcIds);
-
       const nextCoinCounter = coinLimitCount >= totalCmcIds ? 0 : coinLimitCount;
       await redisClient.setKeyValuePair(
         config.REDISKEYS.COIN_LIMIT_COUNTS,
@@ -907,64 +808,6 @@ class PricesController {
     }
   };
 
-  // private compare_update_prices = async (
-  //   sparkline: any,
-  //   recordExist: any,
-  //   id: number,
-  //   code: string,
-  //   type: string
-  // ) => {
-  //   if (!sparkline?.length) return sparkline;
-
-  //   const sparklineLatestRecord = sparkline[sparkline.length - 1]
-  //     ? sparkline[sparkline.length - 1]
-  //     : null;
-
-  //   const existingSparkline = recordExist.sparkline || [];
-  //   const cleanedData = existingSparkline.filter((item: any) => item !== null);
-  //   const existingLastRecord =
-  //     cleanedData.length > 0 ? cleanedData[cleanedData.length - 1] : null;
-  //   if (existingLastRecord && sparklineLatestRecord) {
-  //     const existingTimestamp = new Date(
-  //       existingLastRecord.timestamp
-  //     ).getTime();
-  //     const latestTimestamp = new Date(
-  //       sparklineLatestRecord.timestamp
-  //     ).getTime();
-
-  //     if (existingTimestamp > latestTimestamp) {
-  //       sparkline.push(existingLastRecord);
-  //       return sparkline; // Early return if we push existing record
-  //     }
-
-  //     const coinData = await Coins.CoinsRead.findOne({
-  //       attributes: ["coin_id"],
-  //       where: { cmc_id: id },
-  //     });
-
-  //     await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-  //       {
-  //         coin_id: coinData?.coin_id,
-  //         value: sparklineLatestRecord?.price || 0,
-  //         price_change_24h: sparklineLatestRecord?.percent_change_24h || 0,
-  //         price_change_percentage_24h:
-  //           sparklineLatestRecord?.percent_change_24h || 0,
-  //         volume_24h: sparklineLatestRecord?.volume_24h || 0,
-  //         latest_price: sparklineLatestRecord,
-  //         latest_price_source: type,
-  //       },
-  //       {
-  //         where: {
-  //           cmc_id: id,
-  //           fiat_type: code,
-  //         },
-  //       }
-  //     );
-  //   }
-
-  //   return sparkline;
-  // };
-
   public fetchCmcIds = async () => {
     try {
       const BATCH_SIZE = 10;
@@ -1009,11 +852,8 @@ class PricesController {
 
       if (data?.count > 0) {
         // Process coins in parallel with error handling for each
-        await Promise.all(data.rows.map(async (coin) => {
+        await Promise.all(data.rows.map(async (coin :any) => {
           try {
-            // const query_data = coin.token_address
-            //   ? `?address=${coin.token_address}`
-            //   : `?symbol=${coin.coin_symbol}`;
 
             const query_data = `?address=${coin.token_address}`;
 

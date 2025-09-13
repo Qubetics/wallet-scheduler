@@ -445,52 +445,7 @@ class CosnumeCrossChainTxProcess {
                     );
                   }
                 }
-                if (swftcCoin.contact !== null && swftcCoin.contact !== "") {
-                  /** User Solana token Balance */
-                  userBalance = await NonEvmHelper.getUserCRC20TokenBalance(
-                    swftcCoin.contact,
-                    destinationAddr
-                  );
-                } else {
-                  /** User Solana Balance */
-                  userBalance = Number(
-                    await NonEvmHelper.getUserSolanaBalance(
-                      destinationAddr,
-                      true
-                    )
-                  );
-                }
-              } else if (coinFamily == COIN_FAMILY.TRX) {
-                const transactionData: {
-                  status: boolean;
-                  fromAddress: string;
-                  blockId: number;
-                } = await non_evm_helper.getTransactionInfo(transactionId);
-                if (transactionData.status) {
-                  fromAddress = transactionData.fromAddress;
-                  blockId = transactionData.blockId;
-                  if (
-                    swftcCoin.contact !== null &&
-                    swftcCoin.contact !== ""
-                  ) {
-                    console.log("swftc_coin.contact >>>>>", swftcCoin.contact);
-                    const tronBal = await non_evm_helper.Fetch_Balance(
-                      destinationAddr,
-                      Boolean.true,
-                      swftcCoin.contact
-                    );
-                    userBalance = tronBal !== null ? Number(tronBal) : null;
-                  } else {
-                    const tronBal = await non_evm_helper.Fetch_Balance(
-                      destinationAddr,
-                      Boolean.false,
-                      swftcCoin.contact
-                    );
-                    userBalance = tronBal !== null ? Number(tronBal) : null;
-                  }
-                  transStatus = true;
-                }
-              }
+              } 
               console.log("trans_status >>>", transStatus);
               if (transStatus) {
                 const trnxType: string = "deposit";
@@ -782,7 +737,7 @@ class CosnumeCrossChainTxProcess {
     return chains[coinFamily] || null;
   }
 
-  public async moralisTradingview(data: MoralisData): Promise<void> {
+  public async moralisTradingview(data: any): Promise<void> {
     try {
       const chain = this.getChainName(data.coin_family);
       const apiUrl = this.buildApiUrl(
@@ -898,7 +853,7 @@ class CosnumeCrossChainTxProcess {
     }
   }
 
-  private async updateCoinStatus(data: MoralisData, status: number): Promise<void> {
+  private async updateCoinStatus(data: any, status: number): Promise<void> {
     await Coins.CoinsWrite.update(
       {
         is_on_trading_view: status,

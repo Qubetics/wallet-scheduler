@@ -1,46 +1,13 @@
 import axios from "axios";
-import TronWeb from 'tronweb';
 import { config } from "../../config";
-
 import { exponentialToDecimal } from "../common/globalFunctions";
 import { Boolean } from "../../constants";
-import { PublicKey, Connection } from "@solana/web3.js"
-import { AccountLayout } from "@solana/spl-token";
-const spltokenReg = require("@solana/spl-token-registry");
-import {
-    mplTokenMetadata,
-    fetchDigitalAsset,
-} from "@metaplex-foundation/mpl-token-metadata";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import { publicKey } from "@metaplex-foundation/umi";
-
 
 class NonEvmHelpers {
-    public TRX_FULLNODE: string = config.NODE.TRX_RPC_URL
     public BTC_RPC_URL: string = config.NODE.BTC_RPC_URL
     public tronWeb: any;
-    public connection: Connection;
-    public connectionNew: Connection;
-
     public config: any;
 
-    constructor() {
-        this.tronWeb = new TronWeb({
-            fullHost: this.TRX_FULLNODE,
-            headers: { apikey: config.NODE.TRX_API_KEY }
-        });
-
-        this.config = {
-            method: 'get',
-            headers: {
-                'apikey': `${config.NODE.BTC_API_KEY}`,
-                'Content-Type': 'application/json',
-            }
-        };
-        this.connection = new Connection(config.NODE.SOL_RPC_URL || '', 'confirmed');
-        this.connectionNew = new Connection(`https://api.tatum.io/v3/blockchain/node/solana-mainnet/REDACTED`, 'confirmed');
-
-    }
     /** start btc functions */
     public getTransactionById = async (transactionId: string) => {
         try {
@@ -162,22 +129,6 @@ class NonEvmHelpers {
                     const transactionInfo = await this.tronWeb.trx.getTransactionInfo(
                         tx.txID
                     );
-                    // console.log("transactionInfo>>>>>>>.", transactionInfo)
-                    // console.log("transactionInfo.logs>>>>>>>.", transactionInfo.log[0])
-                    // if (transactionInfo.log[0].topics[1]) {
-                    //     console.log("topics 1 exist")
-                    //     const fromAddressHex = transactionInfo.log[0].topics[1].substring(24, transactionInfo.log[0].topics[1].length);
-                    //     console.log("fromAddressHex>>>>>>>>>>>>", fromAddressHex)
-                    //     fromAddress = await this.tronWeb.address.fromHex('41' + fromAddressHex);
-                    // } else if (transactionInfo?.internal_transactions.length > 0) {
-                    //     const fromAddressHex = transactionInfo?.internal_transactions[0] ? transactionInfo?.internal_transactions[0]['caller_address'] : "INTERNAL";
-                    //     fromAddress = fromAddressHex !== 'INTERNAL' ? await this.tronWeb.address.fromHex(fromAddressHex) : fromAddressHex;
-                    // } else {
-                    //     console.log("topics 1 not exist")
-                    //     fromAddress = 'INTERNAL'
-                    // }
-                    console.log("fromAddress>>>>>>>>>>>>", fromAddress)
-
                     blockId = transactionInfo.blockNumber;
 
                 } else if (
@@ -201,30 +152,7 @@ class NonEvmHelpers {
     public async searchToken(
         trc20ContractAddress: string
     ) {
-        try {
-            await this.tronWeb.setAddress(trc20ContractAddress);
-
-            // let contract = await this.tronWeb.contract().at(trc20ContractAddress);
-            const contract: any = await this.tronWeb.contract(config.TRON_ABI, trc20ContractAddress);
-
-            const coinName = await contract.name().call();
-            const coinSymbol = await contract.symbol().call();
-            const decimals = await contract.decimals().call();
-
-            const data: any = {
-                name: coinName,
-                symbol: coinSymbol,
-                decimals: decimals.toString(),
-            };
-            if (decimals._hex != undefined) {
-                data.decimals = await this.tronWeb.toDecimal(decimals._hex);
-                data.decimals = data.decimals.toStringfy();
-            }
-            return data;
-        } catch (error: any) {
-            console.error("trigger smart contract error", error);
-            return null
-        }
+       
     }
     public async return_decimals(address: string, coin_family: number) {
         try {
@@ -237,46 +165,6 @@ class NonEvmHelpers {
             }
         } catch (err: any) {
             console.error("err in return_decimals", err);
-            return 0;
-        }
-    }
-    /** end tron functions */
-
-    /** start solana functions */
-    public async getUserSolanaBalance(wallet: string, inSolana: boolean): Promise<string | number> {
-        try {
-            const balanceInWei = await this.connection.getBalance(new PublicKey(wallet));
-            if (inSolana == true) {
-                return Number(balanceInWei / 1000000000);
-            }
-            return balanceInWei;
-        } catch (err) {
-            console.log("🔥 ~ ~ getUserSolanaBalance error", err);
-            return 0;
-        }
-    }
-
-    /* Get Wallet Toekn balance */
-    public async getUserCRC20TokenBalance(tokenAddress: string, walletAddress: string): Promise<number> {
-        try {
-            const walletPublicKey = new PublicKey(walletAddress);
-            const mintPublicKey = new PublicKey(tokenAddress);
-            const tokenAccounts = await this.connectionNew.getTokenAccountsByOwner(walletPublicKey, {
-                mint: mintPublicKey,
-            });
-            if (tokenAccounts.value?.length > 0) {
-                const tokenAccount = tokenAccounts.value[0].account;
-                const tokenAccountInfo = AccountLayout.decode(tokenAccount.data);
-                const amount = tokenAccountInfo.amount;
-                const mintInfo: any = await this.connectionNew.getParsedAccountInfo(mintPublicKey);
-                const decimals = mintInfo.value.data.parsed.info.decimals;
-                const balance = Number(amount) / (10 ** decimals);
-                return balance;
-            } else {
-                return 0;
-            }
-        } catch (error: any) {
-            console.log("🔥 ~ ~ getUserCRC20TokenBalance error", error);
             return 0;
         }
     }
@@ -364,34 +252,6 @@ class NonEvmHelpers {
         }
     };
 
-    public searchSolToken = async (token_address: string) => {
-        try {
-            const umi = createUmi(config.NODE.SOL_RPC_URL).use(mplTokenMetadata());
-            const myPublicKey = publicKey(token_address);
-            const asset = await fetchDigitalAsset(umi, myPublicKey);
-            const tokenData: any = {
-                name: asset?.metadata?.name,
-                symbol: asset?.metadata?.symbol,
-                decimals: asset?.mint?.decimals,
-            };
-            if (tokenData) {
-                return tokenData;
-            } else {
-                const tokenList = await new spltokenReg.TokenListProvider()
-                    .resolve()
-                    .then((tokens: any) => {
-                        return tokens.filterByClusterSlug("mainnet-beta").getList();
-                    });
-                const foundToken = await tokenList.find(
-                    (token: any) => token.address == token_address
-                );
-                return foundToken;
-            }
-        } catch (error) {
-            console.log("🔥 ~ ~ searchToken node.solana.helper.ts error", error);
-        }
-    };
-    /** end of solana functions */
 
 }
 

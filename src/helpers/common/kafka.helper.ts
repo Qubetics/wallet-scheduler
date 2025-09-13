@@ -1,4 +1,4 @@
-import { Kafka } from 'kafkajs';
+import { Kafka, KafkaConfig, logLevel } from 'kafkajs';
 import * as Interface from '../../interfaces/kafka.interface';
 import { config } from '../../config';
 
@@ -13,10 +13,10 @@ class KafkaHelper {
 
     async connect() {
         const KAFKA_BROKER = config.KAFKA_BROKER.split(',');
-        console.log('KAFKA_BROKER', KAFKA_BROKER);
-        const kafkaCrednetials: Interface.KafkaCrednetials = {
+        const kafkaCrednetials: KafkaConfig = {
             clientId: String(config.KAFKA_CLIENT_ID), // 'test'
             brokers: KAFKA_BROKER, // ['localhost:9092']
+            logLevel : logLevel.NOTHING
         };
         this.kafka = new Kafka(kafkaCrednetials);
         this.producer = await this.kafka.producer();

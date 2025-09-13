@@ -149,19 +149,13 @@ class UpdateBalanceController {
                     if (coin.coin_family == 2) {
                         const token_data: any = await blockchain_helper.searchTokenNew(coin.token_address, config.CONTRACT_ABI, this.Eth_Ether_Url)
                         decimals = Math.pow(10, parseInt(token_data?.decimals))
-                    } else if (coin.coin_family == 6) {
-                        const token_data: any = await non_evm_helper.searchToken(coin.token_address)
-                        decimals = Math.pow(10, parseInt(token_data?.decimals))
                     } else if (coin.coin_family == 1) {
                         const token_data: any = await blockchain_helper.searchTokenNew(coin.token_address, config.CONTRACT_ABI, this.Bsc_Ether_Url)
                         decimals = Math.pow(10, parseInt(token_data?.decimals))
                     } else if (coin.coin_family == 4) {
                         const token_data: any = await blockchain_helper.searchTokenNew(coin.token_address, config.CONTRACT_ABI, this.Pol_Ether_Url)
                         decimals = Math.pow(10, parseInt(token_data?.decimals))
-                    } else if (coin.coin_family == 5) {
-                        const token_data: any = await non_evm_helper.searchSolToken(coin.token_address)
-                        decimals = Math.pow(10, parseInt(token_data?.decimals))
-                    }
+                    } 
                     if (decimals > 0) {
                         await Coins.CoinsWrite.update({ decimals: decimals }, { where: { coin_id: coin.coin_id } });
 
@@ -183,12 +177,6 @@ class UpdateBalanceController {
 
                 }
             }
-            // if (coins.length < limit) {
-            //     await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, 'coin_decimals', '0')
-            // } else {
-            //     coin_limit_count += limit;
-            //     await redisClient.setKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, 'coin_decimals', coin_limit_count.toString())
-            // }
             console.log("\nEND")
             return true;
         } catch (err: any) {

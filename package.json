@@ -5,6 +5,7 @@
   "main": "index.cron.ts",
   "scripts": {
     "compile": "tsc",
+    "local": "nodemon --watch src --ext ts,js --exec ts-node src/index.cron.ts",
     "server": "nodemon build/index.cron.js",
     "dev": "concurrently \"npm run compile\" \"npm run server\"",
     "start": "rm -rf build && npm run compile && node build/index.cron.js "
@@ -53,8 +54,7 @@
     "redis": "^3.1.2",
     "request": "^2.88.2",
     "request-promise": "^4.2.6",
-    "sequelize": "^6.17.0",
-    "tronweb": "^5.2.0",
+    "sequelize": "^6.37.7",
     "tronweb-typings": "^1.0.1",
     "ts-node": "^10.1.0"
   },
