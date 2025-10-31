@@ -415,12 +415,12 @@ class CosnumeCrossChainTxProcess {
                   transaction.confirmations !== 2
                 ) {
                   transStatus = true;
-                }
-
-                const userBtcBaldata: number | null =
+                  fromAddress = transaction?.vin[0]?.addresses[0] ?? '';
+                  const userBtcBaldata: number | null =
                   await non_evm_helper.get_user_btc_balance(destinationAddr);
 
                 userBalance = userBtcBaldata ? Number(userBtcBaldata) : null;
+                }
                 /** for Tron */
               } else if (coinFamily == COIN_FAMILY.SOL) {
                 console.log("solana transaction");
