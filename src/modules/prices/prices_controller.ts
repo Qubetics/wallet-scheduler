@@ -1258,39 +1258,79 @@ class PricesController {
 
   public async updateFiatPrice() {
     try {
-      let findFiat = await CurrencyFiat.CurrencyFiatWrite.findAll();
-
-      let cryptoSymbols = [];
-      if (findFiat.length) {
-        for await (let coin of findFiat) {
-          let cmdId = coin.currency_code;
-          cryptoSymbols.push(cmdId);
-        }
+      const findFiat = await CurrencyFiat.CurrencyFiatWrite.findAll();
+  
+      if (!findFiat.length) {
+        console.log("No fiat currencies found in DB.");
+        return;
       }
-
-      let requestOptionsForListing = await cmcHelper.cmcFiatCurrencyData(
-        cryptoSymbols
-      );
+  
+      const cryptoSymbols = findFiat.map((coin) => coin.currency_code);
+  
+      const requestOptionsForListing = await cmcHelper.cmcFiatCurrencyData(cryptoSymbols);
       const result = await rp(requestOptionsForListing);
-
+  
       if (result && result.data) {
         const response = result.data["2781"];
-        for (let data of cryptoSymbols) {
-          await CurrencyFiat.CurrencyFiatWrite.update(
-            { price_in_usd: response.quote[`${data}`]?.price },
-            {
-              where: { currency_code: data },
-            }
-          );
+  
+        for (const data of cryptoSymbols) {
+          const price = response?.quote?.[data]?.price;
+  
+          if (price != null) {
+            await CurrencyFiat.CurrencyFiatWrite.update(
+              { price_in_usd: price },
+              { where: { currency_code: data } }
+            );
+          } else {
+            console.log(`Skipping ${data} — price is null or undefined`);
+          }
         }
       } else {
-        console.log("No Fiat Currency Found..");
+        console.log("No Fiat Currency data returned from provider.");
       }
     } catch (error) {
       console.log("::Error log:: updateFiatPrice :>> ", error);
       return false;
     }
   }
+  
+  
+  //old code  logic
+  // public async updateFiatPrice() {
+  //   try {
+  //     let findFiat = await CurrencyFiat.CurrencyFiatWrite.findAll();
+
+  //     let cryptoSymbols = [];
+  //     if (findFiat.length) {
+  //       for await (let coin of findFiat) {
+  //         let cmdId = coin.currency_code;
+  //         cryptoSymbols.push(cmdId);
+  //       }
+  //     }
+
+  //     let requestOptionsForListing = await cmcHelper.cmcFiatCurrencyData(
+  //       cryptoSymbols
+  //     );
+  //     const result = await rp(requestOptionsForListing);
+
+  //     if (result && result.data) {
+  //       const response = result.data["2781"];
+  //       for (let data of cryptoSymbols) {
+  //         await CurrencyFiat.CurrencyFiatWrite.update(
+  //           { price_in_usd: response.quote[`${data}`]?.price },
+  //           {
+  //             where: { currency_code: data },
+  //           }
+  //         );
+  //       }
+  //     } else {
+  //       console.log("No Fiat Currency Found..");
+  //     }
+  //   } catch (error) {
+  //     console.log("::Error log:: updateFiatPrice :>> ", error);
+  //     return false;
+  //   }
+  // }
 
   // public delete_graph_old_data = async (
   //   coin_family: string,
