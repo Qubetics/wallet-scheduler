@@ -7,7 +7,8 @@
     "compile": "tsc",
     "server": "nodemon build/index.cron.js",
     "dev": "concurrently \"npm run compile\" \"npm run server\"",
-    "start": "rm -rf build && npm run compile && node build/index.cron.js "
+    "start": "rm -rf build && npm run compile && node build/index.cron.js ",
+    "test": "tsc && node --test test/*.test.js"
   },
   "keywords": [
     "processes"

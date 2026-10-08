@@ -1,12 +1,12 @@
 import firebaseAdmin from 'firebase-admin';
-import { fcmServiceAccount } from "../../constants/firebase.admin.key";
+import { config } from "../../config";
 
 class PushNotification {
   public messaging: firebaseAdmin.messaging.Messaging;
   constructor() {
     (async () => {
       firebaseAdmin.initializeApp({
-        credential: firebaseAdmin.credential.cert(fcmServiceAccount),
+        credential: firebaseAdmin.credential.cert(config.FIREBASE_SERVICE_ACCOUNT),
       });
       this.messaging = firebaseAdmin.messaging();
     })();

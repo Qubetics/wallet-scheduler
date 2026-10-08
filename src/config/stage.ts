@@ -25,6 +25,8 @@ export const MAILGUN = {
 export const REDIS_CONN = zookeeperConfig.config.REDIS_CONN;
 
 export const FCM_SERVER_KEY = zookeeperConfig.config.FCM_SERVER_KEY;
+export const FIREBASE_SERVICE_ACCOUNT = zookeeperConfig.config.FIREBASE_SERVICE_ACCOUNT;
+export const TATUM_SOLANA_KEY = zookeeperConfig.config.TATUM_SOLANA_KEY;
 
 export const ETH_GAS_FEE_URL = zookeeperConfig.config.ETH.GAS_FEE_URL;
 export const ETH_GAS_FEE_API_KEY = zookeeperConfig.config.ETH.GAS_FEE_API_KEY;

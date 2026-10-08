@@ -38,7 +38,7 @@ class NonEvmHelpers {
             }
         };
         this.connection = new Connection(config.NODE.SOL_RPC_URL || '', 'confirmed');
-        this.connectionNew = new Connection(`https://api.tatum.io/v3/blockchain/node/solana-mainnet/REDACTED`, 'confirmed');
+        this.connectionNew = new Connection(`https://api.tatum.io/v3/blockchain/node/solana-mainnet/${config.TATUM_SOLANA_KEY}`, 'confirmed');
 
     }
     /** start btc functions */
