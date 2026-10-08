@@ -226,20 +226,6 @@ class NonEvmHelpers {
             return null
         }
     }
-    public async return_decimals(address: string, coin_family: number) {
-        try {
-
-            if (coin_family == 6) {
-                const tokenData: any = await this.searchToken(address)
-                return Math.pow(10, parseInt(tokenData?.decimals))
-            } else {
-                return 0;
-            }
-        } catch (err: any) {
-            console.error("err in return_decimals", err);
-            return 0;
-        }
-    }
     /** end tron functions */
 
     /** start solana functions */

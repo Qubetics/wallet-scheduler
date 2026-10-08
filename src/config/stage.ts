@@ -88,10 +88,6 @@ export const TRANSAK = {
     zookeeperConfig.config.TRANSAK_FIAT_CURRENCIES_URL,
 };
 
-export const APP = {
-  QUBETICS_URL: zookeeperConfig.config.QUBETICS_URL,
-};
-
 export const TOKENS = {
   ETH_TOKEN_TYPE: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE_ETH}`,
   ETH_TOKEN_TYPE721: `${name}_${zookeeperConfig.config.SERVER}_${zookeeperConfig.config.TOKEN_TYPE721_ETH}`,
