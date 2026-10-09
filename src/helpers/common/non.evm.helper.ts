@@ -92,8 +92,6 @@ class NonEvmHelpers {
     public async TRC20_Token_Balance(address: string, contract_address: string | null | undefined) {
         try {
             await this.tronWeb.setAddress(contract_address);
-            //fixed balance of tron
-            // let contract: any = await this.tronWeb.contract().at(contract_address);
             let contract: any = await this.tronWeb.contract(config.TRON_ABI, contract_address);
 
             let decimals: number = await contract.decimals().call();
@@ -200,7 +198,6 @@ class NonEvmHelpers {
         try {
             await this.tronWeb.setAddress(trc20ContractAddress);
 
-            // let contract = await this.tronWeb.contract().at(trc20ContractAddress);
             let contract: any = await this.tronWeb.contract(config.TRON_ABI, trc20ContractAddress);
 
             const coin_name = await contract.name().call();
