@@ -29,9 +29,6 @@ class RedisServer {
           console.error('redis set string data error...', err)
         }
       });
-      // if (expiryInSeconds) {
-      //    this.client_write.EXPIRE(key, expiryInSeconds);
-      // }
     } catch (err: any) {
       console.error('💥 ~ ~ set_hash_table error');
       throw err;
