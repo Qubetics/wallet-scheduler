@@ -52,5 +52,10 @@
     "@types/crypto-js": "^4.2.2",
     "@types/node-zookeeper-client": "^0.2.8",
     "typescript": "5.0.4"
+  },
+  "overrides": {
+    "rpc-websockets": {
+      "uuid": "^11.1.0"
+    }
   }
 }
