@@ -19,27 +19,9 @@ class RedisServer {
     const value = await getAsync(keyName, field.toUpperCase() || '');
     return value;
   }
-  public deleteKeyValuePair = async (keyName: string, field: string) => {
-    this.client_write.hdel(keyName, field, function (err) {
-      if (err) {
-        throw err;
-      }
-      return true;
-    });
-  }
   public async setKeyValuePair(keyName: string, field: string, value: string) {
     this.client_write.hset(keyName, field.toUpperCase(), value);
   }
-  public async setRedisSting(key: string, value: number) {
-    this.client_write.set(key, value.toString());
-  }
-  public async getRedisSting(key: string) {
-    const getAsync = promisify(this.client_write.get).bind(this.client_write);
-    const value = await getAsync(key);
-    if (value) return value;
-    return null;
-  }
-
 }
 
 const redisClient = new RedisServer();
