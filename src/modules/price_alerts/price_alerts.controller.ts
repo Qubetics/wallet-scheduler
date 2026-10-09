@@ -13,7 +13,6 @@ class PriceAlertsController {
   /**
    * send price alerts
    */
-  // public sendPriceAlerts = async (coin_family: number) => {
   public sendPriceAlerts = async (
     coin_id: number,
     fiat_currency: string,
@@ -35,16 +34,8 @@ class PriceAlertsController {
             {
               model: Coins.CoinsRead,
               attributes: ["coin_id", "coin_symbol"],
-              // where: { coin_family: coin_family },
               where: { coin_status: 1 },
               as: "coin_detail",
-              // include: [{
-              //     model: CoinPriceInFiat.CoinPriceInFiatRead,
-              //     attributes: ['value'],
-              //     where: Sequelize.literal('`coin_detail->coin_price_data`.`fiat_type`=`price_alerts`.`fiat_type`'),
-              //     as: 'coin_price_data',
-              //     required: true
-              // }],
               required: true,
             },
           ],
@@ -53,7 +44,6 @@ class PriceAlertsController {
             coin_id: coin_id,
             fiat_type: fiat_currency,
           },
-          // logging: true
         }
       );
       let currentUTCDate: string = new Date()
@@ -62,20 +52,7 @@ class PriceAlertsController {
         .replace(/\..+/, "");
       if (price_alert_data) {
         for await (let alert of price_alert_data) {
-          // let coin = await CoinPriceInFiat.CoinPriceInFiatRead.findOne({
-          //     attributes: ['value'],
-          //     where: {
-          //         coin_id: alert.coin_id,
-          //         fiat_type: alert.fiat_type,
-          //     },
-          //     raw: true,
-          //     // logging: true
-          // });
-          // if (!coin) {
-          //     throw new Error('Coin does not exist.');
-          // }
 
-          // if (alert.coin_detail.coin_price_data.value && alert.price && alert.coin_detail.coin_price_data.value > alert.price && alert.percentage > 0) {
           if (
             updated_price &&
             alert.price &&
@@ -137,7 +114,6 @@ class PriceAlertsController {
               { status: "sent" },
               { where: { id: alert.id } }
             );
-            // } else if (alert.coin_detail.coin_price_data.value && alert.price && alert.coin_detail.coin_price_data.value < alert.price && alert.percentage < 0) {
           } else if (
             updated_price &&
             alert.price &&
@@ -188,8 +164,6 @@ class PriceAlertsController {
               notification_type: NotificationTypes.ALERT,
               tx_type: "ALERT",
               alert_price: alert.percentage,
-              //   created_at: Date,
-              //   updated_at: Date,
             };
             if (
               typeof deviceToken?.device_token != "undefined" &&
@@ -204,7 +178,6 @@ class PriceAlertsController {
               { where: { id: alert.id } }
             );
           }
-          // }
         }
       }
       return true;

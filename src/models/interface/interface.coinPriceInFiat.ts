@@ -16,15 +16,6 @@ export interface CoinPriceInFiatModel {
   rank: number;
   volume_24h: number;
   max_supply: number;
-  // roi?: number;
-  // open?: number;
-  // high?: number;
-  // average?: number;
-  // close?: number;
-  // low?: number;
-  // change_price?: number;
   latest_price: string | null;
   latest_price_source: string | null;
-  // created_at: string | null;
-  // updated_at: string | null;
 }

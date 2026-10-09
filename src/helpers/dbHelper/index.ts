@@ -5,7 +5,6 @@ import { CoinModel } from "../../models/interface/interface.coins";
 import { NotificationModel } from "../../models/model/index";
 import { config } from "../../config";
 import { FCMObject } from "../../interfaces/notifications.interfaces";
-// var FCM = require('fcm-node');
 import settings_queries from './settings';
 export { settings_queries }
 
@@ -54,7 +53,6 @@ class DbHelper {
   }
 
 
-
   /**
    * get user device tokens
    * @param walletAddress
@@ -86,7 +84,6 @@ class DbHelper {
     });
     let newValue = [];
     for await (let deviceToken of deviceTokensData) {
-      // console.log("deviceToken:", deviceToken.device_token);
       newValue.push(deviceToken.device_token);
     }
     if (newValue.length > 0) return { device_token: newValue as string[] };
@@ -103,72 +100,6 @@ class DbHelper {
       return false;
     }
   }
-  // public async send_fcm_push_notification(to_user_id: number, object: FCMObject) {
-  //   let deviceTokens: any = await DeviceToken.DeviceTokenRead.findAll({
-  //     attributes: ["device_token", "user_id"],
-  //     where: {
-  //       push: 1,
-  //       user_id: to_user_id
-  //     },
-  //     order: [
-  //       ["updated_at", "DESC"],
-  //       ['id', 'DESC']
-  //     ],
-  //     group: ['device_token'],
-  //     raw: true
-  //   })
-  //   let device_tokens = [];
-  //   for await (let deviceToken of deviceTokens) {
-  //     device_tokens.push(deviceToken.device_token);
-  //   }
-  //   let serverKey: string = config.FCM_SERVER_KEY;
-  //   if (device_tokens && serverKey) {
-  //     let fcm = new FCM(serverKey);
-  //     let message: any;
-
-  //     if (Array.isArray(device_tokens)) {
-  //       message = {
-  //         registration_ids: device_tokens,
-  //         collapse_key: "type_a",
-  //         notification: {
-  //           title: object.title,
-  //           body: object.details,
-  //           sound: 'default'
-  //         },
-  //         data: {
-  //           body: object.details,
-  //           title: object.title,
-  //           announcement_title: object.title,
-  //           announcement_message: object.details
-  //         }
-  //       }
-  //     } else {
-  //       message = {
-  //         registration_ids: device_tokens,
-  //         collapse_key: "type_a",
-  //         notification: {
-  //           title: object.title,
-  //           body: object.details,
-  //           sound: 'default'
-  //         },
-  //         data: {
-  //           body: object.details,
-  //           title: object.title,
-  //           announcement_title: object.title,
-  //           announcement_message: object.details
-  //         }
-  //       }
-  //     }
-  //     fcm.send(message, function (err: any, messageId: number) {
-  //       if (err) {
-  //         console.error("Something has gone wrong!", err);
-  //       } else {
-  //         console.debug(`fcm push notification >>`, messageId);
-  //       }
-  //     });
-
-  //   }
-  // };
 
 
   /**

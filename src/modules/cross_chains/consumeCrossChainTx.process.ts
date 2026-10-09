@@ -1,6 +1,5 @@
 import axios from "axios";
 import { config } from "../../config";
-// import { RabbitMq } from '../../helpers/common/rabbitmq.helper';
 import etherJs from "../../helpers/common/web3.helper";
 import blockchain_helper from "../../helpers/common/blockchain.helper";
 import non_evm_helper from "../../helpers/common/non.evm.helper";
@@ -74,10 +73,6 @@ class CosnumeCrossChainTxProcess {
         console.log("🔥 ~ startBlockTxQueue consumer error", err);
       });
 
-    // await RabbitMq.consumeQueue(
-    //     config.PENDING_CROSS_CHAIN_TX_TOPIC || '',
-    //     this.getTx
-    // )
   }
   public async getTx(data: {
     id: number;
@@ -307,7 +302,6 @@ class CosnumeCrossChainTxProcess {
 
           if (depositQuery) {
             console.log("cross chain  456>>>>>>>>>>>>>>>>>.");
-            // let depositAddressData = JSON.parse(depositQuery);
             let amount = res_data.receiveCoinAmt;
             let transactionId = res_data.transactionId;
             let tran_exist: any = await TrnxHistoryModel.findOne({
@@ -343,7 +337,6 @@ class CosnumeCrossChainTxProcess {
                 const transactionReceipt = await ether_object.getTransactionReceipt(
                   transactionId
                 );
-                // console.log('transactionReceipt >>>', transactionReceipt);
                 if (
                   transactionReceipt &&
                   transactionReceipt?.status &&
@@ -355,7 +348,6 @@ class CosnumeCrossChainTxProcess {
                   if (transaction) {
                     from_address = transactionReceipt.from || '';
 
-                    // let gasReverted: BigNumber | undefined = new BigNumber(0);
                     const gasUsed: BigNumber = new BigNumber(transactionReceipt?.gasUsed?.toString() || "0");
 
                     const gasPrice: BigNumber = new BigNumber(transaction.gasPrice?.toString() || "0");
@@ -394,16 +386,6 @@ class CosnumeCrossChainTxProcess {
                 let transaction = await non_evm_helper.getTransactionById(
                   transactionId
                 );
-                // let btc_config: any = {
-                //     method: 'get',
-                //     url: `${config.NODE.BTC_RPC_URL}api/v2/tx/${transactionId}`,
-                //     headers: {
-                //         'apikey': `${config.NODE.BTC_API_KEY}`,
-                //         'Content-Type': 'application/json',
-                //     }
-                // };
-                // const response = await axios(btc_config);
-                //let transaction = response.data;
                 if (
                   transaction.confirmations != undefined &&
                   transaction.confirmations !== 2
@@ -527,7 +509,6 @@ class CosnumeCrossChainTxProcess {
                   data.order_id,
                   to_user_id
                 );
-                // console.log('dddddddddddddddddddddddddddddd>>>>');
                 let wallet_data_exist: any = await Wallets.WalletRead.findOne({
                   attributes: ["wallet_id"],
                   where: {
@@ -535,7 +516,6 @@ class CosnumeCrossChainTxProcess {
                     wallet_address: destinationAddr,
                   },
                   raw: true,
-                  // logging: true
                 });
                 console.log("wallet_data_exist>>>>", wallet_data_exist);
                 if (!wallet_data_exist) {
@@ -546,23 +526,15 @@ class CosnumeCrossChainTxProcess {
                     limit: 1,
                     raw: true,
                   });
-                  // console.log("balance>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>", userBalance)
                   await Wallets.WalletWrite.create({
                     user_id: walletData.user_id,
-                    // email: walletData.email,
-                    // login_type: walletData.login_type,
-                    // social_id: walletData.social_id,
                     wallet_name: walletData.wallet_name,
                     wallet_address: walletData.wallet_address,
                     coin_id: coins_data.coin_id,
                     coin_family: coin_family,
                     balance: userBalance || 0,
-                    // balance_blocked: walletData.balance_blocked,
-                    // user_withdraw_limit: walletData.user_withdraw_limit,
                     default_wallet: walletData.default_wallet,
-                    // is_verified: walletData.is_verified,
                     status: 1,
-                    // is_deleted: walletData.is_deleted,
                     sort_order: null,
                     is_private_wallet: walletData.is_private_wallet,
                   });
@@ -600,7 +572,6 @@ class CosnumeCrossChainTxProcess {
                     console.log("coin added by admin");
                   }
                 } else {
-                  // console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>balance>>>>>>>>>", userBalance)
                   if (userBalance !== null) {
                     await Wallets.WalletWrite.update(
                       {
@@ -633,8 +604,6 @@ class CosnumeCrossChainTxProcess {
                   let notificationData: any = {
                     message: notiMsg,
                     amount: Number(amount),
-                    // alert_price: null,
-                    // fiat_type: null,
                     from_user_id: 0,
                     to_user_id: to_user_id,
                     notification_type: "Deposit",
@@ -643,10 +612,8 @@ class CosnumeCrossChainTxProcess {
                     coin_symbol: coin_symbol,
                     coin_family: coin_family,
                     coin_id: coins_data.coin_id,
-                    // resent_count: null,
                     view_status: null,
                     state: "sent",
-                    // coin_price_in_usd: null,
                     wallet_address: destinationAddr,
                     created_at: new Date(),
                     updated_at: new Date(),
@@ -692,10 +659,8 @@ class CosnumeCrossChainTxProcess {
             console.log("depositQuery address found >>>>>>>>>.", depositQuery);
           }
         } else {
-          // console.log('swftc_coin not found >>>>>>>>>.', swftc_coin);
         }
       } else {
-        // console.log('res_data.detailState >>>>>>>>>.', res_data?.detailState);
         if (
           res_data?.detailState == SWFTC_RESPONSE.WAIT_DEPOSIT ||
           res_data?.detailState == SWFTC_RESPONSE.WAIT_PUSH ||
@@ -935,4 +900,3 @@ class CosnumeCrossChainTxProcess {
 
 const cosnumeCrossChainTxProcess = new CosnumeCrossChainTxProcess();
 export default cosnumeCrossChainTxProcess;
-//export const cosnumeCrossChainTxProcess = new CosnumeCrossChainTxProcess();

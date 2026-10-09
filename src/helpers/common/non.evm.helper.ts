@@ -1,15 +1,11 @@
 import axios from "axios";
-// import Web3 from "web3";
 import TronWeb from 'tronweb';
 import { config } from "../../config";
 
 import { exponentialToDecimal } from "../common/globalFunctions";
-// import { CoinModel } from "../../models/interface/interface.coins";
 import { Boolean } from "../../constants";
 import { PublicKey, Connection } from "@solana/web3.js"
 import { AccountLayout } from "@solana/spl-token";
-// const soltokenbalance = require('soltokenbalance');
-// const solTokenObj = new soltokenbalance(config.NODE.SOL_RPC_URL);
 
 class NonEvmHelpers {
     public TRX_FULLNODE: string = config.NODE.TRX_RPC_URL
@@ -128,7 +124,6 @@ class NonEvmHelpers {
         let blockId: number = 0
         try {
             const transaction: any = await this.tronWeb.trx.getTransaction(transactionId);
-            // console.log("tramnsaction >>>>>>>>>>>>>>>>>>>>", transaction)
             let tx: any = transaction;
             if (tx.ret.length > 0 && tx.ret[0].contractRet == 'SUCCESS') {
                 if (
@@ -192,11 +187,9 @@ class NonEvmHelpers {
         trc20ContractAddress: string
     ) {
         try {
-            // console.log("trc20ContractAddress>>", trc20ContractAddress)
             await this.tronWeb.setAddress(trc20ContractAddress);
 
             let contract = await this.tronWeb.contract().at(trc20ContractAddress);
-            // console.log("contract>>", contract)
             const coin_name = await contract.name().call();
             const coin_symbol = await contract.symbol().call();
             const decimals = await contract.decimals().call();
@@ -215,25 +208,8 @@ class NonEvmHelpers {
             console.log("data.decimals>>>>>", data.decimals)
 
             if (!data) {
-                // let trc10ContractAddress: any = trc20ContractAddress
-                // contract = await this.tronWeb.trx.getTokenByID(trc10ContractAddress);
-                // if (contract) {
-                //     const name = contract.name;
-                //     console.log("name: ", name);
 
-                //     const symbol = contract.abbr;
-                //     console.log("symbol: ", symbol);
 
-                //     const decimals =
-                //         contract.precision == undefined ? 1 : contract.precision;
-                //     console.log("decimals: ", decimals);
-
-                //     const data: any = {
-                //         decimals,
-                //         name,
-                //         symbol,
-                //     };
-                // }
                 return null;
             }
             return data;
@@ -249,7 +225,6 @@ class NonEvmHelpers {
                 let token_data: any = await this.searchToken(address)
                 return Math.pow(10, parseInt(token_data?.decimals))
             } else {
-                // console.log("Invalid Coin_Family")
                 return 0;
             }
         } catch (err: any) {
@@ -293,8 +268,6 @@ class NonEvmHelpers {
                 return 0;
             }
 
-            // let tokenBalance = await solTokenObj.tokenBalance(walletAddress, tokenAddress);
-            // return tokenBalance;
         } catch (error: any) {
             console.log("🔥 ~ ~ getUserCRC20TokenBalance error", error);
             return 0;

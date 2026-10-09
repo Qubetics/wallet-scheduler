@@ -3,7 +3,6 @@ import { promisify } from "util";
 import { config } from "../../config";
 
 class RedisServer {
-  // public client_read: redis.RedisClient;
   public client_write: redis.RedisClient;
 
   constructor() {
@@ -13,7 +12,6 @@ class RedisServer {
   public async initiateConnection(): Promise<void> {
     this.client_write = redis.createClient({ url: config.REDIS_CONN });
     this.client_write.on("connect", () => {
-      // console.log("Connected to redis client successfully");
     });
   }
   public async getKeyValuePair(keyName: string, field: string) {

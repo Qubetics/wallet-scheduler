@@ -1,17 +1,10 @@
 import { NotificationInterface } from "../../interfaces/notifications.interfaces";
 import { config } from "../../config";
 import { DeviceToken } from "../../models/model";
-// import dbHelper from "../dbHelper";
-// import axios from "axios";
-// import { EthHelper } from "../../modules/on_off_ramps/ethhelper";
-// import { bnbHelper } from "../../modules/on_off_ramps/bnbHelper";
-// import { NonEvmHelper } from "../../modules/on_off_ramps/btc_helper";
-// import { Tron_Helper } from "../../modules/on_off_ramps/tron_helper";
 import { pushNotification } from "./push_notification";
 import { Op } from "sequelize";
 
 let BigNumber = require("bignumber.js");
-// var FCM = require("fcm-node");
 
 export const bigNumberSafeMath = function (
   c: string,
@@ -40,7 +33,6 @@ export const bigNumberSafeMath = function (
       rtn = a.dividedBy(b);
       break;
     default:
-      //operator = operation;
       break;
   }
   return rtn;
@@ -110,14 +102,12 @@ export const GetDeviceTokens = async function GetDeviceTokens(user_id: number, a
           [Op.like]: address,
         },
         coin_family: coin_family,
-        // user_id: user_id,
         push: 1,
       },
       order: [
         ["updated_at", "DESC"],
         ["id", "DESC"],
       ],
-      // limit: 3,
       raw: true,
     });
   } catch (error: any) {
@@ -129,12 +119,7 @@ export const GetDeviceTokens = async function GetDeviceTokens(user_id: number, a
 export const sendNotification = async function sendNotification(
   devices: NotificationInterface
 ) {
-  // console.log('devices >>>>>>>>', devices)
   var chat_thread = devices.thread == undefined ? "" : devices.thread;
-  // var serverKey = config.FCM_SERVER_KEY;
-  // console.log("serverKey >>>>>", serverKey);
-  // var fcm = new FCM(serverKey);
-  // console.log("FCM connection >>>>", fcm);
   var fromUserId =
     devices.from_user_id == undefined ? "" : devices.from_user_id;
   var userCoinId =
@@ -143,7 +128,6 @@ export const sendNotification = async function sendNotification(
   var walletAddress = devices.wallet == undefined ? "" : devices.wallet;
   var message = {};
   if (Array.isArray(devices.token)) {
-    // console.log('devices.token >>>', devices.token);
 
     message = {
       deviceTokens: devices.token,
@@ -168,7 +152,6 @@ export const sendNotification = async function sendNotification(
       },
     };
 
-    // console.log(message);
   } else {
     message = {
       deviceTokens: devices.token,
@@ -192,19 +175,9 @@ export const sendNotification = async function sendNotification(
       },
     };
 
-    // console.log(message);
   }
 
   await pushNotification.sendNewNotification(message);
 
-  //promise style
-  // fcm.send(message, function (err: Error, messageId: number) {
-  //   if (err) {
-  //     console.error("Something has gone wrong!", err);
-  //   } else {
-  //     console.log("Sent with message ID: ", messageId);
-  //   }
-  // });
 };
-
 

@@ -2,13 +2,11 @@ import zookeeperConfig from "../helpers/common/zookeeper.helper";
 const name = "qubetics";
 export const APP_NAME = zookeeperConfig.config.APP_NAME;
 export const SERVER = zookeeperConfig.config.SERVER;
-// export const PORT = zookeeperConfig.config.PORT;
 export const DB_USER = zookeeperConfig.config.DB_USER;
 export const DB_HOST_READ = zookeeperConfig.config.DB_HOST_READ;
 export const DB_HOST_WRITE = zookeeperConfig.config.DB_HOST_WRITE;
 export const DB_DATABASE = zookeeperConfig.config.DB_NAME;
 export const DB_PASSWORD = zookeeperConfig.config.DB_PASSWORD;
-// export const DB_OTC_DATABASE = zookeeperConfig.config.DB_OTC_DATABASE;
 export const DB_PORT = zookeeperConfig.config.DB_PORT;
 export const DBSECRET = zookeeperConfig.config.DBSECRET;
 export const RABBIT_MQ = zookeeperConfig.config.RABBIT_MQ;
@@ -24,9 +22,6 @@ export const MAILGUN = {
   MAILGUN_BASE_URL: zookeeperConfig.config.MAILGUN_BASE_URL,
 };
 
-// export const COIN_LIMIT_COUNT_IN_CMC_PRICE = zookeeperConfig.config.COIN_LIMIT_COUNT_IN_CMC_PRICE;
-
-// export const ETH_NODE = zookeeperConfig.config.ETH_NODE;
 
 export const REDIS_CONN = zookeeperConfig.config.REDIS_CONN;
 
@@ -45,11 +40,6 @@ export const REDISKEYS = {
   COIN_LIMIT_COUNT_FIELD: zookeeperConfig.config.COIN_LIMIT_COUNT_FIELD,
   ALL_PROCESSES: zookeeperConfig.config.ALL_PROCESSES,
 };
-// export const ALCHEMY = {
-//     APP_ID: zookeeperConfig.config.APP_ID,
-//     APPSECRET: zookeeperConfig.config.APPSECRET,
-//     ALCHEMY_BASE_URL: zookeeperConfig.config.ALCHEMY_BASE_URL
-// }
 export const CMC_PRODUCT = {
   COIN_ZONE_URL: zookeeperConfig.config.COIN_ZONE.URL,
   COIN_ZONE_KEY: zookeeperConfig.config.COIN_ZONE.KEY,
