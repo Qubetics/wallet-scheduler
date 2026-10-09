@@ -1,1 +1,1 @@
-# Qubetic Crons Processes
+# Qubetics Crons Processes
