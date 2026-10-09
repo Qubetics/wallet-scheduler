@@ -119,15 +119,8 @@ class UpdateBalanceController {
 
     public updateCoinDecimals = async () => {
         try {
-            // let coin_limit_count = 0;
             const limit = 25;
-            // const findCoinCounter = await redisClient.getKeyValuePair(config.REDISKEYS.COIN_LIMIT_COUNTS, 'coin_decimals')
-            // console.log("🚀 ~ updateCoinDecimals ~ findCoinCounter:", findCoinCounter)
 
-            // if (findCoinCounter) {
-            //     coin_limit_count = Number(findCoinCounter);
-            // }
-            // console.log("🚀 ~ updateCoinDecimals ~ :", coin_limit_count)
             const coins: any = await Coins.CoinsRead.findAll({
                 attributes: ['coin_id', 'is_token', 'token_address', 'coin_family', 'decimals', 'token_type', 'coin_symbol', 'added_by', 'for_swap'],
                 where: {
@@ -170,7 +163,6 @@ class UpdateBalanceController {
                             added_by: coin.added_by,
                             for_swap: coin.for_swap
                         }
-                        // await WalletHelper.update_token_in_redis(coinData, 0);
                         await this.update_token_in_redis_hash(redisCoinData)
 
                     }

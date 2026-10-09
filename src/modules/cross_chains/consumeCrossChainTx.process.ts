@@ -191,44 +191,7 @@ class CosnumeCrossChainTxProcess {
             });
             console.log("Update in redis");
 
-            // const nftTokenType: any =
-            //   coinFamily == 1
-            //     ? TOKENS.BEP721
-            //     : coinFamily == 2 || coinFamily == 4
-            //       ? TOKENS.ERC721
-            //       : TOKENS.ERC721;
 
-            // const tokens: any = await Coins.CoinsRead.findAll({
-            //   attributes: [
-            //     "coin_id",
-            //     "coin_name",
-            //     "coin_symbol",
-            //     "coin_image",
-            //     "coin_family",
-            //     "coin_status",
-            //     "is_token",
-            //     "token_type",
-            //     "decimals",
-            //     "cmc_id",
-            //     "is_on_cmc",
-            //     "usd_price",
-            //     "token_abi",
-            //     "token_address",
-            //     "for_swap",
-            //     "added_by",
-            //     "created_at",
-            //     "updated_at",
-            //   ],
-            //   where: {
-            //     coin_status: 1,
-            //     coin_family: coinFamily,
-            //     [Op.or]: [
-            //       { token_type: { [Op.ne]: nftTokenType } },
-            //       { token_type: null },
-            //     ],
-            //   },
-            //   raw: true,
-            // });
             const redisCoinData = {
               coin_id: coinsData?.coin_id,
               is_token: coinsData?.is_token,
@@ -303,16 +266,11 @@ class CosnumeCrossChainTxProcess {
               destinationAddr.toUpperCase()
             );
           } else if (coinFamily == COIN_FAMILY.BNB) {
-            // console.log(
-            //   "${config.BSC_WALLET_ADDRESS",
-            //   config.BSC_WALLET_ADDRESS
-            // );
             etherObject = this.bscEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.BSC_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
-            // console.log("depositQuery", depositQuery);
           } else if (coinFamily == COIN_FAMILY.TICS) {
             etherObject = this.ticsEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
@@ -519,7 +477,6 @@ class CosnumeCrossChainTxProcess {
                   });
 
                   if (coinsData.added_by) {
-                    //console.log("coin.added_by exist", coinsData.added_by);
                     if (coinsData.added_by == "user") {
                       console.log("added by user");
                       const userExist: any =

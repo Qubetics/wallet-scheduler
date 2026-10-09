@@ -35,14 +35,6 @@ const dataObj = {
     type: DataTypes.STRING,
     allowNull: true,
   },
-  // created_at: {
-  //   type: DataTypes.DATE,
-  //   allowNull: true,
-  // },
-  // updated_at: {
-  //   type: DataTypes.DATE,
-  //   allowNull: true,
-  // },
 };
 
 const dataObjIndex = {

@@ -26,9 +26,7 @@ class CronJobs {
     this.updateCmcIds();
 
     /** Graph data */
-    // this.updateFiatCoinPriceCron();
     this.updateFiatCoinPriceCronV2();
-    // this.updateFiatCoinPriceCronTics();
 
     this.getCoinGraphDataDaily();
     this.getCoinGraphDataWeekly();
@@ -46,15 +44,12 @@ class CronJobs {
 
     this.updateFiatPrice();
 
-    // this.updateTicsPrice();
-    // this.deleteTicsDailyTablePrice();
 
     /* for SwftCoin (SWFTC) */
     this.swftcCoinList();
 
     /* Announcement notification */
     this.announcementNotification();
-    // this.updateCoinDecimals();
   }
 
   public updateEthGasPriceCron = async () => {
@@ -77,7 +72,6 @@ class CronJobs {
 
   public updateCmcIds = async () => {
     schedule.scheduleJob("*/25 * * * * *", async function () {
-      // await PricesController.fetchCmcIds();
       await PricesController.fetchCmcIdsBySymbol();
     });
   };
