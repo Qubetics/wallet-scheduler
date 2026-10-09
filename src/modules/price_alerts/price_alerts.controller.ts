@@ -1,4 +1,3 @@
-import { Coins, PriceAlerts } from "../../models/model/index";
 
 class PriceAlertsController {
   constructor() {}
