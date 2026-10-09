@@ -74,16 +74,6 @@ export const BSC_WALLET_ADDRESS = `${name}_${zookeeperConfig.config.SERVER}_${zo
 export const PENDING_CROSS_CHAIN_TX_GROUP_ID =
   zookeeperConfig.config.PENDING_CROSS_CHAIN_TX_GROUP_ID;
 
-export const TRANSAK = {
-  TRANSAK_URL: zookeeperConfig.config.TRANSAK_URL,
-  TRANSAK_REFRESH_TOKEN_URL: zookeeperConfig.config.TRANSAK_REFRESH_TOKEN_URL,
-  TRANSAK_API_SECRET: zookeeperConfig.config.TRANSAK_APP_SECRET,
-  TRANSAK_API_KEY: zookeeperConfig.config.TRANSAK_API_KEY,
-  TRANSAK_UPDATE_WEBHOOK_URL: zookeeperConfig.config.TRANSAK_UPDATE_WEBHOOK_URL,
-  TRANSAK_FIAT_CURRENCIES_URL:
-    zookeeperConfig.config.TRANSAK_FIAT_CURRENCIES_URL,
-};
-
 export const APP = {
   QUBETICS_URL: zookeeperConfig.config.QUBETICS_URL,
 };
