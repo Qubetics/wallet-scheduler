@@ -451,7 +451,6 @@ class PricesController {
               required: false, // Set to false for LEFT JOIN
             },
           ],
-          // raw: true,
           group: ["cmc_id"],
           order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
           limit: limit,
@@ -970,7 +969,6 @@ class PricesController {
           "pair_address",
         ],
         where: {
-          // is_token: { [Op.ne]: null },     //      old check
           is_token: 1,
           coin_family: coinFamily,
           token_type: tokenType,
