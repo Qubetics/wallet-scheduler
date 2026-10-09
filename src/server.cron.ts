@@ -173,12 +173,6 @@ class CronJobs {
     }, 1000);
   }
 
-  public updateBalanceCron = async () => {
-    setTimeout(async () => {
-      await update_balance_controller.update_wallet_balance();
-    }, 10000);
-  };
-
   public tradingViewGraphData = async () => {
     schedule.scheduleJob("*/3 * * * *", async function () {
       await TradingViewGraphs.getTradingViewTokens();
