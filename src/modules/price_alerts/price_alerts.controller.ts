@@ -1,8 +1,3 @@
-import { Coins, CoinPriceInFiat, PriceAlerts } from "../../models/model/index";
-import {
-  sendNotification,
-  bigNumberSafeMath,
-} from "../../helpers/common/globalFunctions";
 import { Sequelize } from "sequelize";
 
 class PriceAlertsController {

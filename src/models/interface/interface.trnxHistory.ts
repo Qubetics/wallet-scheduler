@@ -1,6 +1,5 @@
 export interface ITrnxHistoryInterface {
     id: number,
-    alchemy_order_id: string | null;
     user_id: number;
     to_user_id: number | null;
     coin_id: number;
