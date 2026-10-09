@@ -3,7 +3,6 @@ import { DataTypes, Model, Optional } from "sequelize";
 import { CoinModel } from "../interface/coins";
 import db from "../../helpers/common/db";
 import { CoinPriceInFiat } from "./coinPriceInFiat";
-// import reset_graph_data from "./reset_graph_data";
 import { CoinPriceInFiatGraph } from "./coinPriceInFiatGraph";
 
 interface CoinCreationModel extends Optional<CoinModel, "coin_id"> {}
@@ -57,10 +56,6 @@ const dataObj = {
     allowNull: true,
   },
 
-  // token_abi: {
-  //   type: DataTypes.STRING,
-  //   allowNull: true,
-  // },
   token_address: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -143,11 +138,6 @@ CoinsRead.hasOne(CoinPriceInFiat.CoinPriceInFiatRead, {
   sourceKey: "coin_id",
   as: "coin_price_data",
 });
-// CoinsRead.hasOne(reset_graph_data.ResetGraphRead, {
-//   foreignKey: "cmc_id",
-//   sourceKey: "cmc_id",
-//   as: "reset_graph_data",
-// });
 
 CoinsRead.hasOne(CoinPriceInFiatGraph.CoinPriceInFiatGraphRead, {
   foreignKey: "cmc_id",

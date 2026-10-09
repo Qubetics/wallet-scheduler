@@ -85,7 +85,6 @@ class CmcHelper {
             gzip: true,
           };
         } else {
-          // new cmc product
           console.log(
             "Cmc result 2 it means CMC product key,cmc_historical_data"
           );
@@ -145,7 +144,6 @@ class CmcHelper {
             gzip: true,
           };
         } else {
-          // new cmc product
           console.log(
             "Cmc result 2 it means CMC product key,cmc_historical_data"
           );

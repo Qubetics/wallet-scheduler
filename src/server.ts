@@ -4,7 +4,6 @@ import { config } from "./config";
 import {
   ThirdPartyController,
   PricesController,
-  // update_balance_controller,
   PendingCrossChainProcess,
   CosnumeCrossChainTxProcess,
   TradingViewGraphs,
@@ -19,44 +18,13 @@ const {
 class CronJobs {
   constructor() {
     this.connectKafka();
-    // /** Update Gas Prices */
-    // this.updateEthGasPriceCron();
-    // this.updateBNBGasPriceCron();
-    // this.updatePOLGasPriceCron();
 
-    // /** Update Cmc Ids*/
-    // this.updateCmcIds();
 
-    // /** Graph data */
-    // // this.updateFiatCoinPriceCron();
-    // this.updateFiatCoinPriceCronV2();
-    // // this.updateFiatCoinPriceCronTics();
-
-    // this.getCoinGraphDataDaily();
-    // this.getCoinGraphDataWeekly();
-    // this.getCoinGraphDataMonthly();
-    // this.getCoinGraphDataYearly();
     /** cross chain */
     this.getPendingWithdrawalTxProcess();
     this.updateTxStatusProcess();
-    // this.tradingViewGraphData();
 
-    // /* moralis Chart Widget TradingView */
-    // this.moralisTradingviewWidget()
 
-    // this.moralisTradingview(); // call custom token kafka consumer
-
-    // this.updateFiatPrice();
-
-    // // this.updateTicsPrice();
-    // // this.deleteTicsDailyTablePrice();
-
-    // /* for SwftCoin (SWFTC) */
-    // this.swftcCoinList();
-
-    // /* Announcement notification */
-    // this.announcementNotification();
-    // // this.updateCoinDecimals();
   }
 
   public async connectKafka() {
@@ -87,11 +55,6 @@ class CronJobs {
     });
   };
 
-  // public updateFiatCoinPriceCron = async () => {
-  //   schedule.scheduleJob("0 */1 * * * *", async function () {
-  //     await PricesController.fetchCmcPrice();
-  //   });
-  // };
 
   public updateFiatCoinPriceCronV2 = async () => {
     schedule.scheduleJob("0 */1 * * * *", async function () {
@@ -99,11 +62,6 @@ class CronJobs {
     });
   };
 
-  // public updateFiatCoinPriceCronTics = async () => {
-  //   schedule.scheduleJob("0 */5 * * * *", async function () {
-  //     await PricesController.fetchCmcPriceTics();
-  //   });
-  // };
 
   public getCoinGraphDataDaily = async () => {
     schedule.scheduleJob("0/15 */2 * * * *", async function () {
@@ -191,11 +149,6 @@ class CronJobs {
     }, 1000);
   }
 
-  // public updateBalanceCron = async () => {
-  //   setTimeout(async () => {
-  //     await update_balance_controller.update_wallet_balance();
-  //   }, 10000);
-  // };
 
   public tradingViewGraphData = async () => {
     schedule.scheduleJob("*/3 * * * *", async function () {
@@ -220,17 +173,6 @@ class CronJobs {
     });
   };
 
-  // public updateTicsPrice = async () => {
-  //   schedule.scheduleJob("* * * * *", async function () {
-  //     await PricesController.updateTicsPrice();
-  //   });
-  // };
-
-  // public deleteTicsDailyTablePrice = async () => {
-  //   schedule.scheduleJob("51 23 * * *", async function () {
-  //     await PricesController.deleteTicsDailyTablePrice();
-  //   });
-  // }
 
   public swftcCoinList = async () => {
     schedule.scheduleJob("0 0 */1 * * *", async function () {
@@ -244,11 +186,6 @@ class CronJobs {
     });
   }
 
-  // public updateCoinDecimals = async () => {
-  //   schedule.scheduleJob('*/3 * * * *', async function () {
-  //     await update_balance_controller.updateCoinDecimals();
-  //   });
-  // }
 }
 
 new CronJobs();

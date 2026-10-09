@@ -1,5 +1,4 @@
 import { NotificationInterface } from "../../interfaces/notifications";
-// import { config } from "../../config";
 import { DeviceToken } from "../../models/model";
 import { pushNotification } from "./pushNotification";
 import { Op } from "sequelize";
@@ -38,18 +37,6 @@ export const bigNumberSafeMath = function (
   return rtn;
 };
 
-// export const toFixed_norounding = function (value: string, n: number): number {
-//   const val: number = new BigNumber(value);
-//   value = val.toFixed();
-//   var x: string[] = (val.toString() + ".0").split(".");
-//   return parseFloat(x[0] + "." + x[1].substr(0, n));
-// };
-
-// export const bigNumberSafeConversion = function (val: number): number {
-//   var amount = val.toString();
-//   var value = new BigNumber(amount);
-//   return value.toFixed();
-// };
 
 export const exponentialToDecimal = async function (exponential: number) {
   let decimal: string = exponential.toString().toLowerCase();
@@ -179,5 +166,4 @@ export const sendNotification = async function sendNotification(
   await pushNotification.sendNewNotification(message);
 
 };
-
 

@@ -59,20 +59,7 @@ class BlockchainHelper {
             return data;
         }
     }
-    // public async return_decimals(address: string, coin_family: number, tokenAbi: any, rpc_object: any) {
-    //     try {
 
-    //         if (coin_family == 2 || coin_family == 1) {
-    //             let token_data: any = await this.searchTokenNew(address, tokenAbi, rpc_object)
-    //             return Math.pow(10, parseInt(token_data?.decimals))
-    //         } else {
-    //             return 0;
-    //         }
-    //     } catch (err: any) {
-    //         console.error("err in return_decimals", err);
-    //         return 0;
-    //     }
-    // }
 
 }
 

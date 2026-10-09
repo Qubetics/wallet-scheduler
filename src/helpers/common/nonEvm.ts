@@ -92,8 +92,6 @@ class NonEvmHelpers {
     public async TRC20TokenBalance(address: string, contract_address: string | null | undefined) {
         try {
             await this.tronWeb.setAddress(contract_address);
-            //fixed balance of tron
-            // let contract: any = await this.tronWeb.contract().at(contract_address);
             const contract: any = await this.tronWeb.contract(config.TRON_ABI, contract_address);
             let decimals: number = await contract.decimals().call();
             let dex: any = decimals.toString()
@@ -198,7 +196,6 @@ class NonEvmHelpers {
     ) {
         try {
             await this.tronWeb.setAddress(trc20ContractAddress);
-            // let contract = await this.tronWeb.contract().at(trc20ContractAddress);
             const contract: any = await this.tronWeb.contract(config.TRON_ABI, trc20ContractAddress);
             const coin_name = await contract.name().call();
             const coin_symbol = await contract.symbol().call();
@@ -226,20 +223,7 @@ class NonEvmHelpers {
             return null
         }
     }
-    // public async return_decimals(address: string, coin_family: number) {
-    //     try {
 
-    //         if (coin_family == 6) {
-    //             let token_data: any = await this.searchToken(address)
-    //             return Math.pow(10, parseInt(token_data?.decimals))
-    //         } else {
-    //             return 0;
-    //         }
-    //     } catch (err: any) {
-    //         console.error("err in return_decimals", err);
-    //         return 0;
-    //     }
-    // }
     /** end tron functions */
 
     /** start solana functions */

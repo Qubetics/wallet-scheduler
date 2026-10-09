@@ -24,7 +24,6 @@ import { SWFTC, SWFTC_RESPONSE, SWFTC_STATUS } from "./enum";
 import { Boolean, ADDED_BY, COINS, TOKENS } from "../../constants";
 import { crossChainHelper } from "./helper";
 import kafkaHelper from "../../helpers/common/kafka";
-// import nonEvmHelper from "../../helpers/common/non.evm.helper";
 import { ethers } from "ethers";
 
 const COIN_FAMILY = config.STATIC_COIN_FAMILY;
@@ -291,16 +290,11 @@ class CosnumeCrossChainTxProcess {
               destinationAddr.toUpperCase()
             );
           } else if (coinFamily == COIN_FAMILY.BNB) {
-            // console.log(
-            //   "${config.BSC_WALLET_ADDRESS",
-            //   config.BSC_WALLET_ADDRESS
-            // );
             etherObject = this.bscEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
               `${config.BSC_WALLET_ADDRESS}`,
               destinationAddr.toUpperCase()
             );
-            // console.log("depositQuery", depositQuery);
           }else if (coinFamily == COIN_FAMILY.TICS) {
             etherObject = this.ticsEtherUrl;
             depositQuery = await redisClient.getKeyValuePair(
