@@ -14,10 +14,6 @@ let dataObj = {
         primaryKey: true,
         autoIncrement: true
     },
-    alchemy_order_id: {
-        type: DataTypes.STRING,
-        allowNull: true
-    },
     user_id: {
         type: DataTypes.INTEGER,
         allowNull: false
@@ -39,7 +35,7 @@ let dataObj = {
         allowNull: false
     },
     req_type: {
-        type: DataTypes.ENUM('APP', 'EXNG', 'MERCURYO', 'TRANSAK', 'ALCHEMY'),
+        type: DataTypes.ENUM('APP', 'EXNG'),
         allowNull: false
     },
     from_adrs: {
