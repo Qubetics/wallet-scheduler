@@ -203,7 +203,6 @@ class tradingViewController {
     };
 
 
-
     // Function to validate the response based on exchange name
     private isValidExchangeResponse = (exchange: { name: string }, response: any) => {
         switch (exchange.name) {
@@ -232,7 +231,6 @@ class tradingViewController {
         }
     };
 
-    //function to find the exchange source
     private getExchangeSource = async (symbol: string) => {
         const exchanges = [
             { name: 'BINANCE', url: (symbol: string) => `https://api.binance.com/api/v3/exchangeInfo?symbol=${symbol}USDT` },

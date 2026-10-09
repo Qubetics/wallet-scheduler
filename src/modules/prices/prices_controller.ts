@@ -398,24 +398,11 @@ class PricesController {
         coin_limit_count = Number(findCoinCounter);
       }
       let now = new Date();
-      // let subtractTime = new Date(now);
-      // // Calculate different time ranges
-      // if (type == "1d") {
-      //   subtractTime.setHours(subtractTime.getHours() - 4);
-      // } else if (type == "1w") {
-      //   subtractTime.setHours(subtractTime.getHours() - 6);
-      // } else if (type == "1m") {
-      //   subtractTime.setDate(subtractTime.getDate() - 1);
-      // } else {
-      //   subtractTime.setDate(subtractTime.getDate() - 3);
-      // }
-      // console.log("subtractTime :>> ", subtractTime, "timeperiod :>>", type);
       let dbCoinrecords: any;
 
       dbCoinrecords =
         await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
           where: {
-            // updated_at: { [Op.lt]: subtractTime },
             type: type,
             fiat_type: "USD",
           },
@@ -452,7 +439,6 @@ class PricesController {
               required: false, // Set to false for LEFT JOIN
             },
           ],
-          // raw: true,
           group: ["cmc_id"],
           order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
           limit: limit,
@@ -971,7 +957,6 @@ class PricesController {
           "pair_address",
         ],
         where: {
-          // is_token: { [Op.ne]: null },     //      old check
           is_token: 1,
           coin_family: coinFamily,
           token_type: tokenType,
@@ -1397,27 +1382,7 @@ class PricesController {
 
       // Add each coin's cmc_id into the reset_graph_data table if not already present
       if (cmcIds.length > 0) {
-        // for (let i: number = 0; i < cmcIds.length; i++) {
-        //   let id_exist: any = await reset_graph_data.ResetGraphRead.findOne({
-        //     attributes: ["id"],
-        //     where: { cmc_id: cmcIds[i] },
-        //     raw: true,
-        //   });
 
-        //   if (id_exist == null) {
-        //     let currentUTCDate: string = new Date()
-        //       .toISOString()
-        //       .replace(/T/, " ")
-        //       .replace(/\..+/, "");
-
-        //     await reset_graph_data.ResetGraphWrite.create({
-        //       cmc_id: cmcIds[i],
-        //       graph_type: "1d",
-        //       created_at: currentUTCDate,
-        //       updated_at: null,
-        //     });
-        //   }
-        // }
 
         // Fetch live market data for the coins from CMC API
         const cmcIdsParam = cmcIds.join(",");
