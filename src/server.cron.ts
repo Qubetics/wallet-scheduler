@@ -1,15 +1,7 @@
 import schedule from "node-schedule";
 import moment from "moment";
 import { config } from "./config";
-import {
-  ThirdPartyController,
-  PricesController,
-  update_balance_controller,
-  PendingCrossChainProcess,
-  CosnumeCrossChainTxProcess,
-  TradingViewGraphs,
-  NotificationController
-} from "./modules/index";
+import { ThirdPartyController, PricesController, PendingCrossChainProcess, CosnumeCrossChainTxProcess, TradingViewGraphs, NotificationController } from "./modules/index";
 
 const {
   moralis_graph_counter: MORALIS_GRAPH_COUNTER,
@@ -169,12 +161,6 @@ class CronJobs {
       await CosnumeCrossChainTxProcess.startTxStatusUpdateQueue();
     }, 1000);
   }
-
-  public updateBalanceCron = async () => {
-    setTimeout(async () => {
-      await update_balance_controller.update_wallet_balance();
-    }, 10000);
-  };
 
   public tradingViewGraphData = async () => {
     schedule.scheduleJob("*/3 * * * *", async function () {
