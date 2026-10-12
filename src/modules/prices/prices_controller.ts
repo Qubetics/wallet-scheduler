@@ -306,29 +306,6 @@ class PricesController {
       if (findCoinCounter) {
         coinLimitCount = Number(findCoinCounter);
       }
-      /*let dbCoinrecords: any;
-
-      dbCoinrecords =
-        await CoinPriceInFiatGraph.CoinPriceInFiatGraphRead.findAndCountAll({
-          where: {
-            type: type,
-            fiat_type: "USD",
-          },
-          order: [["cmc_id", "asc"]], // cmc_id replace with coin_id in order by
-          limit: limit,
-          offset: coin_limit_count,
-          logging: true,
-        });
-
-      console.log(
-        "dbCoinrecords.count :>> ",
-        dbCoinrecords.count,
-        "type :",
-        type
-      );
-      let groupedCount = dbCoinrecords.count; // This is an array of grouped results
-      let totalRecords = dbCoinrecords.rows.length; // Total number of unique groups (cmc_id)
-      if (dbCoinrecords.count == 0) {*/
       const totalCmcIds: number = await Coins.CoinsRead.count({
         distinct: true,
         col: 'cmc_id',
