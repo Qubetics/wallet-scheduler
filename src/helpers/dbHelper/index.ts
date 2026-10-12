@@ -1,8 +1,6 @@
 import { NotificationInterface } from "../../models/interface/interface.notifications";
 import { DeviceToken, SettingsModel } from "../../models/model/index";
 import { NotificationModel } from "../../models/model/index";
-import { config } from "../../config";
-import { FCMObject } from "../../interfaces/notifications.interfaces";
 import settings_queries from './settings';
 export { settings_queries }
 
