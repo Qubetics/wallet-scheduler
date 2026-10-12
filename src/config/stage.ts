@@ -87,9 +87,6 @@ export const TOKENS = {
 export const MORALIS_TRADINGVIEW_GROUP_ID = zookeeperConfig.config.MORALIS_TRADING_VIEW_GROUP_ID;
 export const MORALIS_TRADINGVIEW_TOPIC = zookeeperConfig.config.MORALIS_TRADING_VIEW_TOPIC;
 
-// /**
-//  * ERC 20 Tokens standard ABI
-//  */
 
 export const CONTRACT_ABI = [
   {

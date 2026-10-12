@@ -25,6 +25,7 @@ import { Boolean, ADDED_BY, COINS, TOKENS } from "../../constants";
 import { crossChainHelper } from "./helper";
 import kafkaHelper from "../../helpers/common/kafka";
 import { ethers } from "ethers";
+import { MoralisData } from "./consumer";
 
 const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 
