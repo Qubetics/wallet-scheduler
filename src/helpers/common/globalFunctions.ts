@@ -1,5 +1,4 @@
 import { NotificationInterface } from "../../interfaces/notifications.interfaces";
-import { config } from "../../config";
 import { DeviceToken } from "../../models/model";
 import { pushNotification } from "./push_notification";
 import { Op } from "sequelize";

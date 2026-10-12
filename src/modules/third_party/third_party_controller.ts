@@ -4,7 +4,7 @@ import { Coins, GasPrice } from "../../models/model/index";
 import SWFTCCoinsDataModel from "../../models/model/model.swftc_coins";
 import { Op } from "sequelize";
 
-const { ETH: ETH, BNB: BNB, POL: POL, BTC: BTC, TRX: TRX, SOL: SOL } = config.STATIC_COIN_FAMILY;
+const { ETH: ETH, BNB: BNB, POL: POL } = config.STATIC_COIN_FAMILY;
 
 class ThirdPartyController {
   public updateGasPrice = async () => {
