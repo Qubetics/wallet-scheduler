@@ -10,7 +10,6 @@ import {
 import redisClient from "../../helpers/common/redis";
 import { Op, Sequelize } from "sequelize";
 import rp from "request-promise";
-import price_alerts_controller from "../price_alerts/price_alerts.controller";
 import sequelize from "sequelize";
 import reset_graph_data from "../../models/model/reset_graph_data";
 import { CoinModel } from "../../models/interface/interface.coins";
@@ -18,14 +17,12 @@ import dbHelper from "../../helpers/dbHelper";
 import cmcHelper from "../../helpers/common/cmc.helper";
 import globalHelper from "../../helpers/common/global.helper";
 import axios from "axios";
-import { TimePeriods } from "../../constants";
 import { bigNumberSafeMath, exponentialToDecimal } from "../../helpers/common/globalFunctions";
 
 const {
   current_price_coin_counter: CURRENT_PRICE_COIN_COUNTER,
   current_price_currency_counter: CURRENT_PRICE_CURRENCY_COUNTER,
   graph_data_coin_counter: GRAPH_DATA_COIN_COUNTER,
-  graph_data_currency_counter: GRAPH_DATA_CURRENCY_COUNTER,
   fetch_cmc_ids_counter: FETCH_CMC_IDS_COIN_COUNTER,
   delete_graph_coin_counter: DELETE_GRAPH_COIN_COUNTER,
 } = config.REDISKEYS.COIN_LIMIT_COUNT_FIELD;
@@ -673,63 +670,6 @@ class PricesController {
     }
   };
 
-  private compare_update_prices = async (
-    sparkline: any,
-    recordExist: any,
-    id: number,
-    code: string,
-    type: string
-  ) => {
-    if (!sparkline?.length) return sparkline;
-
-    const sparklineLatestRecord = sparkline[sparkline.length - 1]
-      ? sparkline[sparkline.length - 1]
-      : null;
-
-    const existingSparkline = recordExist.sparkline || [];
-    const cleanedData = existingSparkline.filter((item: any) => item !== null);
-    const existingLastRecord =
-      cleanedData.length > 0 ? cleanedData[cleanedData.length - 1] : null;
-    if (existingLastRecord && sparklineLatestRecord) {
-      const existingTimestamp = new Date(
-        existingLastRecord.timestamp
-      ).getTime();
-      const latestTimestamp = new Date(
-        sparklineLatestRecord.timestamp
-      ).getTime();
-
-      if (existingTimestamp > latestTimestamp) {
-        sparkline.push(existingLastRecord);
-        return sparkline; // Early return if we push existing record
-      }
-
-      const coinData = await Coins.CoinsRead.findOne({
-        attributes: ["coin_id"],
-        where: { cmc_id: id },
-      });
-
-      await CoinPriceInFiat.CoinPriceInFiatWrite.update(
-        {
-          coin_id: coinData?.coin_id,
-          value: sparklineLatestRecord?.price || 0,
-          price_change_24h: sparklineLatestRecord?.percent_change_24h || 0,
-          price_change_percentage_24h:
-            sparklineLatestRecord?.percent_change_24h || 0,
-          volume_24h: sparklineLatestRecord?.volume_24h || 0,
-          latest_price: sparklineLatestRecord,
-          latest_price_source: type,
-        },
-        {
-          where: {
-            cmc_id: id,
-            fiat_type: code,
-          },
-        }
-      );
-    }
-
-    return sparkline;
-  };
 
   public fetchCmcIds = async () => {
     try {
