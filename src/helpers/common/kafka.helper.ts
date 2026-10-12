@@ -1,5 +1,4 @@
 import { Kafka, KafkaConfig, logLevel } from 'kafkajs';
-import * as Interface from '../../interfaces/kafka.interface';
 import { config } from '../../config';
 
 class KafkaHelper {
