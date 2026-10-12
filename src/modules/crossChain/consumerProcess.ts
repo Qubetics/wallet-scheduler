@@ -87,13 +87,11 @@ class CosnumeCrossChainTxProcess {
         orderId: data.order_id,
         sourceType: SWFTC.IOS,
       };
-      let success: number = Boolean.false;
       let response: any = await axios.post(
         "https://www.swftc.info/api/v2/queryOrderState",
         params
       );
       console.log("🚀 ~ response?.data.data:", response?.data.data)
-      success = Boolean.true;
       await cosnumeCrossChainTxProcess.getOrderDetail(
         response?.data.data,
         data

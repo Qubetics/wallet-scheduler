@@ -7,7 +7,7 @@ import {
   // TicsPriceInFiatGraph
 } from "../../models/model/index";
 import redisClient from "../../helpers/common/redis";
-import { Op, Sequelize } from "sequelize";
+import { Op } from "sequelize";
 import rp from "request-promise";
 import sequelize from "sequelize";
 import cmcHelper from "../../helpers/common/cmc";
