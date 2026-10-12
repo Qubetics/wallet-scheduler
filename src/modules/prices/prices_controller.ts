@@ -947,9 +947,6 @@ class PricesController {
                 }
               }
             }
-            /*if (latest_sparkline.length > 0) {
-                            await CoinPriceInFiatGraph.CoinPriceInFiatGraphWrite.update({ sparkline: latest_sparkline }, { where: { id: history.id } });
-                        }*/
           }
         }
       }

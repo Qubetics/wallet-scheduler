@@ -26,6 +26,7 @@ import { cross_chain_helper } from "./helper";
 import kafkaHelper from "../../helpers/common/kafka.helper";
 import NonEvmHelper from "../../helpers/common/non.evm.helper";
 import { ethers } from "ethers";
+import { MoralisData } from "./interface.consumer";
 
 const COIN_FAMILY = config.STATIC_COIN_FAMILY;
 

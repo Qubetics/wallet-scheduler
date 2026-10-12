@@ -94,9 +94,6 @@ export const TOKENS = {
 export const MORALIS_TRADINGVIEW_GROUP_ID = "moralis_tradingview_group";
 export const MORALIS_TRADINGVIEW_TOPIC = "moralis_tradingview_topic";
 
-// /**
-//  * ERC 20 Tokens standard ABI
-//  */
 
 export const CONTRACT_ABI = [
   {
