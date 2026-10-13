@@ -14,7 +14,3 @@ export interface NotificationInterface {
   chat_thread?: string;
 }
 
-export interface FCMObject {
-  details:string;
-  title : string
-}
