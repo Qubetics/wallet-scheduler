@@ -4,7 +4,6 @@ export * from "./model.coins";
 export * from "./model.gas_price";
 export * from "./model.coinPriceInFiatGraph";
 export * from "./model.deviceToken";
-export * from "./model.priceAlerts";
 export * from "./model.settings";
 export * from './model.wallets';
 export * from './notification_model';
