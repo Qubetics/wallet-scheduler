@@ -17,8 +17,6 @@ export enum TOKENS {
     TRC20 = 'TRC20',
     BEP20 = 'BEP20',
     SPL = 'SPL',
-    ERC721 = 'ERC721',
-    BEP721 = 'BEP721'
 }
 
 export enum Boolean {
