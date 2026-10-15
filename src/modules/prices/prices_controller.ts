@@ -8,7 +8,7 @@ import {
 } from "../../models/model/index";
 import redisClient from "../../helpers/common/redis";
 import { Op, Sequelize } from "sequelize";
-import rp from "request-promise";
+import { requestJson } from "../../helpers/common/http.helper";
 import cmcHelper from "../../helpers/common/cmc.helper";
 import globalHelper from "../../helpers/common/global.helper";
 
@@ -354,7 +354,7 @@ class PricesController {
           startDate,
           endDate
         );
-        const data = await rp(requestOptionsForListing);
+        const data = await requestJson(requestOptionsForListing);
         if (data) {
           for await (const id of cmcIds) {
             const fiat_type = code;
@@ -654,7 +654,7 @@ class PricesController {
       const cryptoSymbols = findFiat.map((coin) => coin.currency_code);
   
       const requestOptionsForListing = await cmcHelper.cmcFiatCurrencyData(cryptoSymbols);
-      const result = await rp(requestOptionsForListing);
+      const result = await requestJson(requestOptionsForListing);
   
       if (result && result.data) {
         const response = result.data["2781"];
