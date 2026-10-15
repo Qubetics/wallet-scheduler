@@ -1,5 +1,5 @@
 import axios from "axios";
-import TronWeb from 'tronweb';
+import { TronWeb } from 'tronweb';
 import { config } from "../../config";
 
 import { exponentialToDecimal } from "../common/globalFunctions";
@@ -94,19 +94,17 @@ class NonEvmHelpers {
             await this.tronWeb.setAddress(contract_address);
             let contract: any = await this.tronWeb.contract(config.TRON_ABI, contract_address);
 
-            let decimals: number = await contract.decimals().call();
-            let dex: any = decimals.toString()
-            if (dex.hex != undefined) {
-                dex = await this.tronWeb.toDecimal(dex.hex);
-                decimals = Number(dex);
-            }
+            // tronweb 6 returns uint values as bigint (older versions returned numbers and BigNumber objects)
+            let decimals: number = Number((await contract.decimals().call()).toString());
 
             let balanceOf: any = await contract.balanceOf(address).call();
-            let toDecimal: number = await this.tronWeb.toDecimal(balanceOf._hex);
-            if (balanceOf._hex == undefined) {
-                toDecimal = await this.tronWeb.toDecimal(
-                    balanceOf.balance._hex
-                );
+            let toDecimal: any;
+            if (typeof balanceOf === 'bigint') {
+                toDecimal = balanceOf.toString();
+            } else if (balanceOf._hex != undefined) {
+                toDecimal = await this.tronWeb.toDecimal(balanceOf._hex);
+            } else {
+                toDecimal = await this.tronWeb.toDecimal(balanceOf.balance._hex);
             }
             let expToDecimal: string = await exponentialToDecimal(toDecimal);
             let balance: number = Number(expToDecimal) / Math.pow(10, decimals);
