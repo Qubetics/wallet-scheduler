@@ -9,19 +9,6 @@ class Database implements DBInterface {
   public connectionRead: string;
 
   constructor() {
-    console.log(
-      "DB_USER",
-      config.DB_USER,
-      "DB_PASSWORD",
-      config.DB_PASSWORD,
-      "DB_HOST_WRITE",
-      config.DB_HOST_WRITE,
-      "DB_DATABASE",
-      config.DB_DATABASE,
-      "DB_HOST_READ",
-      config.DB_HOST_READ
-    );
-
     this.connectionWrite = `mysql://${config.DB_USER}:${config.DB_PASSWORD}@${config.DB_HOST_WRITE}/${config.DB_DATABASE}`;
 
     this.connectionRead = `mysql://${config.DB_USER}:${config.DB_PASSWORD}@${config.DB_HOST_READ}/${config.DB_DATABASE}`;
