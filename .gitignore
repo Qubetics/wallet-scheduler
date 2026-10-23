@@ -1,0 +1,10 @@
+node_modules
+build
+.vscode
+.vscode/
+.env
+bsc_bk
+bsc_old
+btc_bk
+ltc_bk
+crons_audit.md
